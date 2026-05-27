@@ -1,0 +1,775 @@
+<style>
+  /* ══════════════════════════════════════════════
+     TOKENS
+  ══════════════════════════════════════════════ */
+  .dash-root {
+    --bg:        #f0f4fb;
+    --bg-card:   #ffffff;
+    --border:    #e5e7eb;
+    --blue-dark: #1a3a8f;
+    --blue:      #2366CE;
+    --blue-soft: rgba(35,102,206,0.10);
+    --green:     #22c55e;
+    --amber:     #f59e0b;
+    --red:       #ef4444;
+    --purple:    #8b5cf6;
+    --text-1:    #111827;
+    --text-2:    #6b7280;
+    --text-3:    #9ca3af;
+    --font:      'Inter', sans-serif;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.07);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
+    --r-lg:      16px;
+    --r-md:      12px;
+    --r-sm:      8px;
+  }
+
+  .dash-root {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text-1);
+  }
+
+  /* ══════════════════════════════════════════════
+     KPI GRID
+  ══════════════════════════════════════════════ */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  .kpi-card:hover {
+    box-shadow: 0 8px 24px rgba(35,102,206,0.13);
+    border-color: #bfdbfe;
+    transform: translateY(-2px);
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .kpi-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-1);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .kpi-sub {
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .kpi-sub.green { color: #16a34a; }
+  .kpi-sub.amber { color: #b45309; }
+  .kpi-sub.red   { color: #dc2626; }
+
+  /* ══════════════════════════════════════════════
+     GRID PRINCIPAL 2 columnas
+  ══════════════════════════════════════════════ */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .panel.full-width {
+    grid-column: 1 / -1;
+  }
+
+  /* ══════════════════════════════════════════════
+     PANEL BASE
+  ══════════════════════════════════════════════ */
+  .panel {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .panel:hover {
+    box-shadow: 0 8px 24px rgba(35,102,206,0.10);
+    border-color: #bfdbfe;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+  .panel-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-subtitle {
+    font-size: 12px;
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  .panel-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    background: #f3f4f6;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .panel-badge.live {
+    color: #16a34a;
+    background: rgba(34,197,94,0.10);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ══════════════════════════════════════════════
+     USUARIOS RECIENTES
+  ══════════════════════════════════════════════ */
+  .usuario-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+  }
+  .usuario-item:last-child { border-bottom: none; }
+  .usuario-item:hover { background: #f8fafc; }
+
+  .avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; font-weight: 700;
+    flex-shrink: 0;
+    color: #fff;
+  }
+  .avatar-jm { background: linear-gradient(135deg,#1a3a8f,#2366CE); }
+  .avatar-ym { background: linear-gradient(135deg,#7c3aed,#8b5cf6); }
+  .avatar-cp { background: linear-gradient(135deg,#b45309,#f59e0b); }
+  .avatar-lr { background: linear-gradient(135deg,#065f46,#22c55e); }
+  .avatar-ma { background: linear-gradient(135deg,#9f1239,#ef4444); }
+
+  .usuario-nombre {
+    font-size: 13px; font-weight: 600; color: var(--text-1);
+    margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .usuario-meta { font-size: 11px; color: var(--text-3); margin: 0; }
+
+  .chip-rol {
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 6px;
+    white-space: nowrap; flex-shrink: 0;
+  }
+  .chip-general    { background: rgba(35,102,206,0.10);  color: #2366CE; }
+  .chip-operador   { background: rgba(139,92,246,0.10);  color: #7c3aed; }
+  .chip-estudiante { background: rgba(34,197,94,0.10);   color: #16a34a; }
+  .chip-sin-saldo  { background: rgba(239,68,68,0.10);   color: #dc2626; }
+
+  /* ══════════════════════════════════════════════
+     ETA
+  ══════════════════════════════════════════════ */
+  .eta-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+  }
+  .eta-item:last-child { border-bottom: none; }
+  .eta-item:hover { background: #f8fafc; }
+
+  .eta-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+  .eta-linea-name {
+    font-size: 12px; font-weight: 600; color: var(--text-1); min-width: 92px;
+  }
+  .eta-bar-wrap {
+    flex: 1; height: 5px; background: #e5e7eb; border-radius: 10px; overflow: hidden;
+  }
+  .eta-bar-fill { height: 100%; border-radius: 10px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); }
+  .eta-tiempo {
+    font-size: 12px; font-weight: 700;
+    min-width: 44px; text-align: center;
+    border-radius: 6px; padding: 3px 8px;
+  }
+  .eta-paradero { font-size: 11px; color: var(--text-3); min-width: 90px; text-align: right; }
+
+  /* ══════════════════════════════════════════════
+     NOTICIAS VISITAS
+  ══════════════════════════════════════════════ */
+  .noticia-visit-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .noticia-visit-item:last-child { border-bottom: none; }
+  .noticia-visit-item:hover { background: #f8fafc; }
+
+  .noticia-dot { width: 8px; height: 8px; border-radius: 50%; margin-top: 5px; flex-shrink: 0; }
+  .noticia-visit-titulo {
+    font-size: 13px; font-weight: 600; color: var(--text-1); margin: 0 0 3px 0; line-height: 1.4;
+  }
+  .noticia-visit-meta { font-size: 11px; color: var(--text-3); margin: 0; }
+  .noticia-visit-vistas {
+    font-size: 12px; color: var(--text-3);
+    display: flex; align-items: center; gap: 4px; flex-shrink: 0; white-space: nowrap;
+  }
+
+  /* ══════════════════════════════════════════════
+     LÍNEA MÁS VIAJES
+  ══════════════════════════════════════════════ */
+  .linea-item { padding: 10px 20px; border-bottom: 1px solid #f1f5f9; }
+  .linea-item:last-child { border-bottom: none; }
+  .linea-row {
+    display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px;
+  }
+  .linea-nombre { font-size: 13px; font-weight: 600; color: var(--text-1); }
+  .linea-count  { font-size: 12px; color: var(--text-2); }
+  .linea-bar-wrap { height: 6px; background: #e5e7eb; border-radius: 10px; overflow: hidden; }
+  .linea-bar-fill {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, #1a3a8f, #2366CE);
+    transition: width 0.9s cubic-bezier(0.4,0,0.2,1);
+  }
+  .linea-total {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px; border-top: 1px solid var(--border);
+  }
+
+  /* ══════════════════════════════════════════════
+     EVENTOS DE ALTO IMPACTO
+  ══════════════════════════════════════════════ */
+  .evento-item {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+  }
+  .evento-item:last-child { border-bottom: none; }
+  .evento-item:hover { background: #f8fafc; }
+
+  .evento-icon {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px; flex-shrink: 0; margin-top: 1px;
+  }
+  .evento-icon.alto    { background: rgba(239,68,68,0.10); }
+  .evento-icon.medio   { background: rgba(245,158,11,0.10); }
+  .evento-icon.festivo { background: rgba(139,92,246,0.10); }
+
+  .evento-body { flex: 1; min-width: 0; }
+  .evento-nombre {
+    font-size: 13px; font-weight: 700; color: var(--text-1);
+    margin: 0 0 2px 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .evento-meta { font-size: 11px; color: var(--text-3); margin: 0 0 5px 0; }
+
+  .evento-rutas { display: flex; flex-wrap: wrap; gap: 4px; }
+  .evento-ruta-chip {
+    font-size: 10px; font-weight: 700;
+    padding: 2px 8px; border-radius: 5px;
+    background: rgba(35,102,206,0.09); color: #1a3a8f;
+    white-space: nowrap;
+  }
+
+  .evento-right { display: flex; flex-direction: column; align-items: flex-end; gap: 5px; flex-shrink: 0; }
+  .evento-impacto-badge {
+    font-size: 10px; font-weight: 700;
+    padding: 3px 9px; border-radius: 6px; white-space: nowrap;
+  }
+  .evento-impacto-badge.alto    { background: rgba(239,68,68,0.10);   color: #dc2626; }
+  .evento-impacto-badge.medio   { background: rgba(245,158,11,0.10);  color: #b45309; }
+  .evento-impacto-badge.festivo { background: rgba(139,92,246,0.10);  color: #7c3aed; }
+
+  .evento-fecha { font-size: 11px; font-weight: 600; color: var(--text-2); white-space: nowrap; }
+  .evento-footer {
+    font-size: 11px; color: var(--text-3); padding: 10px 20px;
+    font-weight: 500; border-top: 1px solid #f1f5f9;
+    display: flex; align-items: center; gap: 6px;
+  }
+
+  /* ══════════════════════════════════════════════
+     LIVELINE WC — contenedor
+  ══════════════════════════════════════════════ */
+  .liveline-wrap {
+    padding: 12px 20px 16px 20px;
+    height: 240px;
+    box-sizing: border-box;
+  }
+
+  /* ══════════════════════════════════════════════
+     CHART CANVAS (regresión)
+  ══════════════════════════════════════════════ */
+  .chart-wrap {
+    position: relative;
+    padding: 20px 24px 8px 24px;
+    background: #fafbff;
+    border-radius: 0 0 4px 4px;
+  }
+  .chart-canvas-reg {
+    width: 100%;
+    height: 300px;
+    display: block;
+    cursor: crosshair;
+  }
+
+  /* Tooltip flotante regresión */
+  .chart-tooltip {
+    position: absolute;
+    background: #0f172a;
+    color: #fff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    pointer-events: none;
+    white-space: nowrap;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.25);
+    z-index: 10;
+    transition: opacity 0.1s;
+    border: 1px solid rgba(255,255,255,0.08);
+    min-width: 160px;
+  }
+  .chart-tooltip.hidden { opacity: 0; pointer-events: none; }
+  .chart-tooltip .tt-header {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 8px; padding-bottom: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.10);
+  }
+  .chart-tooltip .tt-hora  { font-size: 11px; font-weight: 700; color: #e2e8f0; }
+  .chart-tooltip .tt-proj-badge {
+    font-size: 9px; font-weight: 700; color: #94a3b8;
+    background: rgba(148,163,184,0.15); padding: 2px 6px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: 0.05em;
+  }
+  .chart-tooltip .tt-row   { display: flex; align-items: center; gap: 6px; margin-bottom: 2px; }
+  .chart-tooltip .tt-dot   { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+  .chart-tooltip .tt-name  { font-size: 11px; font-weight: 500; color: #94a3b8; flex: 1; }
+  .chart-tooltip .tt-num   { font-size: 12px; font-weight: 800; color: #fff; }
+  .chart-tooltip .tt-proj-mark { font-size: 9px; color: #64748b; margin-left: 2px; }
+
+  /* Tooltip subrow: OLS ŷ + residual */
+  .chart-tooltip .tt-row-group { margin-bottom: 5px; }
+  .chart-tooltip .tt-row-group:last-child { margin-bottom: 0; }
+  .chart-tooltip .tt-subrow {
+    display: flex; align-items: center; gap: 5px;
+    padding-left: 14px; margin-top: 1px; margin-bottom: 1px;
+  }
+  .chart-tooltip .tt-sub-label {
+    font-size: 9px; font-weight: 600; color: #475569;
+    font-family: monospace; min-width: 24px;
+  }
+  .chart-tooltip .tt-sub-val {
+    font-size: 10px; font-weight: 500; color: #64748b; flex: 1;
+  }
+  .chart-tooltip .tt-residual {
+    font-size: 9px; font-weight: 700; padding: 1px 5px; border-radius: 3px;
+  }
+  .chart-tooltip .tt-residual.pos { color: #4ade80; background: rgba(74,222,128,0.12); }
+  .chart-tooltip .tt-residual.neg { color: #f87171; background: rgba(248,113,113,0.12); }
+
+  /* ══════════════════════════════════════════════
+     REGRESIÓN — leyenda
+  ══════════════════════════════════════════════ */
+  .reg-legend {
+    display: flex;
+    gap: 16px;
+    padding: 8px 20px 14px 20px;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+  }
+  .reg-legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+    transition: background 0.15s;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .reg-legend-item:hover  { background: #f3f4f6; }
+  .reg-legend-item.active { background: var(--blue-soft); color: var(--text-1); }
+  .reg-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  .reg-hint {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: var(--text-3);
+    padding: 0 20px 12px 20px;
+  }
+  .reg-hint-dash {
+    width: 20px; height: 2px;
+    background: repeating-linear-gradient(90deg, #9ca3af 0, #9ca3af 5px, transparent 5px, transparent 9px);
+  }
+
+  /* ══════════════════════════════════════════════
+     PULSE DOT
+  ══════════════════════════════════════════════ */
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #22c55e; position: relative; display: inline-block; flex-shrink: 0;
+  }
+  .pulse-dot::after {
+    content: ''; position: absolute; inset: -3px;
+    border-radius: 50%; border: 2px solid #22c55e;
+    animation: pulse 1.8s ease-out infinite;
+  }
+
+  /* ══════════════════════════════════════════════
+     ANIMACIONES
+  ══════════════════════════════════════════════ */
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    70%  { transform: scale(2.2); opacity: 0;   }
+    100% { transform: scale(2.2); opacity: 0;   }
+  }
+
+  /* ══════════════════════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════════════════════ */
+  @media (max-width: 1100px) {
+    .kpi-grid  { grid-template-columns: repeat(2, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .panel.full-width { grid-column: 1; }
+  }
+  @media (max-width: 768px) {
+    .dash-content  { padding: 16px 16px 48px 16px !important; }
+    .breadcrumb    { padding: 14px 16px 0 16px !important; }
+    .kpi-grid      { grid-template-columns: 1fr 1fr; }
+    .eta-paradero  { display: none; }
+  }
+  @media (max-width: 420px) {
+    .kpi-grid  { grid-template-columns: 1fr; }
+    .kpi-value { font-size: 26px; }
+  }
+</style>
+
+<div class="dash-root">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb" style="padding: 18px 32px 0 32px; font-family: 'Inter', sans-serif;">
+    <span style="font-size:13px; color:#2366CE; font-weight:600; cursor:pointer;" (click)="irA('inicia')">Inicio</span>
+    <span style="font-size:13px; color:#9ca3af; margin:0 6px;">›</span>
+    <span style="font-size:13px; color:#9ca3af;">Dashboard</span>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="dash-content" style="padding: 24px 32px 64px 32px;">
+
+    <!-- ENCABEZADO -->
+    <div style="margin-bottom: 20px; animation: cardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;">
+      <p style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#2366CE; margin:0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size:24px; font-weight:700; color:#111827; margin:0;">Dashboard — Resumen</h2>
+    </div>
+
+    <!-- ══ KPI CARDS ══ -->
+    <div class="kpi-grid">
+
+      <div class="kpi-card" style="animation-delay: 0ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+          </svg>
+          Usuarios activos
+        </div>
+        <div class="kpi-value">{{ kpis.usuariosActivos | number }}</div>
+        <div class="kpi-sub green">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/>
+          </svg>
+          +18% vs ayer
+        </div>
+      </div>
+
+      <div class="kpi-card" style="animation-delay: 50ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+          </svg>
+          Buses en flota
+        </div>
+        <div class="kpi-value">{{ kpis.busesEnFlota | number }}</div>
+        <div class="kpi-sub green">
+          <span class="pulse-dot" style="margin-top:1px;"></span>
+          En operación ahora
+        </div>
+      </div>
+
+      <div class="kpi-card" style="animation-delay: 100ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75"/>
+          </svg>
+          Recargas hoy
+        </div>
+        <div class="kpi-value">{{ kpis.recargasHoy | number }}</div>
+        <div class="kpi-sub green">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/>
+          </svg>
+          S/ {{ kpis.montoRecargasHoy | number }} total
+        </div>
+      </div>
+
+      <div class="kpi-card" style="animation-delay: 150ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+          </svg>
+          Reportes enviados
+        </div>
+        <div class="kpi-value">{{ kpis.reportesEnviados }}</div>
+        <div class="kpi-sub amber">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/>
+          </svg>
+          +{{ kpis.reportesPendientes }} pendientes
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ GRID PRINCIPAL ══ -->
+    <div class="main-grid">
+
+      <!-- ══ LIVELINE WC — Actividad en tiempo real ══ -->
+      <div class="panel full-width" style="animation-delay: 30ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Actividad en tiempo real</span>
+            <span class="panel-subtitle">Usuarios activos en la plataforma</span>
+          </div>
+          <span class="panel-badge live">
+            <span class="pulse-dot"></span>
+            En vivo
+          </span>
+        </div>
+
+        <!-- liveline-wc: el Web Component de React -->
+        <div class="liveline-wrap">
+          <liveline-wc
+            #liveWc
+            color="#2366CE"
+            height="200px"
+            style="display:block; height:200px; width:100%;">
+          </liveline-wc>
+        </div>
+      </div>
+
+      <!-- Usuarios recientes -->
+      <div class="panel" style="animation-delay: 60ms;">
+        <div class="panel-header">
+          <span class="panel-title">Usuarios recientes</span>
+          <span class="panel-badge">Hoy</span>
+        </div>
+        <div>
+          <div class="usuario-item" *ngFor="let u of usuariosRecientes">
+            <div class="avatar" [ngClass]="u.avatarClass">{{ u.iniciales }}</div>
+            <div style="flex:1; min-width:0;">
+              <p class="usuario-nombre">{{ u.nombre }}</p>
+              <p class="usuario-meta">{{ u.ruta }} · {{ u.hace }}</p>
+            </div>
+            <span class="chip-rol" [ngClass]="u.rolClass">{{ u.rol }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tiempo estimado de llegada -->
+      <div class="panel" style="animation-delay: 100ms;">
+        <div class="panel-header">
+          <span class="panel-title">Tiempo estimado de llegada</span>
+          <span class="panel-badge live">
+            <span class="pulse-dot"></span>
+            En vivo
+          </span>
+        </div>
+        <div>
+          <div class="eta-item" *ngFor="let e of etaItems">
+            <span class="eta-dot" [style.background]="e.color"></span>
+            <span class="eta-linea-name">{{ e.linea }}</span>
+            <div class="eta-bar-wrap">
+              <div class="eta-bar-fill" [style.width]="e.barPct + '%'" [style.background]="e.color"></div>
+            </div>
+            <span class="eta-tiempo" [style.color]="e.tiempoColor" [style.background]="e.tiempoBg">
+              {{ e.tiempo }} min
+            </span>
+            <span class="eta-paradero">{{ e.paradero }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ REGRESIÓN LINEAL — tendencia de demora ══ -->
+      <div class="panel full-width" style="animation-delay: 120ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Tendencia de demora — regresión lineal</span>
+            <span class="panel-subtitle">% viajes con demora >5 min · S1–S8 observado + proyección S9–S11</span>
+          </div>
+          <span class="panel-badge">OLS · IC 95%</span>
+        </div>
+
+        <div class="chart-wrap" style="position:relative;">
+          <canvas #regCanvas
+            class="chart-canvas-reg"
+            (mousemove)="onRegMouseMove($event)"
+            (mouseleave)="onRegMouseLeave()">
+          </canvas>
+        <div class="chart-tooltip"
+               [class.hidden]="!regTooltip.visible"
+               [style.left.px]="regTooltip.x"
+               [style.top.px]="regTooltip.y">
+            <div class="tt-header">
+              <span class="tt-hora">{{ regTooltip.label }}</span>
+              <span class="tt-proj-badge" *ngIf="regTooltip.values[0]?.isProjected">est.</span>
+            </div>
+            <div *ngFor="let v of regTooltip.values" class="tt-row-group">
+              <div class="tt-row">
+                <span class="tt-dot" [style.background]="v.color"></span>
+                <span class="tt-name">{{ v.nombre }}</span>
+                <span class="tt-num">{{ v.y | number:'1.1-1' }}%<span class="tt-proj-mark" *ngIf="v.isProjected">~</span></span>
+              </div>
+              <div class="tt-subrow" *ngIf="!v.isProjected">
+                <span class="tt-sub-label">OLS ŷ</span>
+                <span class="tt-sub-val">{{ v.fitted | number:'1.1-1' }}%</span>
+                <span class="tt-residual"
+                  [class.pos]="v.residual! >= 0"
+                  [class.neg]="v.residual! < 0">
+                  {{ v.residual! >= 0 ? '▲' : '▼' }} {{ v.residual! | number:'1.1-1' }} pp
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="reg-hint">
+          <span class="reg-hint-dash"></span>
+          OLS · IC 95% · Proyección S9–S11 · R² · tendencia · p-value
+        </div>
+      </div>
+
+      <!-- ══ EVENTOS DE ALTO IMPACTO ══ -->
+      <div class="panel full-width" style="animation-delay: 130ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Eventos de alto impacto</span>
+            <span class="panel-subtitle">Próximos eventos que afectarán la demanda de rutas</span>
+          </div>
+          <span class="panel-badge">S9–S12 · {{ eventosImpacto.length }} eventos</span>
+        </div>
+        <div>
+          <div class="evento-item" *ngFor="let ev of eventosImpacto">
+            <div class="evento-icon" [ngClass]="ev.tipo">{{ ev.emoji }}</div>
+            <div class="evento-body">
+              <p class="evento-nombre">{{ ev.nombre }}</p>
+              <p class="evento-meta">{{ ev.fecha }} · {{ ev.lugar }}</p>
+              <div class="evento-rutas">
+                <span class="evento-ruta-chip" *ngFor="let r of ev.rutas">{{ r }}</span>
+              </div>
+            </div>
+            <div class="evento-right">
+              <span class="evento-impacto-badge" [ngClass]="ev.tipo">{{ ev.impactoLabel }}</span>
+              <span class="evento-fecha">{{ ev.semana }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="evento-footer">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+          </svg>
+          Los eventos marcados como <strong>Alto impacto</strong> requieren refuerzo de flota en las rutas indicadas
+        </div>
+      </div>
+
+      <!-- Noticias — tráfico de visitas -->
+      <div class="panel" style="animation-delay: 140ms;">
+        <div class="panel-header">
+          <span class="panel-title">Noticias — tráfico de visitas</span>
+          <span class="panel-badge">Esta semana</span>
+        </div>
+        <div>
+          <div class="noticia-visit-item" *ngFor="let n of noticiasVisitas" (click)="irA('noticias')">
+            <span class="noticia-dot" [style.background]="n.dotColor"></span>
+            <div style="flex:1; min-width:0;">
+              <p class="noticia-visit-titulo">{{ n.titulo }}</p>
+              <p class="noticia-visit-meta">Publicado: {{ n.fecha }} · {{ n.autor }}</p>
+            </div>
+            <span class="noticia-visit-vistas">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+              {{ n.vistas | number }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Línea con más viajes -->
+      <div class="panel" style="animation-delay: 180ms;">
+        <div class="panel-header">
+          <span class="panel-title">Línea con más viajes</span>
+          <span class="panel-badge">Hoy</span>
+        </div>
+        <div>
+          <div class="linea-item" *ngFor="let l of lineasViajes">
+            <div class="linea-row">
+              <span class="linea-nombre">{{ l.nombre }}</span>
+              <span class="linea-count">{{ l.viajes | number }} viajes</span>
+            </div>
+            <div class="linea-bar-wrap">
+              <div class="linea-bar-fill" [style.width]="l.pct + '%'"></div>
+            </div>
+          </div>
+        </div>
+        <div class="linea-total">
+          <span style="font-size:13px; color:#6b7280; font-weight:500;">Total del día</span>
+          <span style="font-size:14px; font-weight:800; color:#111827;">{{ totalViajes | number }} viajes</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:48px; text-align:center; font-size:12px; color:#9ca3af; font-family:'Inter',sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div>
+</div>

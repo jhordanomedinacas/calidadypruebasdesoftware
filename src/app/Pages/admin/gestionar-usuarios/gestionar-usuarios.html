@@ -1,0 +1,998 @@
+<style>
+  /* ══════════════════════════════════════════════
+     TOKENS (mismo sistema que dashboard)
+  ══════════════════════════════════════════════ */
+  .gu-root {
+    --bg:        #f0f4fb;
+    --bg-card:   #ffffff;
+    --border:    #e5e7eb;
+    --blue-dark: #1a3a8f;
+    --blue:      #2366CE;
+    --blue-soft: rgba(35,102,206,0.10);
+    --green:     #22c55e;
+    --amber:     #f59e0b;
+    --red:       #ef4444;
+    --purple:    #8b5cf6;
+    --text-1:    #111827;
+    --text-2:    #6b7280;
+    --text-3:    #9ca3af;
+    --font:      'Inter', sans-serif;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.07);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
+    --r-lg:      16px;
+    --r-md:      12px;
+    --r-sm:      8px;
+  }
+
+  .gu-root {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text-1);
+  }
+
+  /* ══════════════════════════════════════════════
+     PANEL / TABLA
+  ══════════════════════════════════════════════ */
+  .gu-panel {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    animation: guCardIn 0.38s cubic-bezier(0.4,0,0.2,1) both;
+    animation-delay: 60ms;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .gu-panel:hover {
+    box-shadow: 0 8px 24px rgba(35,102,206,0.10);
+    border-color: #bfdbfe;
+  }
+
+  /* ── Buscador ── */
+  .gu-search-wrap {
+    position: relative;
+    margin-bottom: 20px;
+    animation: guCardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;
+    animation-delay: 30ms;
+  }
+  .gu-search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--text-3);
+    pointer-events: none;
+  }
+  .gu-search-input {
+    width: 100%;
+    padding: 12px 16px 12px 42px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 14px;
+    font-family: var(--font);
+    color: var(--text-1);
+    background: var(--bg-card);
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+    box-shadow: var(--shadow-sm);
+  }
+  .gu-search-input:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(35,102,206,0.10);
+  }
+  .gu-search-input::placeholder { color: var(--text-3); }
+
+  /* ── Cabecera tabla ── */
+  .gu-thead {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    padding: 14px 20px;
+  }
+  .gu-th {
+    font-size: 13px;
+    font-weight: 700;
+    color: #fff;
+    font-family: var(--font);
+  }
+  .gu-th.center { text-align: center; }
+
+  /* ── Fecha registro ── */
+  .gu-fecha {
+    font-size: 13px;
+    color: var(--text-2);
+    font-weight: 500;
+  }
+
+  /* ── Rol badge ── */
+  .gu-rol {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+  }
+  .gu-rol-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 999px;
+    white-space: nowrap;
+    font-family: var(--font);
+  }
+  .gu-rol-badge.admin     { background: rgba(139,92,246,0.10); color: #6d28d9; }
+  .gu-rol-badge.pasajero  { background: rgba(35,102,206,0.10); color: #1d4ed8; }
+  .gu-rol-badge.operador  { background: rgba(245,158,11,0.10); color: #b45309; }
+
+  /* ── Fila usuario ── */
+  .gu-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr;
+    align-items: center;
+    padding: 14px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+    animation: guCardIn 0.32s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  .gu-row:last-child { border-bottom: none; }
+  .gu-row:hover { background: #f8fafc; }
+
+  /* ── Avatar + nombre ── */
+  .gu-user-cell {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    min-width: 0;
+  }
+  .gu-avatar {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    font-size: 13px; font-weight: 700; color: #fff;
+  }
+  .gu-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .gu-nombre {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-1);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* ── Saldo ── */
+  .gu-saldo {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+
+  /* ── Acciones ── */
+  .gu-acciones {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .gu-btn-action {
+    width: 32px; height: 32px;
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s, border-color 0.15s, transform 0.15s;
+    color: var(--text-2);
+  }
+  .gu-btn-action:hover { transform: translateY(-1px); }
+  .gu-btn-action.eliminar:hover { background: rgba(239,68,68,0.08);   border-color: #fca5a5; color: #dc2626; }
+  .gu-btn-action.editar:hover   { background: rgba(35,102,206,0.08);  border-color: #bfdbfe; color: var(--blue); }
+  .gu-btn-action.ver:hover      { background: rgba(124,58,237,0.08);  border-color: #ddd6fe; color: #7c3aed; }
+
+  /* ── Estado badge ── */
+  .gu-estado-cell { display: flex; justify-content: flex-start; }
+  .gu-badge {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 14px;
+    border-radius: 999px;
+    white-space: nowrap;
+    font-family: var(--font);
+  }
+  .gu-badge.activo     { background: rgba(34,197,94,0.12);   color: #16a34a; }
+  .gu-badge.baja       { background: rgba(239,68,68,0.10);   color: #dc2626; }
+  .gu-badge.suspendido { background: rgba(245,158,11,0.12);  color: #b45309; }
+
+  /* ── Empty state ── */
+  .gu-empty {
+    text-align: center;
+    padding: 56px 24px;
+    color: var(--text-3);
+    font-family: var(--font);
+  }
+
+  /* ── Footer tabla ── */
+  .gu-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text-2);
+    font-family: var(--font);
+  }
+  .gu-footer-count { font-weight: 500; }
+
+  /* ══════════════════════════════════════════════
+     ANIMACIONES
+  ══════════════════════════════════════════════ */
+  @keyframes guCardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ══════════════════════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════════════════════ */
+  @media (max-width: 1280px) {
+    .gu-thead,
+    .gu-row           { grid-template-columns: 2fr 1fr 1fr 1fr 1fr; }
+    .gu-th.fecha,
+    .gu-fecha         { display: none; }
+  }
+  @media (max-width: 1024px) {
+    .gu-thead,
+    .gu-row           { grid-template-columns: 2fr 1fr 1fr 1fr; }
+    .gu-th.rol,
+    .gu-rol-badge     { display: none; }
+  }
+  @media (max-width: 768px) {
+    .gu-content    { padding: 16px 16px 48px 16px !important; }
+    .gu-breadcrumb { padding: 14px 16px 0 16px !important; }
+    .gu-thead,
+    .gu-row        { grid-template-columns: 2fr 1fr 1fr; }
+    .gu-th.saldo,
+    .gu-saldo      { display: none; }
+  }
+  @media (max-width: 480px) {
+    .gu-thead,
+    .gu-row            { grid-template-columns: 1fr auto auto; }
+    .gu-th.acciones    { display: none; }
+  }
+
+  /* ══════════════════════════════════════════════
+     MODAL OVERLAY (igual sistema que navbar)
+  ══════════════════════════════════════════════ */
+  .gu-modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(10, 20, 60, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    animation: guOverlayIn 0.2s ease;
+  }
+  @keyframes guOverlayIn {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  @keyframes guModalSlideIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+
+  /* ── Header modal (idéntico al navbar) ── */
+  .gu-modal-header {
+    background: #fff;
+    padding: 20px 24px;
+    border-bottom: 1.5px solid #e5e7eb;
+    display: flex; align-items: center; gap: 14px;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .gu-modal-header-left {
+    display: flex; align-items: center; gap: 14px;
+  }
+  .gu-modal-logo {
+    height: 36px; object-fit: contain; flex-shrink: 0;
+  }
+  .gu-modal-titulo {
+    font-size: 16px; font-weight: 800; color: #0f1f6e;
+    margin: 0 0 2px 0; font-family: 'Inter', sans-serif;
+  }
+  .gu-modal-sub {
+    font-size: 12px; color: #6b7280;
+    margin: 0; font-family: 'Inter', sans-serif;
+  }
+  .gu-modal-close {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    border: none; background: #f1f5f9;
+    color: #374151; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s;
+  }
+  .gu-modal-close:hover { background: #e5e7eb; }
+
+  /* ══════════════════════════════════════════════
+     MODAL ELIMINAR (estilo logout del navbar)
+  ══════════════════════════════════════════════ */
+  .gu-modal-eliminar {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    animation: guModalSlideIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gu-modal-eliminar__body {
+    padding: 28px 24px 20px;
+    display: flex; flex-direction: column;
+    align-items: center; text-align: center; gap: 12px;
+  }
+  .gu-modal-eliminar__icon-wrap {
+    width: 64px; height: 64px; border-radius: 16px;
+    background: rgba(220, 38, 38, 0.08);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .gu-modal-eliminar__usuario {
+    display: flex; align-items: center; gap: 10px;
+    background: #f8fafc; border: 1.5px solid #e5e7eb;
+    border-radius: 12px; padding: 10px 16px;
+    width: 100%; box-sizing: border-box;
+  }
+  .gu-modal-eliminar__avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; color: #fff; flex-shrink: 0;
+  }
+  .gu-modal-eliminar__nombre {
+    font-size: 14px; font-weight: 600; color: #111827;
+    font-family: 'Inter', sans-serif;
+  }
+  .gu-modal-eliminar__pregunta {
+    font-size: 16px; font-weight: 800; color: #111827;
+    margin: 0; font-family: 'Inter', sans-serif;
+  }
+  .gu-modal-eliminar__desc {
+    font-size: 13px; color: #6b7280; line-height: 1.6;
+    margin: 0; font-family: 'Inter', sans-serif;
+  }
+  .gu-modal-eliminar__footer {
+    padding: 0 24px 24px;
+    display: flex; gap: 10px;
+  }
+  .gu-modal-btn-cancelar {
+    flex: 1; padding: 11px;
+    border-radius: 10px;
+    border: 1.5px solid #e5e7eb;
+    background: #fff; color: #374151;
+    font-size: 13px; font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: background 0.15s;
+  }
+  .gu-modal-btn-cancelar:hover { background: #f8fafc; }
+  .gu-modal-btn-eliminar {
+    flex: 1; padding: 11px;
+    border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+    color: #fff; font-size: 13px; font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: opacity 0.18s;
+    box-shadow: 0 4px 14px rgba(220,38,38,0.3);
+  }
+  .gu-modal-btn-eliminar:hover { opacity: 0.9; }
+
+  /* ══════════════════════════════════════════════
+     MODAL EDITAR (estilo reporte del navbar)
+  ══════════════════════════════════════════════ */
+  .gu-modal-editar {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%; max-width: 520px;
+    max-height: 90vh;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    font-family: 'Inter', sans-serif;
+    animation: guModalSlideIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gu-modal-editar__body {
+    padding: 20px 24px 4px;
+    display: flex; flex-direction: column; gap: 14px;
+    overflow-y: auto; flex: 1;
+  }
+  .gu-modal-editar__grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+  .gu-modal-editar__grid--full { grid-column: 1 / -1; }
+  .gu-modal-field {
+    display: flex; flex-direction: column; gap: 6px;
+  }
+  .gu-modal-label {
+    font-size: 12px; font-weight: 700; color: #374151;
+    font-family: 'Inter', sans-serif;
+  }
+  .gu-modal-label span {
+    color: #dc2626; margin-left: 2px;
+  }
+  .gu-modal-input,
+  .gu-modal-select {
+    width: 100%; padding: 10px 12px;
+    border-radius: 10px; border: 1.5px solid #e5e7eb;
+    background: #f9fafb; color: #111827;
+    font-size: 13px; font-family: 'Inter', sans-serif;
+    outline: none; transition: border-color 0.15s, background 0.15s;
+    box-sizing: border-box;
+  }
+  .gu-modal-input:focus,
+  .gu-modal-select:focus {
+    border-color: #2366CE; background: #fff;
+    box-shadow: 0 0 0 3px rgba(35,102,206,0.08);
+  }
+  .gu-modal-select { appearance: none; cursor: pointer; }
+  .gu-modal-select-wrap {
+    position: relative;
+  }
+  .gu-modal-select-wrap::after {
+    content: '';
+    position: absolute; right: 12px; top: 50%;
+    transform: translateY(-50%);
+    width: 0; height: 0;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 5px solid #6b7280;
+    pointer-events: none;
+  }
+  .gu-modal-editar__footer {
+    padding: 16px 24px 24px;
+    display: flex; gap: 10px;
+    border-top: 1px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+  .gu-modal-btn-guardar {
+    flex: 1; padding: 11px;
+    border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #1a4fa0 0%, #2366CE 100%);
+    color: #fff; font-size: 13px; font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: opacity 0.18s;
+    box-shadow: 0 4px 14px rgba(35,102,206,0.3);
+  }
+  .gu-modal-btn-guardar:hover { opacity: 0.9; }
+
+  /* ── Separador de sección ── */
+  .gu-modal-section-title {
+    font-size: 11px; font-weight: 800;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: #9ca3af; font-family: 'Inter', sans-serif;
+    margin: 0;
+  }
+
+  /* ══════════════════════════════════════════════
+     MODAL VER DETALLE
+  ══════════════════════════════════════════════ */
+  .gu-modal-ver {
+    background: #fff;
+    border-radius: 20px;
+    width: 100%; max-width: 480px;
+    max-height: 90vh;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    font-family: 'Inter', sans-serif;
+    animation: guModalSlideIn 0.32s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .gu-modal-ver__body {
+    padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 16px;
+    overflow-y: auto; flex: 1;
+  }
+  /* Card perfil */
+  .gu-ver-perfil {
+    display: flex; align-items: center; gap: 16px;
+    padding: 16px;
+    background: linear-gradient(135deg, rgba(26,58,143,0.04), rgba(35,102,206,0.06));
+    border: 1.5px solid #dbeafe;
+    border-radius: 14px;
+  }
+  .gu-ver-avatar {
+    width: 52px; height: 52px; border-radius: 50%; flex-shrink: 0;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 800; color: #fff;
+    box-shadow: 0 4px 12px rgba(35,102,206,0.3);
+  }
+  .gu-ver-nombre-bloque { flex: 1; min-width: 0; }
+  .gu-ver-nombre {
+    font-size: 15px; font-weight: 800; color: #0f1f6e;
+    font-family: 'Inter', sans-serif; margin: 0 0 4px 0;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .gu-ver-badges { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  /* Grid de datos */
+  .gu-ver-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .gu-ver-item {
+    display: flex; flex-direction: column; gap: 3px;
+    padding: 12px;
+    background: #f9fafb; border: 1px solid #f1f5f9;
+    border-radius: 10px;
+  }
+  .gu-ver-item--full { grid-column: 1 / -1; }
+  .gu-ver-item__label {
+    font-size: 10px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.07em;
+    color: #9ca3af; font-family: 'Inter', sans-serif;
+  }
+  .gu-ver-item__valor {
+    font-size: 13px; font-weight: 600; color: #111827;
+    font-family: 'Inter', sans-serif;
+  }
+  .gu-ver-item__valor--empty {
+    color: #d1d5db; font-style: italic;
+  }
+  /* Saldo highlight */
+  .gu-ver-saldo-card {
+    padding: 14px 16px;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    border-radius: 12px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .gu-ver-saldo-label {
+    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.7);
+    font-family: 'Inter', sans-serif;
+  }
+  .gu-ver-saldo-monto {
+    font-size: 22px; font-weight: 800; color: #fff;
+    font-family: 'Inter', sans-serif;
+  }
+  .gu-ver-saldo-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+  }
+  /* Footer modal ver */
+  .gu-modal-ver__footer {
+    padding: 12px 24px 24px;
+    display: flex; gap: 10px;
+    border-top: 1px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+  .gu-modal-btn-editar-desde-ver {
+    flex: 1; padding: 11px;
+    border-radius: 10px; border: none;
+    background: linear-gradient(135deg, #1a4fa0 0%, #2366CE 100%);
+    color: #fff; font-size: 13px; font-weight: 700;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer; transition: opacity 0.18s;
+    box-shadow: 0 4px 14px rgba(35,102,206,0.3);
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+  }
+  .gu-modal-btn-editar-desde-ver:hover { opacity: 0.9; }
+</style>
+
+<div class="gu-root">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div class="gu-breadcrumb" style="padding: 18px 32px 0 32px; font-family: 'Inter', sans-serif;">
+    <span style="font-size:13px; color:#2366CE; font-weight:600; cursor:pointer;" (click)="irA('inicio')">Inicio</span>
+    <span style="font-size:13px; color:#9ca3af; margin:0 6px;">›</span>
+    <span style="font-size:13px; color:#9ca3af;">Resumen de usuarios</span>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="gu-content" style="padding: 24px 32px 64px 32px;">
+
+    <!-- ENCABEZADO -->
+    <div style="margin-bottom: 24px; animation: guCardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;">
+      <p style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#2366CE; margin:0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size:24px; font-weight:700; color:#111827; font-family:'Inter',sans-serif; margin:0;">Gestionar usuarios</h2>
+    </div>
+
+    <!-- BUSCADOR -->
+    <div class="gu-search-wrap">
+      <span class="gu-search-icon">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z"/>
+        </svg>
+      </span>
+      <input
+        class="gu-search-input"
+        type="text"
+        placeholder="Buscar usuario por nombre"
+        [(ngModel)]="busqueda"
+        (input)="filtrar()"
+      />
+    </div>
+
+    <!-- PANEL TABLA -->
+    <div class="gu-panel">
+
+      <!-- CABECERA -->
+      <div class="gu-thead">
+        <div class="gu-th">Apellidos y Nombres</div>
+        <div class="gu-th saldo">Saldo</div>
+        <div class="gu-th rol">Rol</div>
+        <div class="gu-th fecha">Fecha de registro</div>
+        <div class="gu-th">Estado</div>
+        <div class="gu-th center acciones">Acciones</div>
+      </div>
+
+      <!-- FILAS -->
+      <ng-container *ngIf="usuariosFiltrados.length > 0; else sinResultados">
+        <div
+          class="gu-row"
+          *ngFor="let u of usuariosFiltrados; let i = index"
+          [style.animation-delay]="(i * 30) + 'ms'">
+
+          <!-- Nombre -->
+          <div class="gu-user-cell">
+            <div class="gu-avatar">
+              <img *ngIf="u.avatarUrl" [src]="u.avatarUrl" [alt]="u.nombre" />
+              <span *ngIf="!u.avatarUrl">{{ u.iniciales }}</span>
+            </div>
+            <span class="gu-nombre">{{ u.nombre }}</span>
+          </div>
+
+          <!-- Saldo -->
+          <div class="gu-saldo">S/ {{ u.saldo | number:'1.2-2' }}</div>
+
+          <!-- Rol -->
+          <div>
+            <span class="gu-rol-badge" [ngClass]="u.rolClass">{{ u.rolLabel }}</span>
+          </div>
+
+          <!-- Fecha de registro -->
+          <div class="gu-fecha">{{ u.fechaRegistro }}</div>
+
+          <!-- Estado -->
+          <div class="gu-estado-cell">
+            <span class="gu-badge" [ngClass]="u.estadoClass">{{ u.estadoLabel }}</span>
+          </div>
+
+          <!-- Acciones -->
+          <div class="gu-acciones">
+            <button class="gu-btn-action eliminar" title="Eliminar usuario" (click)="abrirModalEliminar(u)">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+              </svg>
+            </button>
+            <button class="gu-btn-action editar" title="Editar usuario" (click)="abrirModalEditar(u)">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+              </svg>
+            </button>
+            <button class="gu-btn-action ver" title="Ver detalle" (click)="abrirModalVer(u)">
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </svg>
+            </button>
+          </div>
+
+        </div>
+      </ng-container>
+
+      <!-- EMPTY STATE -->
+      <ng-template #sinResultados>
+        <div class="gu-empty">
+          <svg width="44" height="44" fill="none" stroke="#d1d5db" stroke-width="1.2" viewBox="0 0 24 24" style="margin: 0 auto 12px auto; display: block;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+          </svg>
+          <p style="font-size:14px; font-weight:600; color:#6b7280; margin:0 0 4px 0;">No se encontraron usuarios</p>
+          <p style="font-size:13px; color:#9ca3af; margin:0;">Intenta con otro nombre</p>
+        </div>
+      </ng-template>
+
+      <!-- FOOTER -->
+      <div class="gu-footer">
+        <span class="gu-footer-count">
+          {{ usuariosFiltrados.length }} de {{ totalUsuarios }} usuarios
+        </span>
+        <span style="color: #9ca3af; font-size:11px;">Actualizado hoy</span>
+      </div>
+
+    </div>
+
+    <!-- Footer página -->
+    <div style="margin-top:48px; text-align:center; font-size:12px; color:#9ca3af; font-family:'Inter',sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     MODAL ELIMINAR
+════════════════════════════════════════════════════════ -->
+<div class="gu-modal-overlay" *ngIf="modalEliminarAbierto" (click)="cerrarModalEliminarSiOverlay($event)">
+  <div class="gu-modal-eliminar">
+
+    <!-- Header -->
+    <div class="gu-modal-header">
+      <div class="gu-modal-header-left">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="gu-modal-logo" />
+        <div>
+          <p class="gu-modal-titulo">Eliminar usuario</p>
+          <p class="gu-modal-sub">Corredor Azul</p>
+        </div>
+      </div>
+      <button class="gu-modal-close" (click)="cerrarModalEliminar()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="gu-modal-eliminar__body">
+      <!-- Ícono rojo -->
+      <div class="gu-modal-eliminar__icon-wrap">
+        <svg width="28" height="28" fill="none" stroke="#dc2626" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+        </svg>
+      </div>
+
+      <!-- Card usuario objetivo -->
+      <div class="gu-modal-eliminar__usuario" *ngIf="usuarioSeleccionado">
+        <div class="gu-modal-eliminar__avatar">{{ usuarioSeleccionado.iniciales }}</div>
+        <span class="gu-modal-eliminar__nombre">{{ usuarioSeleccionado.nombre }}</span>
+      </div>
+
+      <p class="gu-modal-eliminar__pregunta">¿Eliminar este usuario?</p>
+      <p class="gu-modal-eliminar__desc">
+        Esta acción es permanente y no se puede deshacer.<br/>
+        Se perderán todos los datos asociados a esta cuenta.
+      </p>
+    </div>
+
+    <!-- Footer -->
+    <div class="gu-modal-eliminar__footer">
+      <button class="gu-modal-btn-cancelar" (click)="cerrarModalEliminar()">Cancelar</button>
+      <button class="gu-modal-btn-eliminar" (click)="confirmarEliminar()">Sí, eliminar</button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     MODAL EDITAR
+════════════════════════════════════════════════════════ -->
+<div class="gu-modal-overlay" *ngIf="modalEditarAbierto" (click)="cerrarModalEditarSiOverlay($event)">
+  <div class="gu-modal-editar">
+
+    <!-- Header -->
+    <div class="gu-modal-header">
+      <div class="gu-modal-header-left">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="gu-modal-logo" />
+        <div>
+          <p class="gu-modal-titulo">Editar usuario</p>
+          <p class="gu-modal-sub">Corredor Azul</p>
+        </div>
+      </div>
+      <button class="gu-modal-close" (click)="cerrarModalEditar()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="gu-modal-editar__body" *ngIf="formEditar">
+
+      <!-- Sección: Datos personales -->
+      <p class="gu-modal-section-title">Datos personales</p>
+
+      <div class="gu-modal-editar__grid">
+        <!-- Nombres -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Nombres <span>*</span></label>
+          <input class="gu-modal-input" type="text" [(ngModel)]="formEditar.nombres" placeholder="Ej: Jorge Luis" />
+        </div>
+        <!-- Apellidos -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Apellidos <span>*</span></label>
+          <input class="gu-modal-input" type="text" [(ngModel)]="formEditar.apellidos" placeholder="Ej: Machado Flores" />
+        </div>
+        <!-- Tipo documento -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Tipo de documento</label>
+          <div class="gu-modal-select-wrap">
+            <select class="gu-modal-select" [(ngModel)]="formEditar.tipoDocumento">
+              <option value="">Seleccionar</option>
+              <option value="DNI">DNI</option>
+              <option value="CE">Carnet de Extranjería</option>
+              <option value="Pasaporte">Pasaporte</option>
+            </select>
+          </div>
+        </div>
+        <!-- Nro documento -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Nro. de documento</label>
+          <input class="gu-modal-input" type="text" [(ngModel)]="formEditar.nroDocumento" placeholder="Ej: 12345678" maxlength="20" />
+        </div>
+      </div>
+
+      <!-- Sección: Contacto -->
+      <p class="gu-modal-section-title" style="margin-top:6px;">Contacto</p>
+
+      <div class="gu-modal-editar__grid">
+        <!-- Correo -->
+        <div class="gu-modal-field gu-modal-editar__grid--full">
+          <label class="gu-modal-label">Correo electrónico <span>*</span></label>
+          <input class="gu-modal-input" type="email" [(ngModel)]="formEditar.correo" placeholder="correo@ejemplo.com" />
+        </div>
+        <!-- Teléfono -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Teléfono</label>
+          <input class="gu-modal-input" type="text" [(ngModel)]="formEditar.telefono" placeholder="Ej: 987654321" maxlength="15" />
+        </div>
+        <!-- Rol -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Rol <span>*</span></label>
+          <div class="gu-modal-select-wrap">
+            <select class="gu-modal-select" [(ngModel)]="formEditar.rol">
+              <option value="">Seleccionar</option>
+              <option value="Pasajero">Pasajero</option>
+              <option value="Operador">Operador</option>
+              <option value="Administrador">Administrador</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sección: Cuenta -->
+      <p class="gu-modal-section-title" style="margin-top:6px;">Cuenta</p>
+
+      <div class="gu-modal-editar__grid">
+        <!-- Estado -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Estado <span>*</span></label>
+          <div class="gu-modal-select-wrap">
+            <select class="gu-modal-select" [(ngModel)]="formEditar.estado">
+              <option value="activo">Activo</option>
+              <option value="suspendido">Suspendido</option>
+              <option value="baja">Baja</option>
+            </select>
+          </div>
+        </div>
+        <!-- Saldo (solo lectura) -->
+        <div class="gu-modal-field">
+          <label class="gu-modal-label">Saldo actual</label>
+          <input class="gu-modal-input" type="text" [value]="'S/ ' + (formEditar.saldo | number:'1.2-2')" readonly
+            style="background:#f1f5f9; color:#6b7280; cursor:default;" />
+        </div>
+      </div>
+
+      <!-- Spacer inferior -->
+      <div style="height:4px;"></div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="gu-modal-editar__footer">
+      <button class="gu-modal-btn-cancelar" (click)="cerrarModalEditar()">Cancelar</button>
+      <button class="gu-modal-btn-guardar" (click)="guardarEdicion()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="display:inline;vertical-align:middle;margin-right:5px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+        </svg>
+        Guardar cambios
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ════════════════════════════════════════════════════════
+     MODAL VER DETALLE
+════════════════════════════════════════════════════════ -->
+<div class="gu-modal-overlay" *ngIf="modalVerAbierto" (click)="cerrarModalVerSiOverlay($event)">
+  <div class="gu-modal-ver">
+
+    <!-- Header -->
+    <div class="gu-modal-header">
+      <div class="gu-modal-header-left">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="gu-modal-logo" />
+        <div>
+          <p class="gu-modal-titulo">Detalle de usuario</p>
+          <p class="gu-modal-sub">Corredor Azul</p>
+        </div>
+      </div>
+      <button class="gu-modal-close" (click)="cerrarModalVer()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="gu-modal-ver__body" *ngIf="usuarioSeleccionado">
+
+      <!-- Perfil card -->
+      <div class="gu-ver-perfil">
+        <div class="gu-ver-avatar">{{ usuarioSeleccionado.iniciales }}</div>
+        <div class="gu-ver-nombre-bloque">
+          <p class="gu-ver-nombre">{{ usuarioSeleccionado.nombre }}</p>
+          <div class="gu-ver-badges">
+            <span class="gu-badge" [ngClass]="usuarioSeleccionado.estadoClass">{{ usuarioSeleccionado.estadoLabel }}</span>
+            <span class="gu-rol-badge" [ngClass]="usuarioSeleccionado.rolClass">{{ usuarioSeleccionado.rolLabel }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Saldo card -->
+      <div class="gu-ver-saldo-card">
+        <div>
+          <p class="gu-ver-saldo-label">Saldo disponible</p>
+          <p class="gu-ver-saldo-monto">S/ {{ usuarioSeleccionado.saldo | number:'1.2-2' }}</p>
+        </div>
+        <div class="gu-ver-saldo-icon">
+          <svg width="20" height="20" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Grid datos -->
+      <div class="gu-ver-grid">
+        <div class="gu-ver-item">
+          <span class="gu-ver-item__label">Tipo de documento</span>
+          <span class="gu-ver-item__valor" [class.gu-ver-item__valor--empty]="!usuarioSeleccionado.tipoDocumento">
+            {{ usuarioSeleccionado.tipoDocumento || '—' }}
+          </span>
+        </div>
+        <div class="gu-ver-item">
+          <span class="gu-ver-item__label">Nro. documento</span>
+          <span class="gu-ver-item__valor" [class.gu-ver-item__valor--empty]="!usuarioSeleccionado.nroDocumento">
+            {{ usuarioSeleccionado.nroDocumento || '—' }}
+          </span>
+        </div>
+        <div class="gu-ver-item gu-ver-item--full">
+          <span class="gu-ver-item__label">Correo electrónico</span>
+          <span class="gu-ver-item__valor" [class.gu-ver-item__valor--empty]="!usuarioSeleccionado.correo">
+            {{ usuarioSeleccionado.correo || '—' }}
+          </span>
+        </div>
+        <div class="gu-ver-item">
+          <span class="gu-ver-item__label">Teléfono</span>
+          <span class="gu-ver-item__valor" [class.gu-ver-item__valor--empty]="!usuarioSeleccionado.telefono">
+            {{ usuarioSeleccionado.telefono || '—' }}
+          </span>
+        </div>
+        <div class="gu-ver-item">
+          <span class="gu-ver-item__label">Fecha de registro</span>
+          <span class="gu-ver-item__valor">{{ usuarioSeleccionado.fechaRegistro }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="gu-modal-ver__footer">
+      <button class="gu-modal-btn-cancelar" (click)="cerrarModalVer()">Cerrar</button>
+      <button class="gu-modal-btn-editar-desde-ver" (click)="editarDesdeVer()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931z"/>
+        </svg>
+        Editar usuario
+      </button>
+    </div>
+
+  </div>
+</div>

@@ -1,0 +1,786 @@
+<style>
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .canal-page { padding: 16px !important; }
+    .canal-accordion__header { padding: 16px 18px !important; }
+    .canal-accordion__body { padding: 0 18px 18px 18px !important; }
+    .canal-hero { padding: 24px 20px !important; }
+    .canal-stats { flex-direction: column !important; gap: 0 !important; }
+    .canal-stat-sep { display: none !important; }
+    .canal-action-row { flex-wrap: wrap !important; }
+    .canal-grid { grid-template-columns: 1fr !important; }
+  }
+
+  /* ── Acordeón base ── */
+  .canal-accordion {
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e5e7eb;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+    overflow: hidden;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .canal-accordion.open {
+    box-shadow: 0 8px 28px rgba(35,102,206,0.10);
+    border-color: #bfdbfe;
+  }
+  .canal-accordion:hover {
+    box-shadow: 0 4px 16px rgba(35,102,206,0.09);
+    border-color: #bfdbfe;
+  }
+
+  /* ── Header del acordeón ── */
+  .canal-accordion__header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s;
+    position: relative;
+  }
+  .canal-accordion__header:hover {
+    background: #f8faff;
+  }
+  .canal-accordion.open .canal-accordion__header {
+    background: #f0f5ff;
+    border-bottom: 1.5px solid #dbeafe;
+  }
+
+  /* ── Icono del canal ── */
+  .canal-accordion__icon {
+    width: 42px;
+    height: 42px;
+    border-radius: 11px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+  }
+  .canal-accordion.open .canal-accordion__icon {
+    transform: scale(1.06);
+  }
+
+  /* ── Título y subtítulo ── */
+  .canal-accordion__title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: -0.01em;
+    margin: 0 0 2px 0;
+    transition: color 0.15s;
+  }
+  .canal-accordion.open .canal-accordion__title {
+    color: #1d4ed8;
+  }
+  .canal-accordion__subtitle {
+    font-size: 12px;
+    color: #9ca3af;
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    font-weight: 500;
+  }
+
+  /* ── Badge de disponibilidad ── */
+  .canal-badge {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    white-space: nowrap;
+    flex-shrink: 0;
+    font-family: 'Inter', sans-serif;
+  }
+  .canal-badge--verde  { background: rgba(34,197,94,0.10); color: #15803d; }
+  .canal-badge--azul   { background: rgba(35,102,206,0.10); color: #1d4ed8; }
+  .canal-badge--gris   { background: #f1f5f9; color: #6b7280; }
+  .canal-badge--ambar  { background: rgba(245,158,11,0.12); color: #92400e; }
+
+  /* ── Chevron ── */
+  .canal-accordion__chevron {
+    width: 20px;
+    height: 20px;
+    color: #9ca3af;
+    flex-shrink: 0;
+    transition: transform 0.25s cubic-bezier(0.4,0,0.2,1), color 0.15s;
+  }
+  .canal-accordion.open .canal-accordion__chevron {
+    transform: rotate(180deg);
+    color: #2366CE;
+  }
+
+  /* ── Body del acordeón ── */
+  .canal-accordion__body {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  .canal-accordion.open .canal-accordion__body {
+    max-height: 600px;
+  }
+  .canal-accordion__body-inner {
+    padding: 20px 22px 22px 22px;
+  }
+
+  /* ── Animación de entrada de las cards ── */
+  .canal-accordion {
+    animation: cardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  .canal-accordion:nth-child(1) { animation-delay: 0ms; }
+  .canal-accordion:nth-child(2) { animation-delay: 50ms; }
+  .canal-accordion:nth-child(3) { animation-delay: 100ms; }
+  .canal-accordion:nth-child(4) { animation-delay: 150ms; }
+  .canal-accordion:nth-child(5) { animation-delay: 200ms; }
+  .canal-accordion:nth-child(6) { animation-delay: 250ms; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Animación body al abrir ── */
+  .canal-accordion__body-inner {
+    animation: none;
+  }
+  .canal-accordion.open .canal-accordion__body-inner {
+    animation: fadeIn 0.25s ease both;
+  }
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(6px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Info row (horario, dirección, etc.) ── */
+  .canal-info-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin-bottom: 10px;
+    font-size: 13px;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+  }
+
+  /* ── Chip de horario ── */
+  .canal-horario {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: #6b7280;
+    background: #f0f4fb;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-weight: 500;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 14px;
+  }
+
+  /* ── Texto descripción ── */
+  .canal-desc {
+    font-size: 13px;
+    color: #6b7280;
+    line-height: 1.65;
+    font-family: 'Inter', sans-serif;
+    margin: 0 0 14px 0;
+  }
+
+  /* ── Botones de acción ── */
+  .canal-action-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+  }
+  .btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%);
+    border: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    text-decoration: none;
+    transition: opacity 0.15s, transform 0.15s;
+  }
+  .btn-primary:hover { opacity: 0.92; transform: translateY(-1px); }
+  .btn-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #374151;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    text-decoration: none;
+    transition: border-color 0.15s, transform 0.15s;
+  }
+  .btn-secondary:hover { border-color: #93c5fd; transform: translateY(-1px); }
+
+  /* ── Chips de ubicación (CAT) ── */
+  .ubicacion-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #fef2f2;
+    color: #991b1b;
+    border: 1px solid #fecaca;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Chips de redes sociales ── */
+  .red-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Stats bar ── */
+  .canal-stats {
+    display: flex;
+    align-items: center;
+    background: #fff;
+    border-radius: 16px;
+    border: 1.5px solid #e5e7eb;
+    padding: 16px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+  }
+  .canal-stat-item { flex: 1; text-align: center; }
+  .canal-stat-val  { font-size: 20px; font-weight: 700; color: #111827; font-family: 'Inter', sans-serif; margin: 0 0 2px 0; }
+  .canal-stat-lbl  { font-size: 11px; color: #9ca3af; font-family: 'Inter', sans-serif; margin: 0; }
+  .canal-stat-sep  { width: 1px; height: 36px; background: #e5e7eb; flex-shrink: 0; }
+</style>
+
+<div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div style="padding: 18px 32px 0 32px; font-family: 'Inter', sans-serif;">
+    <span style="font-size: 13px; color: #2366CE; font-weight: 600; cursor: pointer;" (click)="irInicio()">Inicio</span>
+    <span style="font-size: 13px; color: #9ca3af; margin: 0 6px;">›</span>
+    <span style="font-size: 13px; color: #9ca3af;">Canales de Atención</span>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div class="canal-page" style="padding: 24px 32px 48px 32px;">
+
+    <!-- ENCABEZADO -->
+    <div style="margin-bottom: 24px;">
+      <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2366CE; font-family: 'Inter', sans-serif; margin: 0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size: 24px; font-weight: 700; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">Canales de Atención</h2>
+    </div>
+
+    <!-- HERO BANNER (wrapper relativo para que el personaje desborde) -->
+    <div style="position: relative; margin-bottom: 24px;">
+
+      <!-- Personaje fuera de la card, sobresaliendo por arriba a la derecha -->
+      <img src="MensajeRecomendacionAtu.png" alt="Mensaje recomendación ATU"
+           style="position: absolute; right: 32px; bottom: 0; height: 280px; width: auto;
+                  object-fit: contain; z-index: 2;
+                  filter: drop-shadow(0 8px 20px rgba(0,0,0,0.28));">
+
+      <div class="canal-hero" style="border-radius: 20px; padding: 28px 32px;
+                  background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%);
+                  box-shadow: 0 8px 24px rgba(35,102,206,0.28); position: relative; overflow: hidden;">
+
+        <div style="max-width: 55%;">
+          <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 16px;">
+            <div style="width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,0.15);
+                        display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+              <svg style="width: 20px; height: 20px;" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+              </svg>
+            </div>
+            <div>
+              <p style="font-size: 13px; font-weight: 700; color: #fff; margin: 0;">CORREDOR AZUL — ATU</p>
+              <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin: 2px 0 0 0;">Concesionario de Transporte Urbano — Lima, Perú</p>
+            </div>
+          </div>
+
+          <h1 style="font-size: 22px; font-weight: 700; color: #fff; margin: 0 0 8px 0; line-height: 1.25;">
+            Canales de Atención al Usuario
+          </h1>
+          <p style="font-size: 13px; color: rgba(255,255,255,0.72); margin: 0; line-height: 1.65;">
+            Contáctanos para consultas, reclamos, sugerencias o información sobre la tarjeta Lima Pass.
+            Selecciona el canal que prefieras para ver todos los detalles.
+          </p>
+        </div>
+
+      </div>
+    </div><!-- fin wrapper hero -->
+
+    <!-- STATS BAR -->
+    <div class="canal-stats">
+      <div class="canal-stat-item">
+        <p class="canal-stat-val">7</p>
+        <p class="canal-stat-lbl">Canales disponibles</p>
+      </div>
+      <div class="canal-stat-sep"></div>
+      <div class="canal-stat-item">
+        <p class="canal-stat-val">L–V</p>
+        <p class="canal-stat-lbl">Atención principal</p>
+      </div>
+      <div class="canal-stat-sep"></div>
+      <div class="canal-stat-item">
+        <p class="canal-stat-val">8–5pm</p>
+        <p class="canal-stat-lbl">Horario oficinas</p>
+      </div>
+      <div class="canal-stat-sep"></div>
+      <div class="canal-stat-item">
+        <p class="canal-stat-val" style="color: #16a34a;">● Activo</p>
+        <p class="canal-stat-lbl">Estado del servicio</p>
+      </div>
+    </div>
+
+    <!-- LABEL SECCIÓN -->
+    <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin: 0 0 4px 0;">Información oficial · corredorazul.pe / atu.pe</p>
+    <h3 style="font-size: 15px; font-weight: 600; color: #111827; margin: 0 0 14px 0;">Selecciona un canal para ver los detalles</h3>
+
+    <!-- ══════════════════════════════════════════════════════════
+         LISTA DE ACORDEONES — 2 columnas
+         ══════════════════════════════════════════════════════════ -->
+    <div class="canal-grid" style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;">
+
+      <!-- 1. TELÉFONO ─────────────────────────────────────────── -->
+      <div class="canal-accordion" id="acc-1">
+        <div class="canal-accordion__header" (click)="toggleAcc(1)">
+          <div class="canal-accordion__icon" style="background: rgba(202,138,4,0.10);">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="#ca8a04" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p class="canal-accordion__title">Teléfono de Atención</p>
+            <p class="canal-accordion__subtitle">(01) 481-3306 · Lun-Vie 8am–5pm · Sáb 8am–1pm</p>
+          </div>
+          <span class="canal-badge canal-badge--verde">Disponible</span>
+          <svg class="canal-accordion__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </div>
+        <div class="canal-accordion__body">
+          <div class="canal-accordion__body-inner">
+            <p class="canal-desc">
+              Llama al <strong style="color: #111827;">(01) 481-3306</strong> para consultas, reclamos o información
+              general sobre el servicio y la tarjeta Lima Pass. Nuestros asesores te atenderán en el horario indicado.
+            </p>
+            <div class="canal-horario">
+              <svg style="width: 13px; height: 13px; flex-shrink: 0;" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Lun-Vie: 8:00 a.m. – 5:00 p.m. &nbsp;|&nbsp; Sáb: 8:00 a.m. – 1:00 p.m.
+            </div>
+            <div class="canal-action-row">
+              <a href="tel:014813306" style="text-decoration: none;">
+                <button class="btn-primary">
+                  <svg style="width: 15px; height: 15px;" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 002.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 01-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 00-1.091-.852H4.5A2.25 2.25 0 002.25 4.5v2.25z"/>
+                  </svg>
+                  Llamar ahora
+                </button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. CORREO ─────────────────────────────────────────────── -->
+      <div class="canal-accordion" id="acc-2">
+        <div class="canal-accordion__header" (click)="toggleAcc(2)">
+          <div class="canal-accordion__icon" style="background: rgba(35,102,206,0.08);">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p class="canal-accordion__title">Correo Electrónico</p>
+            <p class="canal-accordion__subtitle">corredorazul&#64;atu.pe · Respuesta en días hábiles</p>
+          </div>
+          <span class="canal-badge canal-badge--azul">Formal</span>
+          <svg class="canal-accordion__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </div>
+        <div class="canal-accordion__body">
+          <div class="canal-accordion__body-inner">
+            <p class="canal-desc">
+              Escríbenos a <strong style="color: #2366CE;">corredorazul&#64;atu.pe</strong> para consultas formales,
+              reclamos detallados o sugerencias. Un asesor te responderá en días hábiles.
+            </p>
+            <div class="canal-horario">
+              <svg style="width: 13px; height: 13px; flex-shrink: 0;" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Respuesta en días hábiles — Lun-Vie
+            </div>
+            <div class="canal-action-row">
+              <a href="mailto:corredorazul@atu.pe" style="text-decoration: none;">
+                <button class="btn-primary">
+                  <svg style="width: 15px; height: 15px;" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+                  </svg>
+                  Enviar correo
+                </button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. FORMULARIO WEB ──────────────────────────────────────── -->
+      <div class="canal-accordion" id="acc-3">
+        <div class="canal-accordion__header" (click)="toggleAcc(3)">
+          <div class="canal-accordion__icon" style="background: rgba(234,88,12,0.08);">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="#ea580c" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p class="canal-accordion__title">Formulario Web Oficial</p>
+            <p class="canal-accordion__subtitle">corredorazul.pe/contacto · Disponible 24/7</p>
+          </div>
+          <span class="canal-badge canal-badge--verde">24/7</span>
+          <svg class="canal-accordion__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </div>
+        <div class="canal-accordion__body">
+          <div class="canal-accordion__body-inner">
+            <p class="canal-desc">
+              Envía tu nombre, correo, celular y mensaje desde
+              <strong style="color: #2366CE;">corredorazul.pe/contacto</strong>.
+              Ideal para consultas y reclamos formales desde cualquier dispositivo, disponible en cualquier horario.
+            </p>
+            <div class="canal-action-row">
+              <a href="https://corredorazul.pe/contacto" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button class="btn-primary">
+                  <svg style="width: 15px; height: 15px;" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                  </svg>
+                  Ir al formulario
+                </button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. OFICINA CENTRAL ──────────────────────────────────────── -->
+      <div class="canal-accordion" id="acc-4">
+        <div class="canal-accordion__header" (click)="toggleAcc(4)">
+          <div class="canal-accordion__icon" style="background: rgba(99,102,241,0.08);">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="#6366f1" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21M3 3h12m-.75 4.5H21m-3.75 3.75h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008zm0 3h.008v.008h-.008v-.008z"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p class="canal-accordion__title">Oficina Central — ATU</p>
+            <p class="canal-accordion__subtitle">Av. Manuel Vargas N° 483, Rímac · Presencial</p>
+          </div>
+          <span class="canal-badge canal-badge--gris">Presencial</span>
+          <svg class="canal-accordion__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </div>
+        <div class="canal-accordion__body">
+          <div class="canal-accordion__body-inner">
+            <p class="canal-desc">
+              Atención presencial para trámites, reclamos formales e información institucional sobre el Corredor Azul.
+            </p>
+            <div class="canal-info-row">
+              <svg style="width: 14px; height: 14px; flex-shrink: 0;" fill="none" stroke="#ef4444" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+              </svg>
+              <span style="font-weight: 600;">Av. Manuel Vargas N° 483 — Rímac, Lima</span>
+            </div>
+            <div class="canal-horario">
+              <svg style="width: 13px; height: 13px; flex-shrink: 0;" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Lun-Vie: 8:00 a.m. – 5:00 p.m. &nbsp;|&nbsp; Sáb: 8:00 a.m. – 1:00 p.m.
+            </div>
+            <div class="canal-action-row">
+              <a href="https://maps.google.com/?q=Av.+Manuel+Vargas+483+Rimac+Lima" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button class="btn-secondary">
+                  <svg style="width: 15px; height: 15px;" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+                  </svg>
+                  Ver en Google Maps
+                </button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. CAT ───────────────────────────────────────────────────── -->
+      <div class="canal-accordion" id="acc-5">
+        <div class="canal-accordion__header" (click)="toggleAcc(5)">
+          <div class="canal-accordion__icon" style="background: rgba(16,185,129,0.08);">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="#10b981" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p class="canal-accordion__title">Centros de Atención de Tarjetas (CAT)</p>
+            <p class="canal-accordion__subtitle">Lima Pass · Adquisición, recarga y reposición</p>
+          </div>
+          <span class="canal-badge canal-badge--ambar">Tarjeta</span>
+          <svg class="canal-accordion__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </div>
+        <div class="canal-accordion__body">
+          <div class="canal-accordion__body-inner">
+            <p class="canal-desc">
+              Adquiere, recarga o repón tu tarjeta Lima Pass. Para la tarjeta estudiantil (medio pasaje) es obligatorio
+              acudir con <strong style="color: #111827;">DNI y carnet universitario o escolar vigente (Sunedu)</strong>.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px;">
+              <span class="ubicacion-chip">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0;"></span>
+                Estación Central — Lado Norte y Sur
+              </span>
+              <span class="ubicacion-chip">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0;"></span>
+                Terminal Matellini
+              </span>
+              <span class="ubicacion-chip">
+                <span style="width: 6px; height: 6px; border-radius: 50%; background: #ef4444; flex-shrink: 0;"></span>
+                CC Expo Centro, Av. Benavides 347 — Miraflores
+              </span>
+            </div>
+            <div class="canal-horario">
+              <svg style="width: 13px; height: 13px; flex-shrink: 0;" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Est. Central: Lun-Dom 6:00–22:00 &nbsp;|&nbsp; Matellini: Lun-Sáb desde 7:00 a.m.
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. REDES SOCIALES ──────────────────────────────────────── -->
+      <div class="canal-accordion" id="acc-6">
+        <div class="canal-accordion__header" (click)="toggleAcc(6)">
+          <div class="canal-accordion__icon" style="background: rgba(236,72,153,0.08);">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="#ec4899" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p class="canal-accordion__title">Redes Sociales Oficiales</p>
+            <p class="canal-accordion__subtitle">Facebook · Twitter/X · Instagram</p>
+          </div>
+          <span class="canal-badge canal-badge--verde">Online</span>
+          <svg class="canal-accordion__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </div>
+        <div class="canal-accordion__body">
+          <div class="canal-accordion__body-inner">
+            <p class="canal-desc">
+              Síguenos para noticias, cambios de ruta, avisos de servicio e incidencias en tiempo real.
+            </p>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px;">
+              <span class="red-chip" style="background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe;">
+                <span style="width: 8px; height: 8px; background: #1877f2; border-radius: 2px; flex-shrink: 0;"></span>
+                Facebook: /corredorazuloficial
+              </span>
+              <span class="red-chip" style="background: #f0f9ff; color: #075985; border: 1px solid #bae6fd;">
+                <span style="width: 8px; height: 8px; background: #000; border-radius: 50%; flex-shrink: 0;"></span>
+                Twitter/X: @corredor_azul
+              </span>
+              <span class="red-chip" style="background: #fdf4ff; color: #86198f; border: 1px solid #f0abfc;">
+                <span style="width: 8px; height: 8px; background: #e1306c; border-radius: 50%; flex-shrink: 0;"></span>
+                Instagram: @corredorazul_pe
+              </span>
+            </div>
+            <div class="canal-action-row">
+              <a href="https://facebook.com/corredorazuloficial" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button class="btn-primary">
+                  <svg style="width: 14px; height: 14px;" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/>
+                  </svg>
+                  Facebook
+                </button>
+              </a>
+              <a href="https://twitter.com/corredor_azul" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button class="btn-secondary">
+                  <svg style="width: 14px; height: 14px;" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.747l7.73-8.835L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+                  </svg>
+                  Twitter / X
+                </button>
+              </a>
+              <a href="https://instagram.com/corredorazul_pe" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button class="btn-secondary">
+                  <svg style="width: 14px; height: 14px;" fill="none" viewBox="0 0 24 24">
+                    <rect x="2" y="2" width="20" height="20" rx="5" stroke="#e1306c" stroke-width="1.5" fill="none"/>
+                    <circle cx="12" cy="12" r="4" stroke="#e1306c" stroke-width="1.5" fill="none"/>
+                    <circle cx="17.5" cy="6.5" r="0.8" fill="#e1306c"/>
+                  </svg>
+                  Instagram
+                </button>
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. LIBRO DE RECLAMACIONES ──────────────────────────── -->
+      <div class="canal-accordion" id="acc-7" style="grid-column: 1 / -1;">
+        <div class="canal-accordion__header" (click)="toggleAcc(7)">
+          <div class="canal-accordion__icon" style="background: rgba(239,68,68,0.08);">
+            <svg style="width: 20px; height: 20px;" fill="none" stroke="#ef4444" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 6.042A8.967 8.967 0 006 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 016 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 016-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0018 18a8.967 8.967 0 00-6 2.292m0-14.25v14.25"/>
+            </svg>
+          </div>
+          <div style="flex: 1; min-width: 0;">
+            <p class="canal-accordion__title">Libro de Reclamaciones</p>
+            <p class="canal-accordion__subtitle">Virtual · Disponible 24/7 · Respuesta en 30 días hábiles</p>
+          </div>
+          <span class="canal-badge canal-badge--ambar">Formal</span>
+          <svg class="canal-accordion__chevron" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </div>
+        <div class="canal-accordion__body">
+          <div class="canal-accordion__body-inner">
+
+            <p class="canal-desc">
+              Registra tu queja o reclamo formal a través del Libro de Reclamaciones Virtual del Corredor Azul —
+              ATU. Conforme al <strong style="color: #111827;">Código de Protección y Defensa del Consumidor
+              (Ley N° 29571)</strong>, la empresa tiene un plazo máximo de <strong style="color: #111827;">30 días hábiles</strong> para darte respuesta.
+            </p>
+
+            <!-- Diferencia queja vs reclamo -->
+            <div style="display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 130px; background: #fff7ed; border: 1px solid #fed7aa; border-radius: 10px; padding: 10px 12px;">
+                <p style="font-size: 11px; font-weight: 700; color: #c2410c; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">Queja</p>
+                <p style="font-size: 12px; color: #374151; margin: 0; line-height: 1.5;">Disconformidad con la atención recibida (no implica una obligación de pago).</p>
+              </div>
+              <div style="flex: 1; min-width: 130px; background: #fef2f2; border: 1px solid #fecaca; border-radius: 10px; padding: 10px 12px;">
+                <p style="font-size: 11px; font-weight: 700; color: #b91c1c; margin: 0 0 4px 0; text-transform: uppercase; letter-spacing: 0.05em;">Reclamo</p>
+                <p style="font-size: 12px; color: #374151; margin: 0; line-height: 1.5;">Disconformidad con el producto o servicio recibido (sí implica una obligación de compensación).</p>
+              </div>
+            </div>
+
+            <!-- Datos que se piden -->
+            <div class="canal-info-row" style="margin-bottom: 8px;">
+              <svg style="width: 14px; height: 14px; flex-shrink: 0;" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+              </svg>
+              <span><strong style="color: #111827;">Datos requeridos:</strong> nombre completo, DNI, correo electrónico, número de celular y descripción detallada del hecho.</span>
+            </div>
+            <div class="canal-info-row" style="margin-bottom: 8px;">
+              <svg style="width: 14px; height: 14px; flex-shrink: 0;" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 002.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 00-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 00.75-.75 2.25 2.25 0 00-.1-.664m-5.8 0A2.251 2.251 0 0113.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"/>
+              </svg>
+              <span><strong style="color: #111827;">Número de registro:</strong> al enviar, recibirás un código de seguimiento a tu correo para rastrear el estado de tu caso.</span>
+            </div>
+
+            <!-- Horario -->
+            <div class="canal-horario">
+              <svg style="width: 13px; height: 13px; flex-shrink: 0;" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+              </svg>
+              Disponible 24/7 &nbsp;|&nbsp; Respuesta en hasta 30 días hábiles
+            </div>
+
+            <!-- Botón -->
+            <div class="canal-action-row">
+              <a href="https://corredorazul.pe/libro-reclamaciones" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button class="btn-primary">
+                  <svg style="width: 15px; height: 15px;" fill="none" stroke="white" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/>
+                  </svg>
+                  Ingresar al libro
+                </button>
+              </a>
+              <a href="https://www.indecopi.gob.pe" target="_blank" rel="noopener noreferrer" style="text-decoration: none;">
+                <button class="btn-secondary">
+                  <svg style="width: 15px; height: 15px;" fill="none" stroke="#374151" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+                  </svg>
+                  INDECOPI
+                </button>
+              </a>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+    </div><!-- fin acordeones -->
+
+    <!-- STATUS BAR -->
+    <div style="margin-top: 24px; background: #fff; border-radius: 14px; padding: 14px 20px;
+                display: flex; align-items: center; justify-content: space-between;
+                box-shadow: 0 1px 4px rgba(0,0,0,0.05); border: 1.5px solid #e5e7eb;">
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <span style="width: 10px; height: 10px; border-radius: 50%; background: #22c55e; flex-shrink: 0;"></span>
+        <div>
+          <p style="font-size: 13px; font-weight: 700; color: #111827; margin: 0;">Canales operativos</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">Fuente: corredorazul.pe — atu.pe</p>
+        </div>
+      </div>
+      <a href="https://corredorazul.pe" target="_blank" rel="noopener noreferrer"
+         style="font-size: 13px; font-weight: 700; color: #2366CE; text-decoration: none;">
+        Sitio oficial →
+      </a>
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top: 28px; text-align: center; font-size: 12px; color: #9ca3af; font-family: 'Inter', sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div><!-- fin contenido principal -->
+</div>

@@ -1,0 +1,1318 @@
+<div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div class="breadcrumb">
+    <span class="breadcrumb__link" (click)="irInicio()">Inicio</span>
+    <span class="breadcrumb__sep">›</span>
+    <span class="breadcrumb__actual">Recargar saldo</span>
+  </div>
+
+  <!-- LAYOUT PRINCIPAL -->
+  <div class="layout-principal">
+
+    <!-- ENCABEZADO -->
+    <div class="layout-header">
+      <p class="layout-header__sub">Corredor Azul</p>
+      <h2 class="layout-header__titulo">Recargar saldo</h2>
+    </div>
+
+    <!-- FILA 1: card monto + saldo card lado a lado -->
+    <div class="fila-cards">
+
+      <!-- SECCIÓN: Monto -->
+      <div class="recarga-card fila-cards__main">
+        <p class="recarga-label">ELIJE EL MONTO A RECARGAR</p>
+
+        <div class="montos-grid">
+          <button *ngFor="let monto of montosRapidos"
+            class="monto-chip"
+            [class.monto-chip--activo]="montoSeleccionado === monto"
+            (click)="seleccionarMonto(monto)">
+            <span class="monto-chip__prefijo">s/</span>
+            <span class="monto-chip__valor">{{ monto }}</span>
+          </button>
+        </div>
+
+        <p class="monto-personalizado-label">O ingresa un monto personalizado:</p>
+        <div class="monto-input-wrapper" [class.monto-input-wrapper--focus]="inputFocused">
+          <span class="monto-input__prefijo">s/</span>
+          <input
+            type="number"
+            min="1"
+            [value]="montoPersonalizado || ''"
+            (focus)="inputFocused = true"
+            (blur)="inputFocused = false"
+            (input)="onMontoPersonalizado($event)"
+            placeholder="0.00"
+            class="monto-input"
+          />
+        </div>
+      </div>
+
+      <!-- SALDO CARD -->
+      <div class="saldo-card fila-cards__aside" style="position: relative; overflow: hidden; padding: 0; background: none;">
+        <img src="TarjetCorredorAzul.png" alt=""
+             style="position: absolute; inset: 0; width: 100%; height: 100%;
+                    object-fit: cover; display: block; border-radius: 16px;" />
+        <div style="position: absolute; inset: 0; border-radius: 16px;
+                    background: linear-gradient(135deg, rgba(15,35,100,0.72) 0%, rgba(20,60,160,0.55) 100%);"></div>
+        <div style="position: relative; z-index: 1; padding: 32px 28px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+          <p class="saldo-card__label">SALDO ACTUAL</p>
+          <p class="saldo-card__valor">
+            <span class="saldo-card__prefix">s/</span>{{ saldoActual | number:'1.2-2' }}
+          </p>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- FILA 2: método de pago + historial lado a lado -->
+    <div class="fila-cards fila-cards--top">
+
+      <!-- SECCIÓN: Método de pago -->
+      <div class="recarga-card fila-cards__main">
+        <p class="recarga-label">SELECCIONA EL MÉTODO DE PAGO</p>
+
+        <div class="metodos-lista">
+
+          <button class="metodo-item"
+            [class.metodo-item--activo]="metodoPago === 'yape'"
+            (click)="seleccionarMetodo('yape')">
+            <div class="metodo-logo metodo-logo--yape">
+              <img src="Yape-Logo.png" alt="Yape" class="metodo-logo__img" />
+            </div>
+            <div class="metodo-info">
+              <p class="metodo-nombre">Yape</p>
+              <p class="metodo-desc">Pago instantáneo con tu número de celular</p>
+            </div>
+            <span class="metodo-badge metodo-badge--verde">Inmediato</span>
+          </button>
+
+          <button class="metodo-item"
+            [class.metodo-item--activo]="metodoPago === 'plin'"
+            (click)="seleccionarMetodo('plin')">
+            <div class="metodo-logo metodo-logo--plin">
+              <img src="Plin-Logo.png" alt="Plin" class="metodo-logo__img" />
+            </div>
+            <div class="metodo-info">
+              <p class="metodo-nombre">Plin</p>
+              <p class="metodo-desc">Transfiere desde tu app bancaria</p>
+            </div>
+            <span class="metodo-badge metodo-badge--verde">Inmediato</span>
+          </button>
+
+          <button class="metodo-item"
+            [class.metodo-item--activo]="metodoPago === 'pagoefectivo'"
+            (click)="seleccionarMetodo('pagoefectivo')">
+            <div class="metodo-logo metodo-logo--pe">
+              <img src="Pagoefectivo-Logo.png" alt="PagoEfectivo" class="metodo-logo__img" />
+            </div>
+            <div class="metodo-info">
+              <p class="metodo-nombre">PagoEfectivo</p>
+              <p class="metodo-desc">Paga en agentes y bancos asociados</p>
+            </div>
+          </button>
+
+          <button class="metodo-item"
+            [class.metodo-item--activo]="metodoPago === 'tarjeta'"
+            (click)="seleccionarMetodo('tarjeta')">
+            <div class="metodo-logo metodo-logo--tarjeta">
+              <img src="Tarjetacredito-Logo.png" alt="Tarjeta de crédito" class="metodo-logo__img" />
+            </div>
+            <div class="metodo-info">
+              <p class="metodo-nombre">Tarjeta de crédito</p>
+              <p class="metodo-desc">Paga con tu tarjeta de débito o crédito</p>
+            </div>
+          </button>
+
+        </div>
+
+        <button class="btn-confirmar"
+          [disabled]="!puedeConfirmar()"
+          [class.btn-confirmar--disabled]="!puedeConfirmar()"
+          (click)="abrirModalPago()">
+          <svg style="width: 18px; height: 18px;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+          </svg>
+          Continuar con el pago
+        </button>
+      </div>
+
+      <!-- HISTORIAL -->
+      <div class="historial-aside fila-cards__aside">
+        <div class="historial-aside__header">
+          <p class="historial-aside__titulo">Ultimas recargas</p>
+          <span class="historial-aside__ver" (click)="abrirHistorial()">Ver todo</span>
+        </div>
+        <div class="historial-lista">
+          <div *ngFor="let r of ultimasRecargas" class="historial-item">
+            <div>
+              <p class="historial-metodo">{{ r.metodo }}</p>
+              <p class="historial-fecha">{{ r.fecha }}</p>
+            </div>
+            <p class="historial-monto">S/{{ r.monto | number:'1.2-2' }}</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="layout-footer">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div>
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL OVERLAY — se muestra encima de todo
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="modalAbierto" (click)="cerrarModalSiEsOverlay($event)">
+
+  <!-- ─── WIDGET CULQI (tarjeta) ─────────────────────────────── -->
+  <div class="culqi-widget" *ngIf="metodoPago === 'tarjeta' && !modalProcesando && !modalExito && !modalError"
+       [@fadeSlideIn]>
+
+    <!-- Header -->
+    <div class="culqi-header">
+      <div class="culqi-header__left">
+        <div class="culqi-logo">
+          <!-- Culqi wordmark simulado -->
+          <svg width="64" height="22" viewBox="0 0 64 22" fill="none">
+            <text x="0" y="17" font-family="'Inter',sans-serif" font-weight="800" font-size="16" fill="#fff">culqi</text>
+          </svg>
+        </div>
+        <div class="culqi-header__concepto">
+          <p class="culqi-header__empresa">Corredor Azul</p>
+          <p class="culqi-header__desc">Recarga de saldo</p>
+        </div>
+      </div>
+      <div class="culqi-header__monto">
+        <p class="culqi-monto__label">Total a pagar</p>
+        <p class="culqi-monto__valor">S/ {{ montoActual | number:'1.2-2' }}</p>
+      </div>
+    </div>
+
+    <!-- SSL badge -->
+    <div class="culqi-ssl">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#16a34a" stroke-width="2.5">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+      <span>Pago seguro con encriptación SSL de 256 bits</span>
+      <span class="culqi-ssl__badge">PCI DSS</span>
+    </div>
+
+    <!-- Body formulario -->
+    <div class="culqi-body">
+
+      <!-- Detectar tipo tarjeta automático -->
+      <div class="culqi-card-type-row">
+        <div class="culqi-card-brand" [class.culqi-card-brand--activo]="tipoTarjetaDetectado === 'visa'">
+          <svg width="38" height="24" viewBox="0 0 38 24" fill="none">
+            <rect width="38" height="24" rx="4" fill="#1a1f71"/>
+            <text x="5" y="17" font-family="'Inter',sans-serif" font-weight="800" font-size="13" fill="white" letter-spacing="-0.5">VISA</text>
+          </svg>
+        </div>
+        <div class="culqi-card-brand" [class.culqi-card-brand--activo]="tipoTarjetaDetectado === 'mastercard'">
+          <svg width="38" height="24" viewBox="0 0 38 24" fill="none">
+            <rect width="38" height="24" rx="4" fill="#f9f9f9"/>
+            <circle cx="15" cy="12" r="8" fill="#EB001B"/>
+            <circle cx="23" cy="12" r="8" fill="#F79E1B"/>
+            <path d="M19 5.5a8 8 0 0 1 0 13A8 8 0 0 1 19 5.5z" fill="#FF5F00"/>
+          </svg>
+        </div>
+        <div class="culqi-card-brand" [class.culqi-card-brand--activo]="tipoTarjetaDetectado === 'amex'">
+          <svg width="38" height="24" viewBox="0 0 38 24" fill="none">
+            <rect width="38" height="24" rx="4" fill="#2E77BC"/>
+            <text x="5" y="16" font-family="'Inter',sans-serif" font-weight="700" font-size="9" fill="white">AMEX</text>
+          </svg>
+        </div>
+        <div class="culqi-card-brand" [class.culqi-card-brand--activo]="tipoTarjetaDetectado === 'diners'">
+          <svg width="38" height="24" viewBox="0 0 38 24" fill="none">
+            <rect width="38" height="24" rx="4" fill="#f0f0f0"/>
+            <circle cx="14" cy="12" r="7" fill="none" stroke="#004A97" stroke-width="2"/>
+            <circle cx="24" cy="12" r="7" fill="none" stroke="#004A97" stroke-width="2"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Número de tarjeta -->
+      <div class="culqi-field">
+        <label class="culqi-field__label">Número de tarjeta</label>
+        <div class="culqi-input-wrap" [class.culqi-input-wrap--focus]="focusNumero">
+          <input type="text" class="culqi-input" placeholder="0000  0000  0000  0000"
+            maxlength="22"
+            [(ngModel)]="numeroTarjeta"
+            (focus)="focusNumero = true"
+            (blur)="focusNumero = false"
+            (input)="formatearNumeroTarjeta($event)" />
+          <div class="culqi-input__icon" *ngIf="tipoTarjetaDetectado === 'visa'">
+            <svg width="28" height="18" viewBox="0 0 38 24" fill="none">
+              <rect width="38" height="24" rx="4" fill="#1a1f71"/>
+              <text x="5" y="17" font-family="'Inter',sans-serif" font-weight="800" font-size="13" fill="white" letter-spacing="-0.5">VISA</text>
+            </svg>
+          </div>
+          <div class="culqi-input__icon" *ngIf="tipoTarjetaDetectado === 'mastercard'">
+            <svg width="28" height="18" viewBox="0 0 38 24" fill="none">
+              <circle cx="15" cy="12" r="8" fill="#EB001B"/>
+              <circle cx="23" cy="12" r="8" fill="#F79E1B"/>
+              <path d="M19 5.5a8 8 0 0 1 0 13A8 8 0 0 1 19 5.5z" fill="#FF5F00"/>
+            </svg>
+          </div>
+        </div>
+      </div>
+
+      <!-- Nombre titular -->
+      <div class="culqi-field">
+        <label class="culqi-field__label">Nombre del titular</label>
+        <div class="culqi-input-wrap" [class.culqi-input-wrap--focus]="focusNombre">
+          <input type="text" class="culqi-input" placeholder="Como aparece en la tarjeta"
+            [(ngModel)]="nombreTitular"
+            (focus)="focusNombre = true"
+            (blur)="focusNombre = false" />
+        </div>
+      </div>
+
+      <!-- Vencimiento + CVV -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div class="culqi-field">
+          <label class="culqi-field__label">Vencimiento</label>
+          <div class="culqi-input-wrap" [class.culqi-input-wrap--focus]="focusVenc">
+            <input type="text" class="culqi-input" placeholder="MM/AA"
+              maxlength="5"
+              [(ngModel)]="vencimiento"
+              (focus)="focusVenc = true"
+              (blur)="focusVenc = false"
+              (input)="formatearVencimiento($event)" />
+          </div>
+        </div>
+        <div class="culqi-field">
+          <label class="culqi-field__label">
+            CVV
+            <span class="culqi-cvv-hint" (mouseenter)="mostrarTooltipCVV = true" (mouseleave)="mostrarTooltipCVV = false">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5">
+                <circle cx="12" cy="12" r="10"/><path d="M12 16v-4m0-4h.01"/>
+              </svg>
+            </span>
+            <div class="culqi-tooltip" *ngIf="mostrarTooltipCVV">
+              3 dígitos al reverso de tu tarjeta (4 dígitos en Amex)
+            </div>
+          </label>
+          <div class="culqi-input-wrap" [class.culqi-input-wrap--focus]="focusCVV">
+            <input type="password" class="culqi-input" placeholder="•••"
+              maxlength="4"
+              [(ngModel)]="cvv"
+              (focus)="focusCVV = true"
+              (blur)="focusCVV = false" />
+          </div>
+        </div>
+      </div>
+
+      <!-- Cuotas (solo si hay monto >= 30) -->
+      <div class="culqi-field" *ngIf="montoActual >= 30">
+        <label class="culqi-field__label">Pagar en cuotas</label>
+        <div class="culqi-input-wrap">
+          <select class="culqi-input culqi-select" [(ngModel)]="cuotasSeleccionadas">
+            <option value="1">1 cuota — S/ {{ montoActual | number:'1.2-2' }}</option>
+            <option value="3">3 cuotas — S/ {{ (montoActual / 3) | number:'1.2-2' }} c/u</option>
+            <option value="6">6 cuotas — S/ {{ (montoActual / 6) | number:'1.2-2' }} c/u</option>
+            <option value="12">12 cuotas — S/ {{ (montoActual / 12) | number:'1.2-2' }} c/u</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Botón pagar -->
+      <button class="culqi-btn-pagar"
+        [disabled]="!puedeConfirmarTarjeta()"
+        [class.culqi-btn-pagar--disabled]="!puedeConfirmarTarjeta()"
+        (click)="procesarPago()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="3" y="11" width="18" height="11" rx="2"/>
+          <path d="M7 11V7a5 5 0 0110 0v4"/>
+        </svg>
+        Pagar S/ {{ montoActual | number:'1.2-2' }}
+      </button>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="culqi-footer">
+      <span>Procesado por</span>
+      <svg width="40" height="14" viewBox="0 0 64 22" fill="none">
+        <text x="0" y="13" font-family="'Inter',sans-serif" font-weight="800" font-size="13" fill="#6b7280">culqi</text>
+      </svg>
+      <span class="culqi-footer__sep">·</span>
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2">
+        <rect x="3" y="11" width="18" height="11" rx="2"/>
+        <path d="M7 11V7a5 5 0 0110 0v4"/>
+      </svg>
+      <span>Seguro</span>
+    </div>
+
+    <!-- Cerrar -->
+    <button class="modal-close-btn" (click)="cerrarModal()">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </button>
+  </div>
+
+  <!-- ─── WIDGET YAPE ─────────────────────────────────────────── -->
+  <div class="yape-widget" *ngIf="metodoPago === 'yape' && !modalProcesando && !modalExito && !modalError"
+       [@fadeSlideIn]>
+
+    <div class="yape-header">
+      <img src="Yape-Logo.png" alt="Yape" style="height: 38px; object-fit: contain;" />
+      <button class="modal-close-btn modal-close-btn--dark" (click)="cerrarModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="yape-body">
+      <p class="yape-instruccion">Escanea el código QR con tu app Yape</p>
+
+      <!-- QR simulado -->
+      <div class="yape-qr-container">
+        <svg class="yape-qr" width="180" height="180" viewBox="0 0 180 180" fill="none">
+          <!-- Patrón QR simulado decorativo -->
+          <rect width="180" height="180" fill="white" rx="12"/>
+          <!-- Esquinas -->
+          <rect x="12" y="12" width="44" height="44" rx="6" fill="#6B21A8"/>
+          <rect x="18" y="18" width="32" height="32" rx="3" fill="white"/>
+          <rect x="24" y="24" width="20" height="20" rx="2" fill="#6B21A8"/>
+
+          <rect x="124" y="12" width="44" height="44" rx="6" fill="#6B21A8"/>
+          <rect x="130" y="18" width="32" height="32" rx="3" fill="white"/>
+          <rect x="136" y="24" width="20" height="20" rx="2" fill="#6B21A8"/>
+
+          <rect x="12" y="124" width="44" height="44" rx="6" fill="#6B21A8"/>
+          <rect x="18" y="130" width="32" height="32" rx="3" fill="white"/>
+          <rect x="24" y="136" width="20" height="20" rx="2" fill="#6B21A8"/>
+
+          <!-- Puntos del QR (patrón decorativo) -->
+          <rect x="70" y="12" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="82" y="12" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="94" y="12" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="106" y="12" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="70" y="24" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="94" y="24" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="70" y="36" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="82" y="36" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="106" y="36" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="70" y="48" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="94" y="48" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="106" y="48" width="8" height="8" rx="1" fill="#6B21A8"/>
+
+          <!-- Filas del medio -->
+          <rect x="12" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="24" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="36" y="82" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="48" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="60" y="82" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="70" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="82" y="82" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="94" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="106" y="82" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="118" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="130" y="82" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="142" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="154" y="82" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="166" y="70" width="8" height="8" rx="1" fill="#6B21A8"/>
+
+          <rect x="12" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="36" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="60" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="70" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="94" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="118" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="142" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="166" y="94" width="8" height="8" rx="1" fill="#6B21A8"/>
+
+          <rect x="12" y="106" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="24" y="106" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="48" y="106" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="82" y="106" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="106" y="106" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="130" y="106" width="8" height="8" rx="1" fill="#6B21A8"/>
+          <rect x="154" y="106" width="8" height="8" rx="1" fill="#6B21A8"/>
+
+          <!-- Logo Yape en centro -->
+          <rect x="74" y="74" width="32" height="32" rx="6" fill="#6B21A8"/>
+          <text x="82" y="95" font-family="'Inter',sans-serif" font-weight="800" font-size="11" fill="white">Y</text>
+        </svg>
+
+        <div class="yape-timer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#6B21A8" stroke-width="2">
+            <circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>
+          </svg>
+          <span>Expira en {{ timerYape }}s</span>
+        </div>
+      </div>
+
+      <div class="yape-divider">
+        <span>o también puedes pagar al número</span>
+      </div>
+
+      <div class="yape-numero">
+        <span class="yape-numero__valor">+51 999 888 777</span>
+        <span class="yape-numero__concepto">Concepto: Recarga Corredor Azul</span>
+      </div>
+
+      <div class="yape-monto-badge">
+        Monto: <strong>S/ {{ montoActual | number:'1.2-2' }}</strong>
+      </div>
+
+      <button class="yape-btn-confirmar" (click)="procesarPago()">
+        Ya realicé el pago
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── WIDGET PLIN ──────────────────────────────────────────── -->
+  <div class="plin-widget" *ngIf="metodoPago === 'plin' && !modalProcesando && !modalExito && !modalError"
+       [@fadeSlideIn]>
+
+    <div class="plin-header">
+      <img src="Plin-Logo.png" alt="Plin" style="height: 34px; object-fit: contain;" />
+      <button class="modal-close-btn modal-close-btn--dark" (click)="cerrarModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="plin-body">
+      <p class="plin-instruccion">Transfiere desde tu app bancaria (BBVA, Interbank, Scotiabank, BanBif)</p>
+
+      <div class="plin-pasos">
+        <div class="plin-paso">
+          <div class="plin-paso__numero">1</div>
+          <p class="plin-paso__texto">Abre tu app bancaria y selecciona <strong>Plin</strong></p>
+        </div>
+        <div class="plin-paso">
+          <div class="plin-paso__numero">2</div>
+          <p class="plin-paso__texto">Transfiere al número <strong>+51 999 888 777</strong></p>
+        </div>
+        <div class="plin-paso">
+          <div class="plin-paso__numero">3</div>
+          <p class="plin-paso__texto">Ingresa el monto exacto: <strong>S/ {{ montoActual | number:'1.2-2' }}</strong></p>
+        </div>
+        <div class="plin-paso">
+          <div class="plin-paso__numero">4</div>
+          <p class="plin-paso__texto">En el concepto escribe: <strong>CORREDOR AZUL</strong></p>
+        </div>
+      </div>
+
+      <div class="plin-monto-card">
+        <p class="plin-monto-card__label">MONTO A TRANSFERIR</p>
+        <p class="plin-monto-card__valor">S/ {{ montoActual | number:'1.2-2' }}</p>
+      </div>
+
+      <button class="plin-btn-confirmar" (click)="procesarPago()">
+        Ya realicé la transferencia
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── WIDGET PAGOEFECTIVO ─────────────────────────────────── -->
+  <div class="pe-widget" *ngIf="metodoPago === 'pagoefectivo' && !modalProcesando && !modalExito && !modalError"
+       [@fadeSlideIn]>
+
+    <div class="pe-header">
+      <img src="Pagoefectivo-Logo.png" alt="PagoEfectivo" style="height: 34px; object-fit: contain;" />
+      <button class="modal-close-btn modal-close-btn--dark" (click)="cerrarModal()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="pe-body">
+      <p class="pe-instruccion">Tu código CIP para pagar en agentes o bancos</p>
+
+      <div class="pe-cip-card">
+        <p class="pe-cip__label">CÓDIGO CIP</p>
+        <p class="pe-cip__codigo">{{ cipGenerado }}</p>
+        <p class="pe-cip__vence">Válido hasta: {{ cipVencimiento }}</p>
+      </div>
+
+      <div class="pe-bancos">
+        <p class="pe-bancos__label">DÓNDE PAGAR</p>
+        <div class="pe-bancos__grid">
+          <span class="pe-banco-chip">BCP</span>
+          <span class="pe-banco-chip">BBVA</span>
+          <span class="pe-banco-chip">Interbank</span>
+          <span class="pe-banco-chip">Scotiabank</span>
+          <span class="pe-banco-chip">BanBif</span>
+          <span class="pe-banco-chip">Kasnet</span>
+          <span class="pe-banco-chip">Western Union</span>
+          <span class="pe-banco-chip">Tambo+</span>
+        </div>
+      </div>
+
+      <div class="pe-monto-card">
+        <p class="pe-monto-card__label">MONTO A PAGAR</p>
+        <p class="pe-monto-card__valor">S/ {{ montoActual | number:'1.2-2' }}</p>
+      </div>
+
+      <button class="pe-btn-confirmar" (click)="procesarPago()">
+        Ya realicé el pago
+      </button>
+    </div>
+  </div>
+
+  <!-- ─── PROCESANDO ───────────────────────────────────────────── -->
+  <div class="estado-widget" *ngIf="modalProcesando" [@fadeSlideIn]>
+    <div class="estado-spinner">
+      <svg class="spinner-svg" width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="24" fill="none" stroke="#e5e7eb" stroke-width="4"/>
+        <circle cx="30" cy="30" r="24" fill="none" stroke="#2366CE" stroke-width="4"
+          stroke-dasharray="100 50" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <p class="estado-titulo">Procesando pago...</p>
+    <p class="estado-desc">Por favor no cierres esta ventana</p>
+  </div>
+
+  <!-- ─── ÉXITO ────────────────────────────────────────────────── -->
+  <div class="estado-widget" *ngIf="modalExito" [@fadeSlideIn]>
+    <div class="estado-icon estado-icon--exito">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+      </svg>
+    </div>
+    <p class="estado-titulo">¡Recarga exitosa!</p>
+    <p class="estado-desc">S/ {{ montoActual | number:'1.2-2' }} agregados a tu saldo</p>
+    <div class="estado-detalle">
+      <p>Nuevo saldo: <strong>S/ {{ saldoActual | number:'1.2-2' }}</strong></p>
+      <p>Ref: <strong>{{ referenciaExito }}</strong></p>
+    </div>
+    <button class="estado-btn-cerrar" (click)="cerrarModal()">Aceptar</button>
+  </div>
+
+  <!-- ─── ERROR ────────────────────────────────────────────────── -->
+  <div class="estado-widget" *ngIf="modalError" [@fadeSlideIn]>
+    <div class="estado-icon estado-icon--error">
+      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+      </svg>
+    </div>
+    <p class="estado-titulo">Pago rechazado</p>
+    <p class="estado-desc">{{ mensajeError }}</p>
+    <button class="estado-btn-cerrar estado-btn-cerrar--error" (click)="volverFormulario()">Intentar de nuevo</button>
+  </div>
+
+</div>
+<!-- FIN MODAL OVERLAY -->
+
+
+<style>
+  /* ── ESTILOS ORIGINALES ─────────────────────────────────────── */
+  .recarga-card {
+    background: #fff; border-radius: 16px;
+    padding: 24px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .recarga-label {
+    font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
+    color: #6b7280; margin: 0 0 16px 0; font-family: 'Inter', sans-serif;
+  }
+  .montos-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .monto-chip {
+    background: #eef3fb; border: 2px solid transparent; border-radius: 12px;
+    padding: 16px 12px; display: flex; flex-direction: row;
+    align-items: baseline; justify-content: center; gap: 2px; cursor: pointer; transition: all 0.18s ease;
+    font-family: 'Inter', sans-serif;
+  }
+  .monto-chip:hover { background: #dbeafe; border-color: #93c5fd; }
+  .monto-chip--activo { border-color: #2366CE !important; }
+  .monto-chip__prefijo { font-size: 13px; font-weight: 600; color: #2366CE; line-height: 1; }
+  .monto-chip__valor   { font-size: 26px; font-weight: 700; color: #2366CE; line-height: 1; }
+
+  .monto-input-wrapper {
+    display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid #e5e7eb; border-radius: 10px;
+    padding: 10px 14px; transition: border-color 0.18s; background: #fff;
+  }
+  .monto-input-wrapper--focus { border-color: #2366CE; }
+  .monto-input__prefijo { font-size: 13px; font-weight: 600; color: #2366CE; font-family: 'Inter', sans-serif; }
+  .monto-input {
+    border: none; outline: none; font-size: 15px; font-weight: 600;
+    color: #1e40af; font-family: 'Inter', sans-serif; width: 100%; background: transparent;
+  }
+  .monto-input::placeholder { color: #93c5fd; font-weight: 400; }
+  .monto-input::-webkit-outer-spin-button,
+  .monto-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+  .monto-input[type=number] { -moz-appearance: textfield; }
+
+  .metodos-lista { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
+  .metodo-item {
+    display: flex; align-items: center; gap: 14px;
+    border: 1.5px solid #e5e7eb; border-radius: 14px;
+    padding: 12px 16px; background: #fff; cursor: pointer;
+    text-align: left; transition: all 0.18s ease; width: 100%;
+  }
+  .metodo-item:hover { border-color: #93c5fd; background: #f8fbff; }
+  .metodo-item--activo { border-color: #2366CE !important; background: #f0f6ff !important; }
+
+  .metodo-logo {
+    width: 52px; height: 52px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden; background: transparent;
+  }
+  .metodo-logo__img { width: 100%; height: 100%; object-fit: contain; padding: 0; }
+  .metodo-info { flex: 1; min-width: 0; }
+  .metodo-nombre { font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', sans-serif; margin: 0 0 2px 0; }
+  .metodo-desc   { font-size: 12px; color: #6b7280; font-family: 'Inter', sans-serif; margin: 0; }
+  .metodo-badge { font-size: 11px; font-weight: 600; border-radius: 20px; padding: 3px 10px; white-space: nowrap; flex-shrink: 0; font-family: 'Inter', sans-serif; }
+  .metodo-badge--verde { background: rgba(34,197,94,0.1); color: #16a34a; }
+
+  .btn-confirmar {
+    width: 100%; display: flex; align-items: center; justify-content: center; gap: 8px;
+    padding: 14px; border-radius: 10px; font-size: 14px; font-weight: 700;
+    font-family: 'Inter', sans-serif; color: #fff;
+    background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%);
+    border: none; cursor: pointer;
+    transition: opacity 0.18s, box-shadow 0.18s;
+    box-shadow: 0 4px 14px rgba(35,102,206,0.35);
+  }
+  .btn-confirmar:hover:not(:disabled) { opacity: 0.92; box-shadow: 0 6px 20px rgba(35,102,206,0.45); }
+  .btn-confirmar--disabled { opacity: 0.45; cursor: not-allowed; box-shadow: none; }
+
+  .saldo-card { background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); border-radius: 16px; padding: 24px; box-shadow: 0 8px 24px rgba(35,102,206,0.3); }
+  .saldo-card__label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.65); font-family: 'Inter', sans-serif; margin: 0 0 10px 0; }
+  .saldo-card__valor { font-size: 36px; font-weight: 800; color: #fff; font-family: 'Inter', sans-serif; line-height: 1; margin: 0; display: flex; align-items: baseline; gap: 4px; }
+  .saldo-card__prefix { font-size: 16px; font-weight: 600; opacity: 0.8; }
+
+  .historial-lista { display: flex; flex-direction: column; }
+  .historial-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-family: 'Inter', sans-serif; }
+  .historial-item:last-child { border-bottom: none; padding-bottom: 0; }
+  .historial-metodo { font-size: 13px; font-weight: 600; color: #111827; margin: 0 0 2px 0; }
+  .historial-fecha  { font-size: 11px; color: #9ca3af; margin: 0; }
+  .historial-monto  { font-size: 13px; font-weight: 700; color: #16a34a; white-space: nowrap; }
+
+  /* ── MODAL OVERLAY ──────────────────────────────────────────── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(10, 20, 60, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+
+  .modal-close-btn {
+    position: absolute; top: 14px; right: 14px;
+    width: 32px; height: 32px; border-radius: 50%;
+    border: none; background: rgba(255,255,255,0.15);
+    color: #fff; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s;
+  }
+  .modal-close-btn:hover { background: rgba(255,255,255,0.25); }
+  .modal-close-btn--dark { background: rgba(0,0,0,0.08); color: #374151; }
+  .modal-close-btn--dark:hover { background: rgba(0,0,0,0.15); }
+
+  /* ── CULQI WIDGET ───────────────────────────────────────────── */
+  .culqi-widget {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 420px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden; position: relative;
+    font-family: 'Inter', sans-serif;
+  }
+
+  .culqi-header {
+    background: linear-gradient(135deg, #0f1f6e 0%, #1e40af 100%);
+    padding: 20px 22px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .culqi-header__left { display: flex; align-items: center; gap: 12px; }
+  .culqi-logo {
+    background: rgba(255,255,255,0.15); border-radius: 8px;
+    padding: 6px 10px; display: flex; align-items: center;
+  }
+  .culqi-header__concepto { display: flex; flex-direction: column; gap: 2px; }
+  .culqi-header__empresa { font-size: 13px; font-weight: 700; color: #fff; margin: 0; }
+  .culqi-header__desc { font-size: 11px; color: rgba(255,255,255,0.65); margin: 0; }
+  .culqi-header__monto { text-align: right; }
+  .culqi-monto__label { font-size: 10px; color: rgba(255,255,255,0.6); margin: 0 0 2px 0; letter-spacing: 0.06em; text-transform: uppercase; }
+  .culqi-monto__valor { font-size: 22px; font-weight: 800; color: #fff; margin: 0; }
+
+  .culqi-ssl {
+    display: flex; align-items: center; gap: 6px;
+    background: #f0fdf4; padding: 8px 22px;
+    font-size: 11px; color: #16a34a; font-weight: 500; border-bottom: 1px solid #e5e7eb;
+  }
+  .culqi-ssl__badge {
+    margin-left: auto; background: #dcfce7; color: #15803d;
+    font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;
+  }
+
+  .culqi-body { padding: 20px 22px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+  .culqi-card-type-row { display: flex; gap: 8px; }
+  .culqi-card-brand {
+    opacity: 0.25; transition: opacity 0.18s, transform 0.18s;
+    border-radius: 4px; overflow: hidden;
+  }
+  .culqi-card-brand--activo { opacity: 1; transform: scale(1.06); }
+
+  .culqi-field { display: flex; flex-direction: column; gap: 5px; position: relative; }
+  .culqi-field__label {
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .culqi-cvv-hint { cursor: pointer; position: relative; display: flex; align-items: center; }
+  .culqi-tooltip {
+    position: absolute; bottom: 22px; left: 0;
+    background: #1e293b; color: #fff; font-size: 11px; font-weight: 400;
+    padding: 6px 10px; border-radius: 7px; white-space: nowrap;
+    z-index: 10; pointer-events: none;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  }
+
+  .culqi-input-wrap {
+    display: flex; align-items: center;
+    border: 1.5px solid #e5e7eb; border-radius: 10px;
+    padding: 10px 12px; background: #fff;
+    transition: border-color 0.18s;
+  }
+  .culqi-input-wrap--focus { border-color: #2366CE; box-shadow: 0 0 0 3px rgba(35,102,206,0.1); }
+  .culqi-input {
+    border: none; outline: none; font-size: 14px; font-weight: 500;
+    color: #111827; font-family: 'Inter', sans-serif; width: 100%; background: transparent;
+    letter-spacing: 0.02em;
+  }
+  .culqi-input::placeholder { color: #d1d5db; font-weight: 400; }
+  .culqi-input__icon { margin-left: 8px; flex-shrink: 0; display: flex; align-items: center; }
+  .culqi-select { cursor: pointer; }
+
+  .culqi-btn-pagar {
+    width: 100%; padding: 14px; border-radius: 10px;
+    background: linear-gradient(135deg, #0f1f6e 0%, #2366CE 100%);
+    color: #fff; font-size: 15px; font-weight: 700;
+    font-family: 'Inter', sans-serif; border: none; cursor: pointer;
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    box-shadow: 0 4px 16px rgba(35,102,206,0.4);
+    transition: opacity 0.18s, box-shadow 0.18s;
+    margin-top: 4px;
+  }
+  .culqi-btn-pagar:hover:not(:disabled) { opacity: 0.92; box-shadow: 0 6px 24px rgba(35,102,206,0.5); }
+  .culqi-btn-pagar--disabled { opacity: 0.4; cursor: not-allowed; box-shadow: none; }
+
+  .culqi-footer {
+    padding: 12px 22px; background: #f9fafb; border-top: 1px solid #f1f5f9;
+    display: flex; align-items: center; gap: 6px;
+    font-size: 11px; color: #9ca3af;
+  }
+  .culqi-footer__sep { color: #d1d5db; }
+
+  /* ── YAPE WIDGET ────────────────────────────────────────────── */
+  .yape-widget {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden; position: relative;
+    font-family: 'Inter', sans-serif;
+  }
+  .yape-header {
+    background: linear-gradient(135deg, #5B1D91 0%, #7C3AED 100%);
+    padding: 18px 22px; display: flex; align-items: center; justify-content: space-between;
+    position: relative;
+  }
+  .yape-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; align-items: center; }
+  .yape-instruccion { font-size: 14px; font-weight: 600; color: #374151; text-align: center; margin: 0; }
+  .yape-qr-container { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+  .yape-qr { border-radius: 12px; box-shadow: 0 4px 20px rgba(107,33,168,0.15); }
+  .yape-timer {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 12px; color: #6B21A8; font-weight: 600;
+  }
+  .yape-divider {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    font-size: 12px; color: #9ca3af;
+  }
+  .yape-divider::before, .yape-divider::after {
+    content: ''; flex: 1; height: 1px; background: #e5e7eb;
+  }
+  .yape-numero { text-align: center; }
+  .yape-numero__valor { font-size: 20px; font-weight: 800; color: #111827; display: block; }
+  .yape-numero__concepto { font-size: 12px; color: #6b7280; display: block; margin-top: 2px; }
+  .yape-monto-badge {
+    background: #f5f3ff; border: 1.5px solid #ddd6fe; border-radius: 10px;
+    padding: 10px 20px; font-size: 14px; color: #5B1D91; width: 100%; text-align: center;
+  }
+  .yape-btn-confirmar {
+    width: 100%; padding: 13px; border-radius: 10px;
+    background: linear-gradient(135deg, #5B1D91 0%, #7C3AED 100%);
+    color: #fff; font-size: 14px; font-weight: 700;
+    font-family: 'Inter', sans-serif; border: none; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(107,33,168,0.35);
+    transition: opacity 0.18s;
+  }
+  .yape-btn-confirmar:hover { opacity: 0.9; }
+
+  /* ── PLIN WIDGET ────────────────────────────────────────────── */
+  .plin-widget {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden; position: relative;
+    font-family: 'Inter', sans-serif;
+  }
+  .plin-header {
+    background: linear-gradient(135deg, #003F8A 0%, #0066CC 100%);
+    padding: 18px 22px; display: flex; align-items: center; justify-content: space-between;
+    position: relative;
+  }
+  .plin-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+  .plin-instruccion { font-size: 13px; color: #6b7280; text-align: center; margin: 0; }
+  .plin-pasos { display: flex; flex-direction: column; gap: 12px; }
+  .plin-paso { display: flex; align-items: flex-start; gap: 12px; }
+  .plin-paso__numero {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: linear-gradient(135deg, #003F8A 0%, #0066CC 100%);
+    color: #fff; font-size: 12px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .plin-paso__texto { font-size: 13px; color: #374151; margin: 0; padding-top: 4px; }
+  .plin-monto-card {
+    background: #eff6ff; border: 1.5px solid #bfdbfe; border-radius: 10px;
+    padding: 14px; text-align: center;
+  }
+  .plin-monto-card__label { font-size: 10px; font-weight: 700; color: #3b82f6; letter-spacing: 0.08em; margin: 0 0 4px 0; }
+  .plin-monto-card__valor { font-size: 28px; font-weight: 800; color: #1e40af; margin: 0; }
+  .plin-btn-confirmar {
+    width: 100%; padding: 13px; border-radius: 10px;
+    background: linear-gradient(135deg, #003F8A 0%, #0066CC 100%);
+    color: #fff; font-size: 14px; font-weight: 700;
+    font-family: 'Inter', sans-serif; border: none; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(0,63,138,0.35);
+    transition: opacity 0.18s;
+  }
+  .plin-btn-confirmar:hover { opacity: 0.9; }
+
+  /* ── PAGOEFECTIVO WIDGET ────────────────────────────────────── */
+  .pe-widget {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 380px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden; position: relative;
+    font-family: 'Inter', sans-serif;
+  }
+  .pe-header {
+    background: linear-gradient(135deg, #B91C1C 0%, #EF4444 100%);
+    padding: 18px 22px; display: flex; align-items: center; justify-content: space-between;
+    position: relative;
+  }
+  .pe-body { padding: 20px 22px; display: flex; flex-direction: column; gap: 16px; }
+  .pe-instruccion { font-size: 13px; color: #6b7280; text-align: center; margin: 0; }
+  .pe-cip-card {
+    background: linear-gradient(135deg, #fef2f2 0%, #fff7ed 100%);
+    border: 1.5px solid #fca5a5; border-radius: 14px; padding: 18px; text-align: center;
+  }
+  .pe-cip__label { font-size: 10px; font-weight: 700; color: #b91c1c; letter-spacing: 0.1em; margin: 0 0 6px 0; }
+  .pe-cip__codigo { font-size: 32px; font-weight: 800; color: #1e293b; margin: 0; letter-spacing: 0.15em; font-variant-numeric: tabular-nums; }
+  .pe-cip__vence { font-size: 11px; color: #9ca3af; margin: 4px 0 0 0; }
+  .pe-bancos__label { font-size: 10px; font-weight: 700; color: #9ca3af; letter-spacing: 0.08em; margin: 0 0 8px 0; }
+  .pe-bancos__grid { display: flex; flex-wrap: wrap; gap: 6px; }
+  .pe-banco-chip {
+    background: #f1f5f9; border-radius: 20px; padding: 4px 12px;
+    font-size: 11px; font-weight: 600; color: #475569;
+  }
+  .pe-monto-card {
+    background: #fef2f2; border: 1.5px solid #fca5a5; border-radius: 10px;
+    padding: 12px; text-align: center;
+  }
+  .pe-monto-card__label { font-size: 10px; font-weight: 700; color: #b91c1c; letter-spacing: 0.08em; margin: 0 0 4px 0; }
+  .pe-monto-card__valor { font-size: 26px; font-weight: 800; color: #b91c1c; margin: 0; }
+  .pe-btn-confirmar {
+    width: 100%; padding: 13px; border-radius: 10px;
+    background: linear-gradient(135deg, #B91C1C 0%, #EF4444 100%);
+    color: #fff; font-size: 14px; font-weight: 700;
+    font-family: 'Inter', sans-serif; border: none; cursor: pointer;
+    box-shadow: 0 4px 14px rgba(185,28,28,0.35);
+    transition: opacity 0.18s;
+  }
+  .pe-btn-confirmar:hover { opacity: 0.9; }
+
+  /* ── ESTADOS ────────────────────────────────────────────────── */
+  .estado-widget {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 320px; padding: 40px 32px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    display: flex; flex-direction: column; align-items: center; gap: 12px;
+    font-family: 'Inter', sans-serif; text-align: center;
+  }
+  .estado-spinner { animation: spinAnim 1s linear infinite; }
+  @keyframes spinAnim { to { transform: rotate(360deg); } }
+  .estado-icon {
+    width: 72px; height: 72px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    margin-bottom: 4px;
+  }
+  .estado-icon--exito { background: linear-gradient(135deg, #16a34a, #22c55e); box-shadow: 0 8px 24px rgba(34,197,94,0.35); }
+  .estado-icon--error { background: linear-gradient(135deg, #b91c1c, #ef4444); box-shadow: 0 8px 24px rgba(239,68,68,0.35); }
+  .estado-titulo { font-size: 20px; font-weight: 800; color: #111827; margin: 0; }
+  .estado-desc { font-size: 14px; color: #6b7280; margin: 0; }
+  .estado-detalle { background: #f8fafc; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #374151; width: 100%; line-height: 1.8; }
+  .estado-btn-cerrar {
+    width: 100%; padding: 13px; border-radius: 10px; margin-top: 4px;
+    background: linear-gradient(135deg, #0f1f6e 0%, #2366CE 100%);
+    color: #fff; font-size: 14px; font-weight: 700; border: none; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: opacity 0.18s;
+  }
+  .estado-btn-cerrar:hover { opacity: 0.9; }
+  .estado-btn-cerrar--error { background: linear-gradient(135deg, #b91c1c, #ef4444); }
+</style>
+
+
+<!-- ══════════════════════════════════════════════════════════════
+     MODAL HISTORIAL COMPLETO
+     ══════════════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="historialAbierto" (click)="cerrarHistorialSiOverlay($event)">
+  <div class="historial-modal" [@fadeSlideIn]>
+
+    <!-- Header -->
+    <div class="historial-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="historial-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="historial-modal__titulo">Historial de recargas</p>
+        <p class="historial-modal__sub">{{ ultimasRecargas.length }} recargas registradas</p>
+      </div>
+      <button class="historial-modal__close" (click)="cerrarHistorial()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Filtros -->
+    <div class="historial-modal__filtros">
+      <!-- Buscador -->
+      <div class="historial-search">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <input type="text" class="historial-search__input" placeholder="Buscar por método o fecha..."
+          [(ngModel)]="historialBusqueda" />
+        <button class="historial-search__clear" *ngIf="historialBusqueda" (click)="historialBusqueda = ''">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Chips de método -->
+      <div class="historial-chips">
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === null"
+          (click)="historialFiltro = null">Todos</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'Yape'"
+          (click)="historialFiltro = 'Yape'">Yape</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'Plin'"
+          (click)="historialFiltro = 'Plin'">Plin</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'PagoEfectivo'"
+          (click)="historialFiltro = 'PagoEfectivo'">PagoEfectivo</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'Tarjeta de crédito'"
+          (click)="historialFiltro = 'Tarjeta de crédito'">Tarjeta</button>
+      </div>
+    </div>
+
+    <!-- Resumen -->
+    <div class="historial-resumen">
+      <div class="historial-resumen__item">
+        <p class="historial-resumen__valor">{{ recargasFiltradas.length }}</p>
+        <p class="historial-resumen__label">Recargas</p>
+      </div>
+      <div class="historial-resumen__sep"></div>
+      <div class="historial-resumen__item">
+        <p class="historial-resumen__valor">S/ {{ totalRecargasFiltradas | number:'1.2-2' }}</p>
+        <p class="historial-resumen__label">Total recargado</p>
+      </div>
+      <div class="historial-resumen__sep"></div>
+      <div class="historial-resumen__item">
+        <p class="historial-resumen__valor">S/ {{ promedioRecargasFiltradas | number:'1.2-2' }}</p>
+        <p class="historial-resumen__label">Promedio</p>
+      </div>
+    </div>
+
+    <!-- Lista -->
+    <div class="historial-modal__lista">
+
+      <div *ngIf="recargasFiltradas.length === 0" class="historial-vacio">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.5">
+          <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+        </svg>
+        <p>No se encontraron recargas</p>
+      </div>
+
+      <div *ngFor="let r of recargasFiltradas; let i = index"
+           class="historial-modal__item">
+        <!-- Ícono método -->
+        <div class="historial-modal__icon">
+          <img *ngIf="r.metodo === 'Yape'"              src="Yape-Logo.png"           alt="Yape"          class="historial-modal__icon-img" />
+          <img *ngIf="r.metodo === 'Plin'"              src="Plin-Logo.png"           alt="Plin"          class="historial-modal__icon-img" />
+          <img *ngIf="r.metodo === 'PagoEfectivo'"      src="Pagoefectivo-Logo.png"   alt="PagoEfectivo"  class="historial-modal__icon-img" />
+          <img *ngIf="r.metodo === 'Tarjeta de crédito'" src="Tarjetacredito-Logo.png" alt="Tarjeta"       class="historial-modal__icon-img" />
+        </div>
+
+        <!-- Info -->
+        <div class="historial-modal__info">
+          <p class="historial-modal__metodo">{{ r.metodo }}</p>
+          <p class="historial-modal__fecha">{{ r.fecha }}</p>
+        </div>
+
+        <!-- Badge estado -->
+        <span class="historial-modal__estado">Completado</span>
+
+        <!-- Monto -->
+        <p class="historial-modal__monto">+S/ {{ r.monto | number:'1.2-2' }}</p>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="historial-modal__footer">
+      <p>Saldo actual: <strong>S/ {{ saldoActual | number:'1.2-2' }}</strong></p>
+    </div>
+
+  </div>
+</div>
+
+<style>
+  /* ── MODAL HISTORIAL ────────────────────────────────────────── */
+  .historial-modal {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 520px; max-height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden; font-family: 'Inter', sans-serif;
+  }
+
+  .historial-modal__header {
+    background: #fff;
+    padding: 20px 24px;
+    border-bottom: 1.5px solid #e5e7eb;
+    display: flex; align-items: center; gap: 14px; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .historial-modal__logo {
+    height: 36px; object-fit: contain; flex-shrink: 0;
+  }
+  .historial-modal__titulo { font-size: 16px; font-weight: 800; color: #0f1f6e; margin: 0 0 2px 0; }
+  .historial-modal__sub { font-size: 12px; color: #6b7280; margin: 0; }
+  .historial-modal__close {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    border: none; background: #f1f5f9;
+    color: #374151; cursor: pointer; display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s;
+  }
+  .historial-modal__close:hover { background: #e5e7eb; }
+
+  .historial-modal__filtros {
+    padding: 16px 20px 12px; display: flex; flex-direction: column; gap: 10px;
+    border-bottom: 1px solid #f1f5f9; flex-shrink: 0;
+  }
+
+  .historial-search {
+    display: flex; align-items: center; gap: 8px;
+    border: 1.5px solid #e5e7eb; border-radius: 10px;
+    padding: 9px 12px; background: #f9fafb;
+    transition: border-color 0.18s;
+  }
+  .historial-search:focus-within { border-color: #2366CE; background: #fff; }
+  .historial-search__input {
+    border: none; outline: none; font-size: 13px; color: #111827;
+    font-family: 'Inter', sans-serif; width: 100%; background: transparent;
+  }
+  .historial-search__input::placeholder { color: #9ca3af; }
+  .historial-search__clear { background: none; border: none; cursor: pointer; display: flex; padding: 0; }
+
+  .historial-chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .historial-chip {
+    padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+    border: 1.5px solid #e5e7eb; background: #fff; color: #6b7280;
+    cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;
+  }
+  .historial-chip:hover { border-color: #93c5fd; color: #2366CE; }
+  .historial-chip--activo { border-color: #2366CE; background: #eff6ff; color: #2366CE; }
+
+  .historial-resumen {
+    display: flex; align-items: center; padding: 14px 20px;
+    background: #f8fafc; border-bottom: 1px solid #f1f5f9;
+    flex-shrink: 0;
+  }
+  .historial-resumen__item { flex: 1; text-align: center; }
+  .historial-resumen__valor { font-size: 16px; font-weight: 800; color: #111827; margin: 0 0 2px 0; }
+  .historial-resumen__label { font-size: 11px; color: #9ca3af; margin: 0; }
+  .historial-resumen__sep { width: 1px; height: 32px; background: #e5e7eb; flex-shrink: 0; }
+
+  .historial-modal__lista {
+    flex: 1; overflow-y: auto; padding: 8px 0;
+  }
+  .historial-modal__lista::-webkit-scrollbar { width: 4px; }
+  .historial-modal__lista::-webkit-scrollbar-track { background: transparent; }
+  .historial-modal__lista::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+  .historial-vacio {
+    display: flex; flex-direction: column; align-items: center; gap: 10px;
+    padding: 48px 20px; color: #9ca3af; font-size: 13px;
+  }
+
+  .historial-modal__item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 20px; transition: background 0.15s; cursor: default;
+  }
+  .historial-modal__item:hover { background: #f8fafc; }
+
+  .historial-modal__icon {
+    width: 44px; height: 44px; border-radius: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; overflow: hidden;
+    background: #f1f5f9; border: 1px solid #e5e7eb;
+    padding: 6px;
+  }
+  .historial-modal__icon-img {
+    width: 100%; height: 100%; object-fit: contain;
+  }
+  .icon--yape        { background: linear-gradient(135deg, #5B1D91, #7C3AED); }
+  .icon--plin        { background: linear-gradient(135deg, #003F8A, #0066CC); }
+  .icon--pagoefectivo { background: linear-gradient(135deg, #B91C1C, #EF4444); }
+  .icon--tarjeta     { background: linear-gradient(135deg, #0f1f6e, #2366CE); }
+
+  .historial-modal__info { flex: 1; min-width: 0; }
+  .historial-modal__metodo { font-size: 13px; font-weight: 600; color: #111827; margin: 0 0 2px 0; }
+  .historial-modal__fecha  { font-size: 11px; color: #9ca3af; margin: 0; }
+
+  .historial-modal__estado {
+    font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+    background: rgba(34,197,94,0.1); color: #16a34a; white-space: nowrap; flex-shrink: 0;
+  }
+
+  .historial-modal__monto {
+    font-size: 14px; font-weight: 700; color: #16a34a;
+    white-space: nowrap; margin: 0; flex-shrink: 0;
+  }
+
+  .historial-modal__footer {
+    padding: 14px 20px; border-top: 1px solid #f1f5f9;
+    font-size: 13px; color: #6b7280; text-align: center; flex-shrink: 0;
+  }
+
+  /* ── Animaciones de entrada (mismo patrón que ubicacion / canalatencion) ── */
+  .layout-header,
+  .fila-cards,
+  .layout-footer {
+    animation: cardIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+
+  .layout-header               { animation-delay: 0ms;   }
+  .fila-cards:nth-of-type(1)   { animation-delay: 60ms;  }
+  .fila-cards:nth-of-type(2)   { animation-delay: 120ms; }
+  .layout-footer               { animation-delay: 180ms; }
+
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .historial-item {
+    animation: cardIn 0.3s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .historial-item:nth-child(1) { animation-delay: 200ms; }
+  .historial-item:nth-child(2) { animation-delay: 240ms; }
+  .historial-item:nth-child(3) { animation-delay: 280ms; }
+  .historial-item:nth-child(4) { animation-delay: 320ms; }
+
+  /* ── LAYOUT RESPONSIVE ──────────────────────────────────────── */
+  .breadcrumb {
+    padding: 18px 32px 0 32px;
+    font-family: 'Inter', sans-serif;
+  }
+  .breadcrumb__link  { font-size: 13px; color: #2366CE; font-weight: 600; cursor: pointer; }
+  .breadcrumb__sep   { font-size: 13px; color: #9ca3af; margin: 0 6px; }
+  .breadcrumb__actual{ font-size: 13px; color: #9ca3af; }
+
+  .layout-principal {
+    padding: 24px 32px 48px 32px;
+    display: flex; flex-direction: column; gap: 20px;
+    font-family: 'Inter', sans-serif;
+    background: #f0f4fb;
+    min-height: calc(100vh - 64px);
+  }
+
+  .layout-header { margin-bottom: 8px; }
+  .layout-header__sub {
+    font-size: 11px; font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.08em; color: #2366CE;
+    font-family: 'Inter', sans-serif; margin: 0 0 4px 0;
+  }
+  .layout-header__titulo {
+    font-size: 24px; font-weight: 700; color: #111827;
+    font-family: 'Inter', sans-serif; margin: 0;
+  }
+
+  .fila-cards {
+    display: flex; gap: 20px; align-items: stretch;
+  }
+  .fila-cards--top { align-items: flex-start; }
+  .fila-cards__main { flex: 1; min-width: 0; }
+  .fila-cards__aside { width: 420px; flex-shrink: 0; }
+
+  .monto-personalizado-label {
+    font-size: 13px; color: #374151;
+    font-family: 'Inter', sans-serif; margin: 20px 0 10px 0;
+  }
+
+  .historial-aside {
+    background: #fff; border-radius: 16px;
+    padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+  }
+  .historial-aside__header {
+    display: flex; align-items: center;
+    justify-content: space-between; margin-bottom: 14px;
+  }
+  .historial-aside__titulo {
+    font-size: 13px; font-weight: 700; color: #374151;
+    margin: 0; font-family: 'Inter', sans-serif;
+  }
+  .historial-aside__ver {
+    font-size: 12px; font-weight: 600; color: #2366CE;
+    cursor: pointer; font-family: 'Inter', sans-serif;
+  }
+
+  .layout-footer {
+    text-align: center; font-size: 12px;
+    color: #9ca3af; font-family: 'Inter', sans-serif;
+  }
+
+  /* ── TABLET (≤ 1024px): sidebar pasa abajo ──────────────────── */
+  @media (max-width: 1024px) {
+    .layout-principal { padding: 20px 24px 48px 24px; }
+    .breadcrumb { padding: 16px 24px 0 24px; }
+    .fila-cards { flex-direction: column; }
+    .fila-cards__aside { width: 100%; }
+    .saldo-card.fila-cards__aside { min-height: 160px; }
+  }
+
+  /* ── MOBILE (≤ 640px): una columna, padding reducido ────────── */
+  @media (max-width: 640px) {
+    .layout-principal { padding: 16px 16px 48px 16px; gap: 14px; }
+    .breadcrumb { padding: 12px 16px 0 16px; }
+    .layout-header__titulo { font-size: 20px; }
+    .fila-cards { gap: 14px; }
+    .montos-grid { grid-template-columns: repeat(2, 1fr); }
+    .monto-chip { padding: 14px 10px; }
+    .monto-chip__valor { font-size: 22px; }
+    .metodo-desc { display: none; }
+    .saldo-card.fila-cards__aside { min-height: 200px; }
+    .saldo-card__valor { font-size: 28px; }
+    .historial-modal { max-width: 100%; border-radius: 16px 16px 0 0; }
+    .modal-overlay { align-items: flex-end; padding: 0; }
+    .culqi-widget { max-width: 100%; border-radius: 16px 16px 0 0; }
+    .recarga-card { width: 100%; box-sizing: border-box; }
+  }
+</style>

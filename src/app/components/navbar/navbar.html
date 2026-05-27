@@ -1,0 +1,383 @@
+<!-- NAVBAR -->
+<nav class="bg-white shadow-sm sticky top-0 z-50 flex items-center justify-between"
+     style="padding: 12px 16px;">
+
+  <!-- Logo -->
+  <div class="flex items-center gap-3">
+    <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="h-9 w-auto" />
+  </div>
+
+  <!-- Acciones -->
+  <div class="flex items-center gap-3">
+
+    <!-- BOTÓN INICIO -->
+    <a routerLink="/inicio"
+      class="relative p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors"
+      title="Inicio">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"/>
+      </svg>
+    </a>
+    <!-- FIN INICIO -->
+
+    <!-- CAMPANA DE NOTIFICACIONES -->
+    <div class="relative">
+      <button
+        (click)="toggleNotificaciones()"
+        class="relative p-2 rounded-lg text-gray-500 hover:text-blue-600 hover:bg-blue-50 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+        </svg>
+        <span *ngIf="noLeidas > 0"
+          class="absolute -top-0.5 -right-0.5 w-4 h-4 rounded-full text-white flex items-center justify-center"
+          style="background-color: #e53e3e; font-size: 10px; font-weight: 700;">
+          {{ noLeidas > 9 ? '9+' : noLeidas }}
+        </span>
+      </button>
+
+      <!-- DROPDOWN -->
+      <div *ngIf="mostrarNotificaciones"
+           class="absolute right-0 mt-2 bg-white rounded-2xl shadow-xl border border-gray-100 overflow-hidden"
+           style="z-index: 100; width: min(320px, 90vw);">
+
+        <div class="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <p class="text-sm font-bold text-gray-800">Notificaciones</p>
+          <button (click)="marcarTodasLeidas()"
+            class="text-xs font-medium hover:underline" style="color: #2366CE;">
+            Marcar todas como leídas
+          </button>
+        </div>
+
+        <div class="overflow-y-auto" style="max-height: 340px;">
+          <ng-container *ngIf="notificaciones.length > 0; else sinNotif">
+            <div *ngFor="let n of notificaciones"
+                 (click)="marcarLeida(n)"
+                 class="flex items-start gap-3 px-4 py-3 cursor-pointer transition-colors hover:bg-gray-50 border-b border-gray-50"
+                 [style.background]="n.leida ? 'white' : 'rgba(35,102,206,0.04)'">
+              <div class="flex-shrink-0 w-8 h-8 rounded-lg flex items-center justify-center mt-0.5"
+                   [style.background]="n.tipo === 'operativa' ? 'rgba(234,88,12,0.1)' : 'rgba(220,38,38,0.1)'">
+                <svg *ngIf="n.tipo === 'operativa'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     [attr.stroke]="'#ea580c'">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+                </svg>
+                <svg *ngIf="n.tipo === 'saldo'" class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
+                     [attr.stroke]="'#dc2626'">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="text-xs font-semibold text-gray-800 leading-snug">{{ n.titulo }}</p>
+                <p class="text-xs text-gray-500 mt-0.5 leading-snug">{{ n.descripcion }}</p>
+                <p class="text-xs mt-1" style="color: #2366CE;">{{ n.hora }}</p>
+              </div>
+              <span *ngIf="!n.leida"
+                class="flex-shrink-0 w-2 h-2 rounded-full mt-1.5"
+                style="background-color: #2366CE;"></span>
+            </div>
+          </ng-container>
+          <ng-template #sinNotif>
+            <div class="flex flex-col items-center justify-center py-8 text-gray-400">
+              <svg class="w-8 h-8 mb-2" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+              </svg>
+              <p class="text-xs">Sin notificaciones nuevas</p>
+            </div>
+          </ng-template>
+        </div>
+
+        <div class="px-4 py-2.5 border-t border-gray-100 text-center">
+          <button class="text-xs font-medium hover:underline" style="color: #2366CE;">
+            Ver todas las notificaciones
+          </button>
+        </div>
+
+      </div>
+    </div>
+    <!-- FIN CAMPANA -->
+
+    <!-- BOTÓN REPORTES -->
+    <button
+      (click)="abrirModalReporte()"
+      class="relative p-2 rounded-lg text-gray-500 hover:text-orange-500 hover:bg-orange-50 transition-colors"
+      title="Enviar reporte">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M3 3v18M3 6l9-3 9 3-9 3-9-3z"/>
+      </svg>
+    </button>
+    <!-- FIN REPORTES -->
+
+    <!-- Avatar + nombre -->
+    <div class="flex items-center gap-2">
+      <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
+           style="background-color: #2366CE;">
+        J
+      </div>
+      <span class="nav-username text-sm font-medium text-gray-700">Jhordan</span>
+    </div>
+
+    <!-- Cerrar sesión -->
+    <button
+      (click)="abrirModalLogout()"
+      class="flex items-center gap-1.5 text-sm text-gray-500 hover:text-red-500 transition-colors px-2 py-1.5 rounded-lg hover:bg-red-50">
+      <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round"
+          d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+      </svg>
+      <span class="nav-cerrar-texto">Cerrar sesión</span>
+    </button>
+
+  </div>
+</nav>
+
+<!-- ── MODAL REPORTE ──────────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalReporteAbierto" (click)="cerrarModalReporteSiOverlay($event)">
+  <div class="reporte-modal">
+
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Enviar reporte</p>
+        <p class="logout-modal__sub">Corredor Azul</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalReporte()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="reporte-modal__body">
+
+      <!-- Sistema de transporte — tarjetas -->
+      <div class="reporte-modal__field">
+        <label class="reporte-modal__label">Sistema de transporte</label>
+        <div class="reporte-linea__grid">
+
+          <button type="button" class="reporte-linea__card"
+            [class.reporte-linea__card--active]="reporteLinea === 'metropolitano'"
+            (click)="reporteLinea = 'metropolitano'">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+            </svg>
+            <span>Metropolitano</span>
+          </button>
+
+          <button type="button" class="reporte-linea__card"
+            [class.reporte-linea__card--active]="reporteLinea === 'corredor_azul'"
+            (click)="reporteLinea = 'corredor_azul'">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
+            </svg>
+            <span>Corredor Azul</span>
+          </button>
+
+          <button type="button" class="reporte-linea__card"
+            [class.reporte-linea__card--active]="reporteLinea === 'metro_lima'"
+            (click)="reporteLinea = 'metro_lima'">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
+            </svg>
+            <span>Metro de Lima</span>
+          </button>
+
+        </div>
+      </div>
+
+      <!-- Tipo de reporte — select custom con iconos por categoría -->
+      <div class="reporte-modal__field">
+        <label class="reporte-modal__label">Tipo de reporte</label>
+
+        <div class="reporte-tipo__wrap" [class.reporte-tipo__wrap--open]="reporteTipoOpen">
+
+          <!-- Trigger -->
+          <button type="button" class="reporte-tipo__trigger" (click)="reporteTipoOpen = !reporteTipoOpen">
+            <ng-container *ngIf="!reporteTipo">
+              <svg width="16" height="16" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 6.75h12M8.25 12h12m-12 5.25h12M3.75 6.75h.007v.008H3.75V6.75zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zM3.75 12h.007v.008H3.75V12zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0zm-.375 5.25h.007v.008H3.75v-.008zm.375 0a.375.375 0 11-.75 0 .375.375 0 01.75 0z"/>
+              </svg>
+              <span style="color:#9ca3af;">Selecciona una categoría</span>
+            </ng-container>
+            <ng-container *ngIf="reporteTipo">
+              <svg width="16" height="16" fill="none" [attr.stroke]="reporteTipoColor()" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="reporteTipoIconPath()"/>
+              </svg>
+              <span style="color:#111827;">{{ reporteTipoLabel() }}</span>
+            </ng-container>
+            <svg class="reporte-tipo__chevron" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+            </svg>
+          </button>
+
+          <!-- Dropdown -->
+          <div class="reporte-tipo__dropdown" *ngIf="reporteTipoOpen">
+
+            <div class="reporte-tipo__group">
+              <div class="reporte-tipo__group-label">
+                <svg width="13" height="13" fill="none" stroke="#ea580c" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21"/>
+                </svg>
+                Estación / Paradero
+              </div>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('estacion_aglomeracion')">Aglomeración peligrosa en estación</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('estacion_modulo_recarga')">Módulo de recarga dañado o sin saldo</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('estacion_torniquete')">Torniquete trabado o sin funcionar</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('estacion_limpieza')">Estación sucia o con mal olor</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('estacion_inseguridad')">Situación de inseguridad en estación</button>
+            </div>
+
+            <div class="reporte-tipo__group">
+              <div class="reporte-tipo__group-label">
+                <svg width="13" height="13" fill="none" stroke="#2366CE" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+                </svg>
+                Bus / Servicio
+              </div>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('bus_no_llega')">Bus no llega / demasiado tiempo de espera</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('bus_lleno')">Bus pasa lleno sin recoger pasajeros</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('bus_mal_estado')">Bus en mal estado (puertas, asientos, aire)</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('bus_conductor')">Conducta inapropiada del conductor</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('bus_ruta_desvio')">Bus se desvió de la ruta habitual</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('bus_velocidad')">Exceso de velocidad o manejo brusco</button>
+            </div>
+
+            <div class="reporte-tipo__group">
+              <div class="reporte-tipo__group-label">
+                <svg width="13" height="13" fill="none" stroke="#7c3aed" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+                </svg>
+                Tarjeta / Saldo
+              </div>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('tarjeta_no_carga')">No se pudo recargar la tarjeta</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('tarjeta_descuento')">Se descontó saldo sin motivo</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('tarjeta_no_lee')">Tarjeta no es leída por el lector</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('tarjeta_perdida')">Tarjeta perdida o robada</button>
+            </div>
+
+            <div class="reporte-tipo__group">
+              <div class="reporte-tipo__group-label">
+                <svg width="13" height="13" fill="none" stroke="#0891b2" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"/>
+                </svg>
+                App / Sistema
+              </div>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('app_saldo_incorrecto')">Saldo incorrecto en la app</button>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('app_error')">Error o falla en la aplicación</button>
+            </div>
+
+            <div class="reporte-tipo__group reporte-tipo__group--last">
+              <div class="reporte-tipo__group-label">
+                <svg width="13" height="13" fill="none" stroke="#6b7280" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+                </svg>
+                Otro
+              </div>
+              <button type="button" class="reporte-tipo__option" (click)="seleccionarTipo('otro')">Otro problema no listado</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Descripción -->
+      <div class="reporte-modal__field">
+        <label class="reporte-modal__label">Descripción</label>
+        <textarea
+          [(ngModel)]="reporteDescripcion"
+          class="reporte-modal__textarea"
+          placeholder="Describe brevemente lo ocurrido..."
+          rows="4"
+          maxlength="400"></textarea>
+        <span class="reporte-modal__chars">{{ reporteDescripcion.length }}/400</span>
+      </div>
+
+      <!-- Adjuntar imagen -->
+      <div class="reporte-modal__field">
+        <label class="reporte-modal__label">Imagen adjunta <span style="color:#9ca3af;">(opcional)</span></label>
+        <label class="reporte-modal__upload" [class.reporte-modal__upload--active]="reporteImagen">
+          <input type="file" accept="image/*" (change)="onImagenSeleccionada($event)" style="display:none;" />
+          <ng-container *ngIf="!reporteImagen">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color:#9ca3af;">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+            </svg>
+            <span class="reporte-modal__upload-txt">Haz clic para subir una imagen</span>
+          </ng-container>
+          <ng-container *ngIf="reporteImagen">
+            <svg width="20" height="20" fill="none" stroke="#16a34a" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="reporte-modal__upload-txt" style="color:#15803d;">{{ reporteImagenNombre }}</span>
+            <button class="reporte-modal__upload-remove" (click)="quitarImagen($event)">
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </ng-container>
+        </label>
+      </div>
+
+    </div>
+
+    <div class="logout-modal__footer">
+      <button class="logout-modal__btn-cancelar" (click)="cerrarModalReporte()">Cancelar</button>
+      <button class="reporte-modal__btn-enviar"
+              [disabled]="!reporteTipo || !reporteLinea || !reporteDescripcion.trim()"
+              (click)="enviarReporte()">
+        Enviar reporte
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL CONFIRMAR CIERRE DE SESIÓN ─────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalLogoutAbierto" (click)="cerrarModalLogoutSiOverlay($event)">
+  <div class="logout-modal">
+
+    <!-- Header — mismo patrón que historial-modal__header -->
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Cerrar sesión</p>
+        <p class="logout-modal__sub">Corredor Azul</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalLogout()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Body -->
+    <div class="logout-modal__body">
+      <div class="logout-modal__icon-wrap">
+        <svg width="32" height="32" fill="none" stroke="#dc2626" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M15.75 9V5.25A2.25 2.25 0 0013.5 3h-6a2.25 2.25 0 00-2.25 2.25v13.5A2.25 2.25 0 007.5 21h6a2.25 2.25 0 002.25-2.25V15M12 9l-3 3m0 0l3 3m-3-3h12.75"/>
+        </svg>
+      </div>
+      <p class="logout-modal__pregunta">¿Deseas cerrar sesión?</p>
+      <p class="logout-modal__desc">Tendrás que volver a iniciar sesión para acceder a tu cuenta de Corredor Azul.</p>
+    </div>
+
+    <!-- Acciones -->
+    <div class="logout-modal__footer">
+      <button class="logout-modal__btn-cancelar" (click)="cerrarModalLogout()">
+        Cancelar
+      </button>
+      <button class="logout-modal__btn-confirmar" (click)="confirmarLogout()">
+        Sí, cerrar sesión
+      </button>
+    </div>
+
+  </div>
+</div>

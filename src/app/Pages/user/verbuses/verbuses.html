@@ -1,0 +1,536 @@
+<style>
+  /* ── Responsive ── */
+  @media (max-width: 900px) {
+    .verbuses-layout { flex-direction: column !important; }
+    .panel-izq, .panel-der { width: 100% !important; }
+  }
+  /* Paraderos: columna única en pantallas muy angostas */
+  @media (max-width: 600px) {
+    .paraderos-grid { grid-template-columns: 1fr !important; }
+  }
+
+  /* ── Animaciones ── */
+  .linea-item {
+    animation: cardIn 0.35s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .linea-item:nth-child(1) { animation-delay: 0ms; }
+  .linea-item:nth-child(2) { animation-delay: 60ms; }
+  .linea-item:nth-child(3) { animation-delay: 120ms; }
+  .linea-item:nth-child(4) { animation-delay: 180ms; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── Hover en items de línea ── */
+  .linea-item:hover {
+    box-shadow: 0 4px 16px rgba(35, 102, 206, 0.12);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .linea-item { transition: all 0.18s ease; }
+</style>
+
+<div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div style="padding: 18px 32px 0 32px; font-family: 'Inter', sans-serif;">
+    <span style="font-size: 13px; color: #2366CE; font-weight: 600; cursor: pointer;" (click)="irInicio()">Inicio</span>
+    <span style="font-size: 13px; color: #9ca3af; margin: 0 6px;">›</span>
+    <span style="font-size: 13px; color: #9ca3af;">Ver buses</span>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div style="padding: 24px 32px 48px 32px;">
+
+    <!-- ENCABEZADO -->
+    <div style="margin-bottom: 28px;">
+      <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2366CE; font-family: 'Inter', sans-serif; margin: 0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size: 24px; font-weight: 700; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">Ver líneas</h2>
+    </div>
+
+    <!-- LAYOUT DE 3 COLUMNAS -->
+    <div class="verbuses-layout" style="display: flex; gap: 20px; align-items: flex-start;">
+
+      <!-- ===================== PANEL IZQUIERDO ===================== -->
+      <div class="panel-izq" style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+        <!-- Buscador -->
+        <div style="position: relative;">
+          <svg style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #9ca3af;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar línea o paradero"
+            [(ngModel)]="busquedaDestino"
+            (input)="filtrarLineas()"
+            style="width: 100%; padding: 10px 12px 10px 36px; border: 1.5px solid #e5e7eb; border-radius: 12px; font-size: 13px; color: #374151; background: #fff; outline: none; box-sizing: border-box; font-family: 'Inter', sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+          />
+        </div>
+
+        <!-- Lista de líneas -->
+        <div style="display: flex; flex-direction: column; gap: 8px;">
+          <div
+            class="linea-item"
+            *ngFor="let linea of lineasFiltradas"
+            (click)="seleccionarLinea(linea)"
+            style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; cursor: pointer; border: 1.5px solid transparent;"
+            [style.background]="lineaSeleccionada?.id === linea.id ? 'linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%)' : '#fff'"
+            [style.border-color]="lineaSeleccionada?.id === linea.id ? 'transparent' : '#e5e7eb'"
+            [style.box-shadow]="lineaSeleccionada?.id === linea.id ? '0 4px 16px rgba(35,102,206,0.25)' : '0 1px 3px rgba(0,0,0,0.05)'"
+          >
+            <!-- Icono bus -->
+            <div style="width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;"
+                 [style.background]="lineaSeleccionada?.id === linea.id ? 'rgba(255,255,255,0.15)' : 'rgba(35,102,206,0.08)'">
+              <svg style="width: 20px; height: 20px;" fill="none"
+                   [attr.stroke]="lineaSeleccionada?.id === linea.id ? '#fff' : '#2366CE'"
+                   stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+              </svg>
+            </div>
+
+            <div style="flex: 1; min-width: 0;">
+              <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px;">
+                <p style="font-size: 15px; font-weight: 700; margin: 0;"
+                   [style.color]="lineaSeleccionada?.id === linea.id ? '#fff' : '#111827'">
+                  {{ linea.nombre }}
+                </p>
+                <span style="font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 20px; white-space: nowrap;"
+                      [style.background]="linea.estado === 'En servicio'
+                        ? (lineaSeleccionada?.id === linea.id ? 'rgba(255,255,255,0.2)' : 'rgba(34,197,94,0.1)')
+                        : (lineaSeleccionada?.id === linea.id ? 'rgba(255,255,255,0.2)' : 'rgba(234,179,8,0.1)')"
+                      [style.color]="linea.estado === 'En servicio'
+                        ? (lineaSeleccionada?.id === linea.id ? '#fff' : '#16a34a')
+                        : (lineaSeleccionada?.id === linea.id ? '#fff' : '#b45309')">
+                  {{ linea.estado }}
+                </span>
+              </div>
+              <p style="font-size: 12px; margin: 3px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
+                 [style.color]="lineaSeleccionada?.id === linea.id ? 'rgba(255,255,255,0.7)' : '#6b7280'">
+                {{ linea.ruta }}
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===================== PANEL CENTRAL ===================== -->
+      <div style="flex: 1; min-width: 0; overflow: hidden;" *ngIf="lineaSeleccionada">
+
+        <!-- Header de la línea seleccionada -->
+        <div style="border-radius: 20px; padding: 28px 32px; margin-bottom: 20px; background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); box-shadow: 0 8px 24px rgba(35,102,206,0.3);">
+          <div style="display: flex; align-items: flex-start; justify-content: space-between; flex-wrap: wrap; gap: 16px;">
+
+            <!-- Info izquierda -->
+            <div>
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 10px;">
+                <span style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; background: rgba(255,255,255,0.15); color: #fff; padding: 4px 10px; border-radius: 6px;">CORREDOR AZUL</span>
+                <span style="font-size: 12px; font-weight: 700; background: #22c55e; color: #fff; padding: 4px 12px; border-radius: 20px; display: flex; align-items: center; gap: 5px;">
+                  <span style="width: 6px; height: 6px; background: #fff; border-radius: 50%; display: inline-block;"></span>
+                  EN SERVICIO
+                </span>
+              </div>
+              <h1 style="font-size: 32px; font-weight: 800; color: #fff; margin: 0 0 6px 0;">{{ lineaSeleccionada.nombre }}</h1>
+              <p style="font-size: 14px; color: rgba(255,255,255,0.7); margin: 0;">{{ lineaSeleccionada.ruta }}</p>
+            </div>
+
+            <!-- Stats -->
+            <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+              <div style="background: rgba(255,255,255,0.15); border-radius: 14px; padding: 14px 20px; text-align: center; min-width: 80px;">
+                <p style="font-size: 24px; font-weight: 800; color: #fff; margin: 0; line-height: 1;">{{ lineaSeleccionada.paraderos }}</p>
+                <p style="font-size: 11px; color: rgba(255,255,255,0.65); margin: 4px 0 0 0; font-weight: 500;">Paraderos</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); border-radius: 14px; padding: 14px 20px; text-align: center; min-width: 80px;">
+                <p style="font-size: 24px; font-weight: 800; color: #fff; margin: 0; line-height: 1;">{{ lineaSeleccionada.recorrido }}</p>
+                <p style="font-size: 11px; color: rgba(255,255,255,0.65); margin: 4px 0 0 0; font-weight: 500;">Recorrido</p>
+              </div>
+              <div style="background: rgba(255,255,255,0.15); border-radius: 14px; padding: 14px 20px; text-align: center; min-width: 80px;">
+                <p style="font-size: 24px; font-weight: 800; color: #fff; margin: 0; line-height: 1;">{{ lineaSeleccionada.duracion }}</p>
+                <p style="font-size: 11px; color: rgba(255,255,255,0.65); margin: 4px 0 0 0; font-weight: 500;">Duración</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs Ida / Vuelta -->
+        <div style="display: flex; gap: 8px; margin-bottom: 20px;">
+          <button
+            (click)="tabActivo = 'ida'"
+            style="display: flex; align-items: center; gap: 6px; padding: 9px 20px; border-radius: 10px; border: 1.5px solid; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;"
+            [style.background]="tabActivo === 'ida' ? '#fff' : 'transparent'"
+            [style.border-color]="tabActivo === 'ida' ? '#2366CE' : '#d1d5db'"
+            [style.color]="tabActivo === 'ida' ? '#2366CE' : '#6b7280'">
+            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3"/>
+            </svg>
+            Ida
+          </button>
+          <button
+            (click)="tabActivo = 'vuelta'"
+            style="display: flex; align-items: center; gap: 6px; padding: 9px 20px; border-radius: 10px; border: 1.5px solid; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; font-family: 'Inter', sans-serif;"
+            [style.background]="tabActivo === 'vuelta' ? '#fff' : 'transparent'"
+            [style.border-color]="tabActivo === 'vuelta' ? '#2366CE' : '#d1d5db'"
+            [style.color]="tabActivo === 'vuelta' ? '#2366CE' : '#6b7280'">
+            <svg style="width: 14px; height: 14px;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18"/>
+            </svg>
+            Vuelta
+          </button>
+        </div>
+
+        <!-- Lista de paraderos: 2 columnas -->
+        <div style="background: #fff; border-radius: 16px; padding: 20px 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); overflow: hidden; width: 100%; box-sizing: border-box;">
+          <div class="paraderos-grid" style="display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 0 16px; width: 100%;">
+
+            <!-- Columna izquierda -->
+            <div style="min-width: 0;">
+              <div *ngFor="let p of getParaderosColumna(0); let i = index; let last = last"
+                   style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; position: relative;">
+                <!-- línea vertical -->
+                <div *ngIf="!last"
+                     style="position: absolute; left: 6px; top: 24px; width: 2px; height: calc(100% - 4px); background: #2366CE; z-index: 0;"></div>
+                <!-- círculo -->
+                <div [style.width]="i === 0 ? '14px' : '12px'"
+                     [style.height]="i === 0 ? '14px' : '12px'"
+                     [style.background]="i === 0 ? '#2366CE' : '#fff'"
+                     [style.border]="i === 0 ? '3px solid #2366CE' : '2px solid #2366CE'"
+                     [style.box-shadow]="i === 0 ? '0 0 0 3px rgba(35,102,206,0.15)' : 'none'"
+                     [style.margin-top]="i === 0 ? '1px' : '2px'"
+                     style="border-radius: 50%; flex-shrink: 0; z-index: 1; position: relative;"></div>
+                <div style="min-width: 0; flex: 1;">
+                  <p style="font-size: 14px; font-weight: 600; color: #111827; margin: 0; word-break: break-word;">{{ p.nombre }}</p>
+                  <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0; white-space: nowrap;">{{ p.km }} km</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Columna derecha -->
+            <div style="min-width: 0;">
+              <div *ngFor="let p of getParaderosColumna(1); let i = index; let last = last"
+                   style="display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; position: relative;">
+                <!-- línea vertical -->
+                <div *ngIf="!last"
+                     style="position: absolute; left: 6px; top: 24px; width: 2px; height: calc(100% - 4px); background: #2366CE; z-index: 0;"></div>
+                <!-- círculo -->
+                <div [style.width]="last ? '14px' : '12px'"
+                     [style.height]="last ? '14px' : '12px'"
+                     [style.background]="last ? '#2366CE' : '#fff'"
+                     [style.border]="last ? '3px solid #2366CE' : '2px solid #2366CE'"
+                     [style.box-shadow]="last ? '0 0 0 3px rgba(35,102,206,0.15)' : 'none'"
+                     [style.margin-top]="last ? '1px' : '2px'"
+                     style="border-radius: 50%; flex-shrink: 0; z-index: 1; position: relative;"></div>
+                <div style="min-width: 0; flex: 1;">
+                  <p style="font-size: 14px; font-weight: 600; color: #111827; margin: 0; word-break: break-word;">{{ p.nombre }}</p>
+                  <p style="font-size: 12px; color: #9ca3af; margin: 2px 0 0 0; white-space: nowrap;">{{ p.km }} km</p>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- Estado vacío si no hay línea seleccionada -->
+      <div *ngIf="!lineaSeleccionada" style="flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #9ca3af; gap: 12px; min-height: 300px;">
+        <svg style="width: 48px; height: 48px; opacity: 0.3;" fill="none" stroke="currentColor" stroke-width="1.2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+        </svg>
+        <p style="font-size: 14px; font-family: 'Inter', sans-serif;">Selecciona una línea para ver sus paraderos</p>
+      </div>
+
+      <!-- ===================== PANEL DERECHO ===================== -->
+      <div class="panel-der" style="width: 340px; flex-shrink: 0; display: flex; flex-direction: column; gap: 16px;" *ngIf="lineaSeleccionada">
+
+        <!-- Bus de la línea -->
+        <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1.5px solid #e5e7eb;">
+          <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin: 0 0 12px 0;">Bus de la línea</p>
+          <!-- Bus Articulado -->
+          <div *ngIf="lineaSeleccionada.tipoBus === 'Articulado'"
+               style="background: linear-gradient(160deg,#dce8fa 0%,#eef3fc 100%); border-radius: 12px; padding: 20px 12px 14px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 14px; min-height: 110px; position: relative; overflow: hidden;">
+            <svg viewBox="0 0 320 95" style="width: 100%; max-width: 300px; overflow: visible;" xmlns="http://www.w3.org/2000/svg">
+              <!-- sombra en el piso -->
+              <ellipse cx="160" cy="92" rx="135" ry="5" fill="rgba(35,102,206,0.10)"/>
+              <defs>
+                <linearGradient id="bodyGradA" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3577e0"/>
+                  <stop offset="100%" stop-color="#1a4fa3"/>
+                </linearGradient>
+                <linearGradient id="roofGradA" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4a8af4"/>
+                  <stop offset="100%" stop-color="#2366CE"/>
+                </linearGradient>
+                <linearGradient id="winGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+                  <stop offset="100%" stop-color="rgba(180,210,255,0.30)"/>
+                </linearGradient>
+                <linearGradient id="wheelGrad" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4b5563"/>
+                  <stop offset="100%" stop-color="#1f2937"/>
+                </linearGradient>
+                <filter id="softShadow" x="-5%" y="-5%" width="110%" height="130%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(20,50,120,0.25)"/>
+                </filter>
+              </defs>
+
+              <!-- === MÓDULO TRASERO === -->
+              <g filter="url(#softShadow)">
+                <!-- cuerpo trasero -->
+                <rect x="4" y="18" width="135" height="52" rx="8" fill="url(#bodyGradA)"/>
+                <!-- techo trasero -->
+                <rect x="4" y="12" width="135" height="10" rx="5" fill="url(#roofGradA)"/>
+                <!-- franja blanca lateral -->
+                <rect x="4" y="52" width="135" height="6" fill="rgba(255,255,255,0.18)"/>
+                <!-- texto línea trasero -->
+                <rect x="72" y="52" width="60" height="12" rx="3" fill="rgba(255,255,255,0.15)"/>
+                <text x="102" y="61" text-anchor="middle" font-size="7" fill="white" font-family="Inter,sans-serif" font-weight="700" letter-spacing="0.5">CORREDOR AZUL</text>
+                <!-- ventanas traseras -->
+                <rect x="12" y="22" width="30" height="20" rx="3" fill="url(#winGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="8" y="22" width="2" height="20" rx="1" fill="rgba(255,255,255,0.12)"/><!-- reflejo -->
+                <rect x="47" y="22" width="30" height="20" rx="3" fill="url(#winGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="82" y="22" width="30" height="20" rx="3" fill="url(#winGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="117" y="22" width="16" height="20" rx="3" fill="url(#winGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <!-- faro trasero -->
+                <rect x="6" y="55" width="14" height="8" rx="2" fill="#ef4444" opacity="0.9"/>
+                <rect x="7" y="56" width="5" height="6" rx="1" fill="rgba(255,255,255,0.4)"/>
+              </g>
+
+              <!-- === FUELLE (acordeón) === -->
+              <g>
+                <rect x="139" y="20" width="16" height="48" fill="#1a3a8f"/>
+                <line x1="142" y1="20" x2="142" y2="68" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                <line x1="145" y1="20" x2="145" y2="68" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                <line x1="148" y1="20" x2="148" y2="68" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+                <line x1="151" y1="20" x2="151" y2="68" stroke="rgba(255,255,255,0.15)" stroke-width="1"/>
+              </g>
+
+              <!-- === MÓDULO DELANTERO === -->
+              <g filter="url(#softShadow)">
+                <!-- cuerpo delantero -->
+                <rect x="155" y="18" width="152" height="52" rx="8" fill="url(#bodyGradA)"/>
+                <!-- techo delantero -->
+                <rect x="155" y="12" width="152" height="10" rx="5" fill="url(#roofGradA)"/>
+                <!-- franja lateral -->
+                <rect x="155" y="52" width="152" height="6" fill="rgba(255,255,255,0.18)"/>
+                <!-- número de línea -->
+                <rect x="268" y="19" width="32" height="14" rx="3" fill="rgba(255,255,255,0.22)"/>
+                <text x="284" y="29" text-anchor="middle" font-size="9" fill="white" font-family="Inter,sans-serif" font-weight="800">{{ lineaSeleccionada.id }}</text>
+                <!-- ventanas delanteras -->
+                <rect x="162" y="22" width="30" height="20" rx="3" fill="url(#winGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="197" y="22" width="30" height="20" rx="3" fill="url(#winGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="232" y="22" width="30" height="20" rx="3" fill="url(#winGrad)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <!-- parabrisas delantero (inclinado) -->
+                <polygon points="294,22 306,14 315,14 307,22" fill="url(#winGrad)" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+                <!-- frente del bus redondeado -->
+                <path d="M307 18 Q316 18 316 30 L316 66 L307 70 L307 18Z" fill="#1a4fa3"/>
+                <!-- faro delantero -->
+                <rect x="308" y="30" width="7" height="10" rx="2" fill="#fbbf24" opacity="0.95"/>
+                <rect x="309" y="31" width="3" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+                <!-- espejo retrovisor -->
+                <rect x="312" y="16" width="8" height="5" rx="1.5" fill="#0f2d6e"/>
+                <line x1="312" y1="18" x2="316" y2="18" stroke="rgba(255,255,255,0.3)" stroke-width="0.5"/>
+                <!-- puerta -->
+                <rect x="264" y="28" width="2" height="28" rx="1" fill="rgba(255,255,255,0.25)"/>
+              </g>
+
+              <!-- === RUEDAS === -->
+              <!-- rueda TI (módulo trasero izq) -->
+              <circle cx="42" cy="72" r="13" fill="url(#wheelGrad)" stroke="#111827" stroke-width="1"/>
+              <circle cx="42" cy="72" r="7" fill="#6b7280"/>
+              <circle cx="42" cy="72" r="3" fill="#9ca3af"/>
+              <line x1="42" y1="65" x2="42" y2="79" stroke="#4b5563" stroke-width="1.5"/>
+              <line x1="35" y1="72" x2="49" y2="72" stroke="#4b5563" stroke-width="1.5"/>
+
+              <!-- rueda TD (módulo trasero der) -->
+              <circle cx="122" cy="72" r="13" fill="url(#wheelGrad)" stroke="#111827" stroke-width="1"/>
+              <circle cx="122" cy="72" r="7" fill="#6b7280"/>
+              <circle cx="122" cy="72" r="3" fill="#9ca3af"/>
+              <line x1="122" y1="65" x2="122" y2="79" stroke="#4b5563" stroke-width="1.5"/>
+              <line x1="115" y1="72" x2="129" y2="72" stroke="#4b5563" stroke-width="1.5"/>
+
+              <!-- rueda DI -->
+              <circle cx="195" cy="72" r="13" fill="url(#wheelGrad)" stroke="#111827" stroke-width="1"/>
+              <circle cx="195" cy="72" r="7" fill="#6b7280"/>
+              <circle cx="195" cy="72" r="3" fill="#9ca3af"/>
+              <line x1="195" y1="65" x2="195" y2="79" stroke="#4b5563" stroke-width="1.5"/>
+              <line x1="188" y1="72" x2="202" y2="72" stroke="#4b5563" stroke-width="1.5"/>
+
+              <!-- rueda DD -->
+              <circle cx="293" cy="72" r="13" fill="url(#wheelGrad)" stroke="#111827" stroke-width="1"/>
+              <circle cx="293" cy="72" r="7" fill="#6b7280"/>
+              <circle cx="293" cy="72" r="3" fill="#9ca3af"/>
+              <line x1="293" y1="65" x2="293" y2="79" stroke="#4b5563" stroke-width="1.5"/>
+              <line x1="286" y1="72" x2="300" y2="72" stroke="#4b5563" stroke-width="1.5"/>
+
+              <!-- piso / línea de suelo -->
+              <line x1="4" y1="85" x2="316" y2="85" stroke="#c7d6f0" stroke-width="1.5" stroke-dasharray="3,4"/>
+            </svg>
+          </div>
+
+          <!-- Bus Padrón -->
+          <div *ngIf="lineaSeleccionada.tipoBus !== 'Articulado'"
+               style="background: linear-gradient(160deg,#dce8fa 0%,#eef3fc 100%); border-radius: 12px; padding: 20px 12px 14px; display: flex; align-items: flex-end; justify-content: center; margin-bottom: 14px; min-height: 110px; position: relative; overflow: hidden;">
+            <svg viewBox="0 0 240 90" style="width: 100%; max-width: 220px; overflow: visible;" xmlns="http://www.w3.org/2000/svg">
+              <defs>
+                <linearGradient id="bodyGradP" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#3577e0"/>
+                  <stop offset="100%" stop-color="#1a4fa3"/>
+                </linearGradient>
+                <linearGradient id="roofGradP" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4a8af4"/>
+                  <stop offset="100%" stop-color="#2366CE"/>
+                </linearGradient>
+                <linearGradient id="winGradP" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="rgba(255,255,255,0.55)"/>
+                  <stop offset="100%" stop-color="rgba(180,210,255,0.30)"/>
+                </linearGradient>
+                <linearGradient id="wheelGradP" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#4b5563"/>
+                  <stop offset="100%" stop-color="#1f2937"/>
+                </linearGradient>
+                <filter id="shadowP" x="-5%" y="-5%" width="110%" height="130%">
+                  <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="rgba(20,50,120,0.25)"/>
+                </filter>
+              </defs>
+
+              <!-- cuerpo principal -->
+              <g filter="url(#shadowP)">
+                <rect x="6" y="18" width="218" height="52" rx="8" fill="url(#bodyGradP)"/>
+                <!-- techo -->
+                <rect x="6" y="12" width="218" height="10" rx="5" fill="url(#roofGradP)"/>
+                <!-- franja lateral blanca -->
+                <rect x="6" y="52" width="218" height="6" fill="rgba(255,255,255,0.18)"/>
+                <!-- número de línea -->
+                <rect x="180" y="19" width="36" height="14" rx="3" fill="rgba(255,255,255,0.22)"/>
+                <text x="198" y="29" text-anchor="middle" font-size="9" fill="white" font-family="Inter,sans-serif" font-weight="800">{{ lineaSeleccionada.id }}</text>
+                <!-- texto corredor -->
+                <rect x="60" y="52" width="90" height="12" rx="3" fill="rgba(255,255,255,0.15)"/>
+                <text x="105" y="61" text-anchor="middle" font-size="7" fill="white" font-family="Inter,sans-serif" font-weight="700" letter-spacing="0.5">CORREDOR AZUL</text>
+                <!-- ventanas -->
+                <rect x="14" y="22" width="32" height="20" rx="3" fill="url(#winGradP)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="51" y="22" width="32" height="20" rx="3" fill="url(#winGradP)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="88" y="22" width="32" height="20" rx="3" fill="url(#winGradP)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <rect x="125" y="22" width="32" height="20" rx="3" fill="url(#winGradP)" stroke="rgba(255,255,255,0.3)" stroke-width="0.8"/>
+                <!-- reflejo sutil en ventanas -->
+                <rect x="16" y="23" width="4" height="18" rx="1" fill="rgba(255,255,255,0.15)"/>
+                <!-- parabrisas -->
+                <polygon points="210,22 224,14 232,14 224,22" fill="url(#winGradP)" stroke="rgba(255,255,255,0.4)" stroke-width="0.8"/>
+                <!-- frente redondeado -->
+                <path d="M224 18 Q232 18 232 30 L232 66 L224 70 L224 18Z" fill="#1a4fa3"/>
+                <!-- faro delantero -->
+                <rect x="225" y="30" width="6" height="10" rx="2" fill="#fbbf24" opacity="0.95"/>
+                <rect x="226" y="31" width="2" height="8" rx="1" fill="rgba(255,255,255,0.5)"/>
+                <!-- espejo retrovisor -->
+                <rect x="228" y="16" width="7" height="4" rx="1.5" fill="#0f2d6e"/>
+                <!-- faro trasero -->
+                <rect x="7" y="55" width="12" height="8" rx="2" fill="#ef4444" opacity="0.9"/>
+                <rect x="8" y="56" width="4" height="6" rx="1" fill="rgba(255,255,255,0.35)"/>
+                <!-- puerta -->
+                <rect x="172" y="28" width="2" height="28" rx="1" fill="rgba(255,255,255,0.25)"/>
+              </g>
+
+              <!-- rueda trasera -->
+              <circle cx="52" cy="73" r="13" fill="url(#wheelGradP)" stroke="#111827" stroke-width="1"/>
+              <circle cx="52" cy="73" r="7" fill="#6b7280"/>
+              <circle cx="52" cy="73" r="3" fill="#9ca3af"/>
+              <line x1="52" y1="66" x2="52" y2="80" stroke="#4b5563" stroke-width="1.5"/>
+              <line x1="45" y1="73" x2="59" y2="73" stroke="#4b5563" stroke-width="1.5"/>
+
+              <!-- rueda delantera -->
+              <circle cx="188" cy="73" r="13" fill="url(#wheelGradP)" stroke="#111827" stroke-width="1"/>
+              <circle cx="188" cy="73" r="7" fill="#6b7280"/>
+              <circle cx="188" cy="73" r="3" fill="#9ca3af"/>
+              <line x1="188" y1="66" x2="188" y2="80" stroke="#4b5563" stroke-width="1.5"/>
+              <line x1="181" y1="73" x2="195" y2="73" stroke="#4b5563" stroke-width="1.5"/>
+
+              <!-- línea de suelo -->
+              <line x1="6" y1="86" x2="232" y2="86" stroke="#c7d6f0" stroke-width="1.5" stroke-dasharray="3,4"/>
+            </svg>
+          </div>
+
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <div style="background: #f0f4fb; border-radius: 10px; padding: 10px 12px;">
+              <p style="font-size: 13px; font-weight: 700; color: #2366CE; margin: 0;">{{ lineaSeleccionada.tipoBus }}</p>
+              <p style="font-size: 11px; color: #9ca3af; margin: 3px 0 0 0;">Tipo de bus</p>
+            </div>
+            <div style="background: #f0f4fb; border-radius: 10px; padding: 10px 12px;">
+              <p style="font-size: 13px; font-weight: 700; color: #2366CE; margin: 0;">{{ lineaSeleccionada.pasajeros }}</p>
+              <p style="font-size: 11px; color: #9ca3af; margin: 3px 0 0 0;">Pasajeros</p>
+            </div>
+          </div>
+
+          <div style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px;">
+            <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: rgba(34,197,94,0.1); color: #16a34a;">Accesible</span>
+            <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: rgba(59,130,246,0.1); color: #2563eb;">WiFi</span>
+            <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: rgba(245,158,11,0.1); color: #b45309;">A/C</span>
+            <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: rgba(168,85,247,0.1); color: #7c3aed;">Tarjeta</span>
+          </div>
+        </div>
+
+        <!-- Próximos buses -->
+        <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1.5px solid #e5e7eb;">
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
+            <p style="font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: #6b7280; margin: 0;">Próximos Buses</p>
+            <span style="font-size: 11px; font-weight: 600; color: #16a34a; display: flex; align-items: center; gap: 4px;">
+              <span style="width: 6px; height: 6px; background: #22c55e; border-radius: 50%; display: inline-block;"></span>
+              En vivo
+            </span>
+          </div>
+
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div *ngFor="let bus of proximosBuses" style="display: flex; align-items: center; gap: 10px; padding: 10px 12px; background: #f9fafb; border-radius: 10px;">
+              <div style="text-align: center; min-width: 42px;">
+                <p style="font-size: 10px; color: #9ca3af; margin: 0;">En</p>
+                <p style="font-size: 20px; font-weight: 800; color: #111827; margin: 0; line-height: 1.1;">{{ bus.minutos }}</p>
+                <p style="font-size: 10px; color: #9ca3af; margin: 0;">min</p>
+              </div>
+              <div style="flex: 1; min-width: 0;">
+                <p style="font-size: 11px; color: #6b7280; margin: 0 0 4px 0;">Capacidad</p>
+                <div style="background: #e5e7eb; border-radius: 4px; height: 6px; width: 100%;">
+                  <div [style.width]="bus.capacidad + '%'"
+                       [style.background]="bus.capacidad < 50 ? '#22c55e' : bus.capacidad < 80 ? '#f59e0b' : '#ef4444'"
+                       style="height: 100%; border-radius: 4px; transition: width 0.3s;"></div>
+                </div>
+                <p style="font-size: 11px; font-weight: 600; margin: 3px 0 0 0;"
+                   [style.color]="bus.capacidad < 50 ? '#16a34a' : bus.capacidad < 80 ? '#b45309' : '#dc2626'">
+                  {{ bus.capacidad }}%
+                </p>
+              </div>
+              <span style="font-size: 10px; font-weight: 700; background: #f0f4fb; color: #2366CE; padding: 4px 8px; border-radius: 6px; white-space: nowrap;">{{ bus.placa }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Horario de aceptación -->
+        <div style="background: #fff; border-radius: 16px; padding: 16px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); border: 1.5px solid #e5e7eb;">
+          <p style="font-size: 12px; font-weight: 600; color: #374151; margin: 0 0 10px 0;">Horario de aceptación</p>
+          <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; text-align: center;">
+            <div>
+              <p style="font-size: 11px; font-weight: 700; color: #374151; margin: 0;">L-V</p>
+              <p style="font-size: 11px; color: #6b7280; margin: 3px 0 0 0;">5:00 – 23:00</p>
+            </div>
+            <div>
+              <p style="font-size: 11px; font-weight: 700; color: #374151; margin: 0;">Sab</p>
+              <p style="font-size: 11px; color: #6b7280; margin: 3px 0 0 0;">5:30 – 22:30</p>
+            </div>
+            <div>
+              <p style="font-size: 11px; font-weight: 700; color: #374151; margin: 0;">Dom</p>
+              <p style="font-size: 11px; color: #6b7280; margin: 3px 0 0 0;">6:00 – 21:00</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+    </div><!-- fin layout 3 columnas -->
+
+    <!-- Footer -->
+    <div class="mt-12 text-center text-xs text-gray-400" style="font-family: 'Inter', sans-serif; margin-top: 48px;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div><!-- fin contenido principal -->
+
+</div>

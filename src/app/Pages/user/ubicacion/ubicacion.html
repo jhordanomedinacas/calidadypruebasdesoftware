@@ -1,0 +1,1274 @@
+<style>
+  /* ════════════════════════════════════════════════════════════
+     CORREDOR AZUL · MAPA-PRIMERO
+     Layout: mapa pantalla completa + overlays flotantes
+  ════════════════════════════════════════════════════════════ */
+
+  /* ── Reset de página ── */
+  .ubicacion-root {
+    position: relative;
+    width: 100%;
+    height: calc(100vh - 60px); /* 60px = navbar (36px logo + 24px padding) */
+    display: flex;
+    flex-direction: column;
+    background: #0f172a;
+    font-family: 'Inter', sans-serif;
+    overflow: hidden;
+  }
+
+  /* ── Barra superior delgada (navbar slot) ── */
+  .top-bar {
+    position: relative;
+    z-index: 1000;
+    flex-shrink: 0;
+  }
+
+  /* ── Contenedor del mapa: ocupa todo el espacio restante ── */
+  .mapa-full {
+    position: relative;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #mapa-unificado {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1; /* Leaflet se queda abajo de los overlays */
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     SEARCH BAR — flotante sobre el mapa, arriba
+  ════════════════════════════════════════════════════════════ */
+  .search-overlay {
+    position: absolute;
+    top: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(560px, calc(100% - 32px));
+    z-index: 700;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .search-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: #fff;
+    border-radius: 16px;
+    padding: 10px 14px;
+    box-shadow: 0 4px 24px rgba(0,0,0,0.18), 0 1px 4px rgba(0,0,0,0.10);
+  }
+
+  .search-ia-icon {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    border-radius: 9px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    font-size: 15px;
+    font-weight: 500;
+    color: #111827;
+    font-family: 'Inter', sans-serif;
+    background: transparent;
+  }
+  .search-input::placeholder { color: #9ca3af; font-weight: 400; }
+
+  .search-btn {
+    padding: 7px 18px;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .search-btn:hover { opacity: 0.88; }
+  .search-btn:disabled { opacity: 0.55; cursor: default; }
+
+  /* ── Respuesta IA (burbuja bajo la barra) ── */
+  .ia-response-bubble {
+    background: rgba(255,255,255,0.97);
+    border: 1.5px solid #bfdbfe;
+    border-radius: 14px;
+    padding: 14px 18px;
+    font-size: 13.5px;
+    line-height: 1.6;
+    color: #1e3a6e;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.12);
+    animation: bubbleIn 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  @keyframes bubbleIn {
+    from { opacity: 0; transform: translateY(-8px) scale(0.98); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .ia-response-bubble .ia-header {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #2366CE;
+    margin-bottom: 6px;
+  }
+  .ia-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-top: 10px;
+  }
+  .ia-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #eff6ff;
+    border: 1.5px solid #bfdbfe;
+    border-radius: 10px;
+    padding: 5px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #1d4ed8;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .ia-chip:hover { background: #dbeafe; }
+  .ia-chip.green { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; cursor: default; }
+
+  /* Typing dots */
+  .typing-dots span {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: #2366CE;
+    border-radius: 50%;
+    margin: 0 2px;
+    animation: typingBounce 1.2s infinite;
+  }
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingBounce {
+    0%, 60%, 100% { transform: translateY(0); }
+    30%           { transform: translateY(-6px); }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     GPS PILL — esquina superior derecha
+  ════════════════════════════════════════════════════════════ */
+  .gps-pill {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    z-index: 700;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,0.96);
+    border-radius: 12px;
+    padding: 8px 14px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.15);
+    font-size: 12px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: #374151;
+    cursor: pointer;
+    transition: box-shadow 0.15s;
+  }
+  .gps-pill:hover { box-shadow: 0 4px 20px rgba(0,0,0,0.22); }
+  .gps-pill.activo { color: #15803d; }
+  .gps-pill.cargando { color: #2366CE; }
+  .gps-pill.error { color: #ef4444; }
+
+  /* ════════════════════════════════════════════════════════════
+     PARADERO CERCANO PILL — bajo el GPS pill
+  ════════════════════════════════════════════════════════════ */
+  .paradero-pill {
+    position: absolute;
+    top: 60px;
+    right: 16px;
+    z-index: 700;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    background: rgba(255,255,255,0.96);
+    border: 1.5px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 7px 13px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.12);
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    color: #1d4ed8;
+    cursor: pointer;
+    max-width: 220px;
+    transition: box-shadow 0.15s;
+    animation: bubbleIn 0.3s ease;
+  }
+  .paradero-pill:hover { box-shadow: 0 4px 18px rgba(35,102,206,0.22); }
+
+  /* ════════════════════════════════════════════════════════════
+     MAPA PLACEHOLDER (sin GPS)
+  ════════════════════════════════════════════════════════════ */
+  .mapa-placeholder {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, #1e293b 0%, #0f1f3d 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    z-index: 2;
+  }
+  .mapa-placeholder-spinner {
+    width: 52px; height: 52px;
+    border: 4px solid rgba(35,102,206,0.25);
+    border-top-color: #2366CE;
+    border-radius: 50%;
+    animation: spin 0.9s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ════════════════════════════════════════════════════════════
+     BOTTOM SHEET — cards de buses deslizables
+  ════════════════════════════════════════════════════════════ */
+  .bottom-sheet {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 800;
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden;
+  }
+
+  /* Handle / drag indicator */
+  .sheet-handle-area {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px 0 0 0;
+    background: rgba(255,255,255,0.97);
+    border-radius: 22px 22px 0 0;
+    box-shadow: 0 -4px 28px rgba(0,0,0,0.16);
+    cursor: pointer;
+    user-select: none;
+  }
+  .sheet-handle-bar {
+    width: 42px; height: 4px;
+    background: #d1d5db;
+    border-radius: 999px;
+    margin-bottom: 10px;
+  }
+
+  /* Header del sheet */
+  .sheet-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 20px 12px 20px;
+    background: rgba(255,255,255,0.97);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  .sheet-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .sheet-count-badge {
+    background: #eff6ff;
+    color: #2366CE;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 8px;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+
+  /* Filtros inline compactos */
+  .sheet-filters {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    padding: 0 20px 14px 20px;
+    background: rgba(255,255,255,0.97);
+  }
+
+  .filter-select-compact {
+    appearance: none;
+    -webkit-appearance: none;
+    background: #f8fafc;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    padding: 7px 28px 7px 11px;
+    font-size: 12px;
+    font-weight: 600;
+    color: #374151;
+    font-family: 'Inter', sans-serif;
+    cursor: pointer;
+    outline: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' fill='none' stroke='%236B7280' stroke-width='1.5' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 9px center;
+    transition: border-color 0.15s;
+    flex-shrink: 0;
+  }
+  .filter-select-compact:focus { border-color: #2366CE; }
+
+  .filter-search-btn {
+    padding: 7px 16px;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    flex-shrink: 0;
+    transition: opacity 0.15s;
+  }
+  .filter-search-btn:hover { opacity: 0.88; }
+
+  /* Scroll de cards */
+  .sheet-cards-scroll {
+    background: rgba(255,255,255,0.97);
+    overflow-y: auto;
+    max-height: 0;
+    transition: max-height 0.38s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .sheet-cards-scroll.expanded {
+    max-height: 320px;
+  }
+  .sheet-cards-scroll::-webkit-scrollbar { width: 4px; }
+  .sheet-cards-scroll::-webkit-scrollbar-track { background: transparent; }
+  .sheet-cards-scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 4px; }
+
+  .sheet-cards-inner {
+    padding: 0 220px 16px 16px; /* 220px derecha = espacio para el chatbot */
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  /* ── Bus card (horizontal compacta) ── */
+  .bus-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 14px;
+    padding: 12px 14px;
+    animation: cardIn 0.3s cubic-bezier(0.4,0,0.2,1) both;
+    transition: box-shadow 0.2s, border-color 0.2s, transform 0.2s;
+  }
+  .bus-row:hover {
+    box-shadow: 0 4px 16px rgba(35,102,206,0.12);
+    border-color: #bfdbfe;
+    transform: translateY(-1px);
+  }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .bus-row:nth-child(1) { animation-delay: 0ms; }
+  .bus-row:nth-child(2) { animation-delay: 50ms; }
+  .bus-row:nth-child(3) { animation-delay: 100ms; }
+  .bus-row:nth-child(4) { animation-delay: 150ms; }
+
+  /* Línea badge */
+  .linea-badge {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .linea-badge-label { font-size: 7px; font-weight: 700; color: rgba(255,255,255,0.7); text-transform: uppercase; }
+  .linea-badge-num   { font-size: 15px; font-weight: 800; color: #fff; line-height: 1.1; }
+
+  /* Info central */
+  .bus-row-info { flex: 1; min-width: 0; }
+  .bus-row-ruta {
+    font-size: 13px; font-weight: 700; color: #111827;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    font-family: 'Inter', sans-serif;
+  }
+  .bus-row-meta {
+    display: flex; align-items: center; gap: 10px; margin-top: 3px; flex-wrap: wrap;
+  }
+  .bus-row-meta-item {
+    display: flex; align-items: center; gap: 4px;
+    font-size: 11px; font-weight: 600; color: #6b7280;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ETA chip grande */
+  .eta-chip-big {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    background: #fefce8;
+    border: 1.5px solid #fde68a;
+    border-radius: 11px;
+    padding: 6px 10px;
+    min-width: 54px;
+  }
+  .eta-chip-big.eta-ok { background: #f0fdf4; border-color: #bbf7d0; }
+  .eta-chip-num { font-size: 20px; font-weight: 800; color: #92400e; line-height: 1; font-family: 'Inter', sans-serif; }
+  .eta-chip-big.eta-ok .eta-chip-num { color: #15803d; }
+  .eta-chip-label { font-size: 9px; font-weight: 700; text-transform: uppercase; color: #92400e; font-family: 'Inter', sans-serif; }
+  .eta-chip-big.eta-ok .eta-chip-label { color: #15803d; }
+
+  /* Status dot + label */
+  .status-dot {
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .status-dot.green  { background: #22c55e; box-shadow: 0 0 0 2px rgba(34,197,94,0.25); }
+  .status-dot.yellow { background: #f59e0b; box-shadow: 0 0 0 2px rgba(245,158,11,0.25); }
+  .status-dot.red    { background: #ef4444; box-shadow: 0 0 0 2px rgba(239,68,68,0.25); }
+
+  /* Actions */
+  .bus-row-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  .btn-seguir {
+    padding: 7px 13px;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    color: #fff;
+    border: none;
+    border-radius: 9px;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    transition: opacity 0.15s;
+    white-space: nowrap;
+  }
+  .btn-seguir:hover { opacity: 0.87; }
+  .btn-siguiendo {
+    padding: 7px 12px;
+    background: #dcfce7;
+    color: #15803d;
+    border: 1.5px solid #bbf7d0;
+    border-radius: 9px;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    white-space: nowrap;
+  }
+
+  .btn-ruta {
+    padding: 7px 12px;
+    background: #fff;
+    color: #2366CE;
+    border: 1.5px solid #2366CE;
+    border-radius: 9px;
+    font-size: 11px; font-weight: 700;
+    cursor: pointer;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 5px;
+    transition: background 0.15s;
+    white-space: nowrap;
+  }
+  .btn-ruta:hover, .btn-ruta.active { background: #eff6ff; }
+
+  .btn-quitar {
+    width: 30px; height: 30px;
+    background: #fef2f2;
+    border: 1.5px solid #fecaca;
+    color: #ef4444;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    transition: background 0.15s;
+    flex-shrink: 0;
+  }
+  .btn-quitar:hover { background: #fee2e2; }
+
+  /* ── Paginación dentro del sheet ── */
+  .sheet-pagination {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    padding: 10px 16px 16px 16px;
+    background: rgba(255,255,255,0.97);
+  }
+  .pg-btn {
+    width: 30px; height: 30px;
+    background: #fff;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 8px;
+    font-size: 12px; font-weight: 600;
+    color: #374151;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.15s;
+    font-family: 'Inter', sans-serif;
+  }
+  .pg-btn.active { background: #2366CE; color: #fff; border-color: #2366CE; }
+  .pg-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .pg-btn:not(.active):not(:disabled):hover { background: #eff6ff; border-color: #bfdbfe; }
+
+  /* ════════════════════════════════════════════════════════════
+     BANNER DE SEGUIMIENTO — flotante sobre el mapa (parte superior del sheet)
+  ════════════════════════════════════════════════════════════ */
+  .following-banner {
+    position: absolute;
+    bottom: 0;
+    left: 0; right: 0;
+    z-index: 810;
+    background: linear-gradient(135deg, #f0fdf4, #dcfce7);
+    border-top: 2px solid #86efac;
+    border-radius: 22px 22px 0 0;
+    padding: 14px 220px 14px 20px; /* 220px derecha = espacio para el chatbot */
+    box-shadow: 0 -4px 24px rgba(0,0,0,0.14);
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+    animation: slideUp 0.35s cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes slideUp {
+    from { transform: translateY(100%); opacity: 0; }
+    to   { transform: translateY(0); opacity: 1; }
+  }
+
+  .following-icon {
+    width: 38px; height: 38px;
+    background: linear-gradient(135deg, #15803d, #22c55e);
+    border-radius: 11px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .following-info { flex: 1; min-width: 100px; }
+  .following-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.09em; color: #15803d;
+    font-family: 'Inter', sans-serif; margin: 0 0 2px 0;
+  }
+  .following-bus-name {
+    font-size: 13px; font-weight: 700; color: #14532d;
+    font-family: 'Inter', sans-serif; margin: 0; white-space: nowrap;
+    overflow: hidden; text-overflow: ellipsis;
+  }
+
+  .following-eta-box {
+    display: flex; align-items: baseline; gap: 3px;
+    background: #fff; border: 1.5px solid #86efac;
+    border-radius: 11px; padding: 6px 13px; flex-shrink: 0;
+  }
+  .following-eta-label { font-size: 8px; font-weight: 700; color: #15803d; text-transform: uppercase; }
+  .following-eta-num   { font-size: 26px; font-weight: 800; color: #14532d; line-height: 1; margin: 0 4px; }
+  .following-eta-unit  { font-size: 12px; font-weight: 600; color: #15803d; }
+
+  .following-progress { flex: 1; min-width: 100px; max-width: 200px; }
+  .progress-track {
+    background: #d1fae5; border-radius: 999px; height: 5px; overflow: hidden;
+  }
+  .progress-fill {
+    background: linear-gradient(90deg, #22c55e, #15803d);
+    height: 100%; border-radius: 999px;
+    transition: width 1s ease;
+  }
+  .progress-labels {
+    display: flex; justify-content: space-between; margin-top: 3px;
+  }
+  .progress-label-text { font-size: 9px; color: #6b7280; font-family: 'Inter', sans-serif; }
+
+  /* Stepper compacto en el banner */
+  .stepper-inline {
+    display: flex; align-items: center; gap: 4px;
+    flex-shrink: 0;
+  }
+  .step-chip {
+    font-size: 10px; font-weight: 600; color: #9ca3af;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 4px;
+  }
+  .step-chip.active { color: #1d4ed8; }
+  .step-chip.done   { color: #22c55e; }
+  .step-sep { width: 16px; height: 1px; background: #d1d5db; }
+
+  .btn-dejar {
+    padding: 7px 13px;
+    background: #fff; border: 1.5px solid #86efac;
+    border-radius: 9px; font-size: 11px; font-weight: 700;
+    color: #15803d; cursor: pointer; font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 5px; flex-shrink: 0;
+    transition: background 0.15s;
+  }
+  .btn-dejar:hover { background: #f0fdf4; }
+
+  /* ════════════════════════════════════════════════════════════
+     BANNER VIENDO RUTA — flotante sobre mapa
+  ════════════════════════════════════════════════════════════ */
+  .ruta-banner {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(500px, calc(100% - 32px));
+    z-index: 700;
+    background: rgba(255,255,255,0.97);
+    border: 1.5px solid #93c5fd;
+    border-radius: 14px;
+    padding: 10px 16px;
+    box-shadow: 0 4px 20px rgba(35,102,206,0.15);
+    display: flex; align-items: center; gap: 10px;
+    animation: bubbleIn 0.28s ease;
+    flex-wrap: wrap;
+  }
+  .ruta-banner-icon {
+    width: 30px; height: 30px;
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    border-radius: 9px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     ETA INLINE EN MAPA — tira flotante (cuando está calculado)
+  ════════════════════════════════════════════════════════════ */
+  .eta-map-strip {
+    position: absolute;
+    top: 80px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(500px, calc(100% - 32px));
+    z-index: 690;
+    background: rgba(255,255,255,0.97);
+    border: 1.5px solid #fde68a;
+    border-radius: 14px;
+    padding: 10px 16px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.10);
+    display: flex; align-items: center; gap: 14px;
+    animation: bubbleIn 0.3s ease;
+    flex-wrap: wrap;
+  }
+
+  .eta-strip-card {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 1; min-width: 80px; padding: 6px 10px;
+    border-radius: 10px; border: 1.5px solid #e5e7eb;
+    background: #fafafa;
+  }
+  .eta-strip-num {
+    font-size: 24px; font-weight: 800; font-family: 'Inter', sans-serif; line-height: 1;
+  }
+  .eta-strip-label {
+    font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.07em; font-family: 'Inter', sans-serif;
+    margin-top: 2px;
+  }
+  .eta-strip-sub {
+    font-size: 10px; color: #9ca3af; font-family: 'Inter', sans-serif; margin-top: 1px;
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     LEYENDA DEL MAPA — flotante abajo izquierda
+  ════════════════════════════════════════════════════════════ */
+  .mapa-leyenda-float {
+    position: absolute;
+    bottom: 120px;
+    left: 14px;
+    z-index: 695;
+    background: rgba(255,255,255,0.94);
+    border-radius: 12px;
+    padding: 9px 12px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.13);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .leyenda-item {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 600; color: #374151;
+    font-family: 'Inter', sans-serif;
+  }
+
+  /* ── Alertas badge sobre el mapa ── */
+  .alertas-float {
+    position: absolute;
+    bottom: 120px;
+    right: 14px;
+    z-index: 695;
+    background: rgba(255,255,255,0.94);
+    border-radius: 12px;
+    padding: 8px 12px;
+    box-shadow: 0 2px 14px rgba(0,0,0,0.13);
+    font-size: 11px; font-weight: 600;
+    color: #15803d;
+    font-family: 'Inter', sans-serif;
+    display: flex; align-items: center; gap: 6px;
+    max-width: 200px;
+  }
+  .alertas-float.warning { color: #b45309; }
+  .alertas-float.danger  { color: #b91c1c; }
+
+  /* ════════════════════════════════════════════════════════════
+     PULSE DOT
+  ════════════════════════════════════════════════════════════ */
+  .pulse-dot {
+    position: relative;
+    display: inline-block;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .pulse-dot::after {
+    content: '';
+    position: absolute;
+    inset: -3px;
+    border-radius: 50%;
+    animation: pulse 1.8s ease-out infinite;
+  }
+  .pulse-dot.green  { background: #22c55e; }
+  .pulse-dot.green::after  { border: 2px solid #22c55e; }
+  .pulse-dot.yellow { background: #f59e0b; }
+  .pulse-dot.yellow::after { border: 2px solid #f59e0b; }
+  @keyframes pulse {
+    0%   { transform: scale(1); opacity: 0.6; }
+    70%  { transform: scale(2.2); opacity: 0; }
+    100% { transform: scale(2.2); opacity: 0; }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     RESPONSIVE
+  ════════════════════════════════════════════════════════════ */
+  @media (max-width: 640px) {
+    .eta-map-strip { display: none; } /* colapsa en móvil muy pequeño */
+    .mapa-leyenda-float { display: none; }
+    .bus-row-meta .bus-row-meta-item:last-child { display: none; }
+    .following-progress { display: none; }
+    .bus-row-actions { gap: 4px; }
+    .btn-ruta span { display: none; } /* solo icono */
+    .search-overlay { top: 10px; }
+  }
+
+  /* ════════════════════════════════════════════════════════════
+     SPINNER GPS en el mapa
+  ════════════════════════════════════════════════════════════ */
+  .spinner {
+    width: 16px; height: 16px;
+    border: 2px solid rgba(35,102,206,0.25);
+    border-top-color: #2366CE;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+</style>
+
+<!-- ══════════════════════════════════════════════════════════
+     ROOT — Pantalla completa, mapa-primero
+══════════════════════════════════════════════════════════ -->
+<div class="ubicacion-root">
+
+  <!-- NAVBAR -->
+  <div class="top-bar">
+    <app-navbar (logout)="onLogout()"></app-navbar>
+  </div>
+
+  <!-- MAPA FULL-SCREEN -->
+  <div class="mapa-full">
+
+    <!-- Placeholder mientras carga el GPS / mapa -->
+    <div *ngIf="estadoGps !== 'activo'" class="mapa-placeholder">
+      <div class="mapa-placeholder-spinner"></div>
+      <p style="font-size: 13px; font-weight: 600; color: rgba(255,255,255,0.55); margin: 0; font-family: 'Inter', sans-serif;">
+        {{ estadoGps === 'cargando' ? 'Obteniendo ubicación GPS...' : estadoGps === 'error' ? 'No se pudo obtener GPS' : 'Iniciando mapa...' }}
+      </p>
+    </div>
+
+    <!-- Mapa Leaflet -->
+    <div id="mapa-unificado"></div>
+
+    <!-- ── SEARCH BAR FLOTANTE (arriba centro) ── -->
+    <div class="search-overlay">
+      <div class="search-bar">
+        <div class="search-ia-icon">
+          <svg width="15" height="15" fill="#fff" viewBox="0 0 24 24">
+            <path d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"/>
+          </svg>
+        </div>
+        <input
+          class="search-input"
+          type="text"
+          placeholder="¿A dónde vas? La IA encuentra tu ruta..."
+          [(ngModel)]="preguntaDestino"
+          (keyup.enter)="consultarIA()"
+        />
+        <button class="search-btn" (click)="consultarIA()" [disabled]="estadoIA === 'pensando'">
+          <ng-container *ngIf="estadoIA !== 'pensando'">Buscar</ng-container>
+          <ng-container *ngIf="estadoIA === 'pensando'">
+            <div class="typing-dots" style="display:flex;align-items:center;">
+              <span></span><span></span><span></span>
+            </div>
+          </ng-container>
+        </button>
+      </div>
+
+      <!-- Respuesta IA -->
+      <div *ngIf="estadoIA === 'respondido'" class="ia-response-bubble">
+        <p class="ia-header">Asistente IA · Corredor Azul</p>
+        <p style="margin: 0; font-size: 13.5px; line-height: 1.6;">{{ respuestaIA }}</p>
+        <div *ngIf="paraderoDestinoIA || paraderoMasCercano" class="ia-chip-row">
+          <button *ngIf="paraderoDestinoIA"
+            class="ia-chip"
+            (click)="irAlMapaConDestino(paraderoDestinoIA)">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+            </svg>
+            Destino: {{ paraderoDestinoIA.nombre }}
+          </button>
+          <span *ngIf="paraderoDestinoIA" class="ia-chip green">
+            Líneas: {{ paraderoDestinoIA.lineas.join(', ') }}
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── GPS STATUS PILL (arriba derecha) ── -->
+    <div class="gps-pill"
+         [class.activo]="estadoGps === 'activo'"
+         [class.cargando]="estadoGps === 'cargando'"
+         [class.error]="estadoGps === 'error'"
+         (click)="estadoGps !== 'activo' && activarGPS()">
+      <ng-container *ngIf="estadoGps === 'activo'">
+        <span class="pulse-dot green"></span>
+        GPS activo
+      </ng-container>
+      <ng-container *ngIf="estadoGps === 'cargando'">
+        <div class="spinner"></div>
+        Localizando...
+      </ng-container>
+      <ng-container *ngIf="estadoGps === 'error'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+        </svg>
+        Reintentar GPS
+      </ng-container>
+      <ng-container *ngIf="estadoGps === 'inactivo'">
+        <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+        </svg>
+        Activar GPS
+      </ng-container>
+    </div>
+
+    <!-- ── PARADERO MÁS CERCANO PILL ── -->
+    <button *ngIf="estadoGps === 'activo' && paraderoMasCercano"
+      class="paradero-pill"
+      (click)="irAlMapaConDestino(paraderoMasCercano)">
+      <span class="pulse-dot green"></span>
+      <span style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+        {{ paraderoMasCercano.nombre }} · {{ formatearDistancia(distanciaAlParadero) }}
+      </span>
+      <svg width="10" height="10" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24" style="flex-shrink:0;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 19.5l15-15M4.5 4.5h15v15"/>
+      </svg>
+    </button>
+
+    <!-- ── ETA STRIP (cuando hay ETA calculado y NO estamos siguiendo) ── -->
+    <div *ngIf="estadoETA === 'calculado' && !busSiguiendo" class="eta-map-strip">
+      <!-- Card 1: ETA ML -->
+      <div class="eta-strip-card" style="border-color:#fde68a;background:#fefce8;">
+        <div class="eta-strip-num" style="color:#92400e;">{{ etaMinutos }}</div>
+        <div class="eta-strip-label" style="color:#92400e;">min · ETA ML</div>
+        <div class="eta-strip-sub">Al paradero</div>
+      </div>
+      <!-- Card 2: Clima -->
+      <div class="eta-strip-card" style="border-color:#e0f2fe;background:#f0f9ff;">
+        <div class="eta-strip-num" style="color:#0369a1;font-size:18px;padding-top:3px;">{{ etaClima | titlecase }}</div>
+        <div class="eta-strip-label" style="color:#0369a1;">Clima Lima</div>
+        <div class="eta-strip-sub">Sin lluvia activa</div>
+      </div>
+      <!-- Alertas inline -->
+      <div style="flex:1;min-width:80px;">
+        <div *ngIf="!etaHayAccidente && !etaHayEvento"
+             style="font-size:11px;font-weight:600;color:#15803d;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;">
+          <svg width="13" height="13" fill="none" stroke="#22c55e" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Sin incidentes en ruta
+        </div>
+        <div *ngIf="etaHayAccidente"
+             style="font-size:11px;font-weight:600;color:#b91c1c;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:5px;">
+          <svg width="13" height="13" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+          </svg>
+          Accidente detectado
+        </div>
+        <div *ngIf="etaHoraPunta" style="display:inline-flex;align-items:center;gap:4px;background:#fef9c3;border:1px solid #fde68a;border-radius:6px;padding:2px 8px;font-size:10px;font-weight:700;color:#92400e;margin-top:4px;">
+          Hora punta activa
+        </div>
+        <span style="font-size:9px;color:#9ca3af;font-family:'Inter',sans-serif;display:block;margin-top:2px;">Actualizado {{ etaTimestamp }}</span>
+      </div>
+      <!-- Botón cerrar -->
+      <button (click)="estadoETA = 'idle'"
+        style="width:26px;height:26px;background:#f3f4f6;border:none;border-radius:7px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#6b7280;">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ── ERROR ETA ── -->
+    <div *ngIf="estadoETA === 'error'"
+         class="eta-map-strip"
+         style="border-color:#fecaca;background:#fef2f2;">
+      <svg width="18" height="18" fill="none" stroke="#ef4444" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+      </svg>
+      <div style="flex:1;">
+        <p style="font-size:12px;font-weight:600;color:#b91c1c;margin:0;font-family:'Inter',sans-serif;">Modelo ML no disponible</p>
+        <p style="font-size:10px;color:#ef4444;margin:0;font-family:'Inter',sans-serif;">FastAPI en :8001 no responde</p>
+      </div>
+      <button (click)="consultarETA()"
+        style="padding:6px 12px;background:#ef4444;color:#fff;border:none;border-radius:8px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;cursor:pointer;">
+        Reintentar
+      </button>
+    </div>
+
+    <!-- ── BANNER VIENDO RUTA ── -->
+    <div *ngIf="busViendoRuta && !busSiguiendo" class="ruta-banner">
+      <div class="ruta-banner-icon">
+        <svg width="14" height="14" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497z"/>
+        </svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <p style="font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:#1d4ed8;font-family:'Inter',sans-serif;margin:0 0 1px 0;">Viendo paraderos</p>
+        <p style="font-size:13px;font-weight:700;color:#1e3a6e;font-family:'Inter',sans-serif;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+          L{{ busViendoRuta.linea }} · {{ busViendoRuta.origen }} → {{ busViendoRuta.destino }}
+        </p>
+      </div>
+      <span style="background:#eff6ff;border:1.5px solid #93c5fd;border-radius:8px;padding:4px 10px;font-size:11px;font-weight:700;color:#1d4ed8;font-family:'Inter',sans-serif;flex-shrink:0;">
+        {{ contarParaderosPorLinea(busViendoRuta.linea) }} paraderos
+      </span>
+      <button (click)="cerrarVistaRuta()"
+        style="padding:6px 12px;background:#fff;border:1.5px solid #93c5fd;border-radius:8px;font-family:'Inter',sans-serif;font-size:11px;font-weight:700;color:#1d4ed8;cursor:pointer;flex-shrink:0;">
+        Cerrar
+      </button>
+    </div>
+
+    <!-- ── LEYENDA FLOTANTE (abajo izquierda) ── -->
+    <div class="mapa-leyenda-float" *ngIf="!busSiguiendo">
+      <div class="leyenda-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="5" fill="#2366CE" stroke="#fff" stroke-width="2"/>
+          <circle cx="8" cy="8" r="7" fill="none" stroke="rgba(35,102,206,0.3)" stroke-width="2"/>
+        </svg>
+        Mi ubicación
+      </div>
+      <div class="leyenda-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="3" width="14" height="10" rx="3" fill="#1a3a8f"/>
+          <rect x="4" y="6" width="3" height="2" rx="0.5" fill="#fff" opacity="0.8"/>
+          <rect x="9" y="6" width="3" height="2" rx="0.5" fill="#fff" opacity="0.8"/>
+        </svg>
+        Paradero
+      </div>
+      <div class="leyenda-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <rect x="1" y="3" width="14" height="10" rx="3" fill="#22c55e"/>
+          <rect x="3" y="5.5" width="3" height="2.5" rx="0.5" fill="#fff" opacity="0.8"/>
+        </svg>
+        Bus activo
+      </div>
+      <div class="leyenda-item">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <line x1="2" y1="8" x2="14" y2="8" stroke="#2366CE" stroke-width="2" stroke-dasharray="3,2"/>
+        </svg>
+        A pie
+      </div>
+    </div>
+
+    <!-- ── ALERTAS FLOTANTE (abajo derecha) ── -->
+    <div *ngIf="estadoGps === 'activo' && !busSiguiendo"
+         class="alertas-float"
+         [class.warning]="etaHoraPunta && !etaHayAccidente"
+         [class.danger]="etaHayAccidente">
+      <ng-container *ngIf="!etaHayAccidente && !etaHayEvento">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Sin alertas activas
+      </ng-container>
+      <ng-container *ngIf="etaHayAccidente">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+        </svg>
+        Accidente en ruta
+      </ng-container>
+      <ng-container *ngIf="etaHayEvento && !etaHayAccidente">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z"/>
+        </svg>
+        Evento especial
+      </ng-container>
+    </div>
+
+    <!-- ════════════════════════════════════════════════════════
+         BOTTOM SHEET — cards de buses
+         Visible cuando NO estamos siguiendo un bus
+    ════════════════════════════════════════════════════════ -->
+    <div class="bottom-sheet" *ngIf="!busSiguiendo" id="sheet-container">
+
+      <!-- Handle: toca para expandir/colapsar -->
+      <div class="sheet-handle-area" (click)="toggleSheet()">
+        <div class="sheet-handle-bar"></div>
+        <!-- Header siempre visible -->
+        <div class="sheet-header">
+          <div class="sheet-title-group">
+            <svg width="18" height="18" fill="none" stroke="#2366CE" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+            </svg>
+            <span style="font-size:15px;font-weight:700;color:#111827;font-family:'Inter',sans-serif;">Buses disponibles</span>
+            <span class="sheet-count-badge">{{ busesFiltrados.length }}</span>
+          </div>
+          <!-- Flecha toggle -->
+          <svg id="sheet-arrow" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"
+               [style.transform]="sheetExpanded ? 'rotate(180deg)' : 'rotate(0deg)'"
+               style="transition:transform 0.3s;flex-shrink:0;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75l7.5-7.5 7.5 7.5"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Filtros (dentro del sheet expandible) -->
+      <div class="sheet-filters" id="sheet-expandable-content" [style.display]="sheetExpanded ? 'flex' : 'none'">
+        <select class="filter-select-compact" [(ngModel)]="lineaSeleccionada" (change)="filtrarBuses()">
+          <option value="">Todas las líneas</option>
+          <option value="204">L-204</option>
+          <option value="301">L-301</option>
+          <option value="412">L-412</option>
+        </select>
+        <select class="filter-select-compact" [(ngModel)]="origenSeleccionado">
+          <option value="">Cualquier inicio</option>
+          <option value="barranco">Barranco</option>
+          <option value="miraflores">Miraflores</option>
+          <option value="surco">Surco</option>
+        </select>
+        <select class="filter-select-compact" [(ngModel)]="destinoSeleccionado">
+          <option value="">Cualquier destino</option>
+          <option value="comas">Comas</option>
+          <option value="independencia">Independencia</option>
+          <option value="sjl">S.J. Lurigancho</option>
+        </select>
+        <button class="filter-search-btn" (click)="buscarBuses()">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z"/>
+          </svg>
+          Filtrar
+        </button>
+      </div>
+
+      <!-- Cards scroll -->
+      <div class="sheet-cards-scroll" id="sheet-cards-scroll" [class.expanded]="sheetExpanded">
+        <div class="sheet-cards-inner">
+
+          <div *ngFor="let bus of busesPaginados; let i = index" class="bus-row">
+
+            <!-- Acciones -->
+            <div class="bus-row-actions">
+              <ng-container *ngIf="!bus.siguiendo">
+                <button class="btn-seguir" (click)="seguirBus(bus)">
+                  <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  </svg>
+                  Seguir
+                </button>
+              </ng-container>
+              <ng-container *ngIf="bus.siguiendo">
+                <button class="btn-siguiendo" (click)="dejarDeSeguir()">
+                  <span class="pulse-dot green"></span>
+                  Siguiendo
+                </button>
+              </ng-container>
+
+              <button class="btn-ruta" [class.active]="busViendoRuta?.id === bus.id" (click)="verRuta(bus)">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497z"/>
+                </svg>
+                <span>Ruta</span>
+              </button>
+
+              <button class="btn-quitar" (click)="quitarBus(bus)">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </div>
+
+            <!-- ETA chip -->
+            <div class="eta-chip-big" [class.eta-ok]="bus.estadoDot === 'green'">
+              <div class="eta-chip-num">{{ estadoETA === 'calculado' ? etaMinutos + bus.tiempoLlegada : bus.tiempoLlegada }}</div>
+              <div class="eta-chip-label">{{ estadoETA === 'calculado' ? 'min ETA' : 'min' }}</div>
+            </div>
+
+            <!-- Línea badge -->
+            <div class="linea-badge">
+              <span class="linea-badge-label">Línea</span>
+              <span class="linea-badge-num">{{ bus.linea }}</span>
+            </div>
+
+            <!-- Info -->
+            <div class="bus-row-info">
+              <div class="bus-row-ruta">{{ bus.origen }} → {{ bus.destino }}</div>
+              <div class="bus-row-meta">
+                <span class="bus-row-meta-item">
+                  <span class="status-dot" [class]="bus.estadoDot"></span>
+                  <span [style.color]="bus.estadoColor">{{ bus.estado }}</span>
+                </span>
+                <span class="bus-row-meta-item">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                  </svg>
+                  {{ bus.tiempoLlegada }} min al paradero
+                </span>
+                <span class="bus-row-meta-item">
+                  <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+                  </svg>
+                  {{ bus.distancia }} km
+                </span>
+              </div>
+            </div>
+
+          </div><!-- /bus-row -->
+        </div><!-- /inner -->
+      </div><!-- /scroll -->
+
+      <!-- Paginación (solo si hay más de una página) -->
+      <div *ngIf="totalPaginas > 1 && sheetExpanded" class="sheet-pagination" id="sheet-pagination">
+        <button class="pg-btn" (click)="paginaAnterior()" [disabled]="paginaActual === 1">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+          </svg>
+        </button>
+        <ng-container *ngFor="let pagina of paginasVisibles">
+          <span *ngIf="pagina === '...'" style="padding: 0 3px; color:#9ca3af; font-size:13px; font-weight:600;">…</span>
+          <button *ngIf="pagina !== '...'" class="pg-btn" [class.active]="pagina === paginaActual" (click)="irAPagina(pagina)">{{ pagina }}</button>
+        </ng-container>
+        <button class="pg-btn" (click)="paginaSiguiente()" [disabled]="paginaActual === totalPaginas">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </button>
+      </div>
+
+    </div><!-- /bottom-sheet -->
+
+    <!-- ════════════════════════════════════════════════════════
+         FOLLOWING BANNER — reemplaza el sheet mientras sigues un bus
+    ════════════════════════════════════════════════════════ -->
+    <div *ngIf="busSiguiendo" class="following-banner">
+
+      <!-- Botón dejar de seguir — izquierda para no quedar tapado por el chatbot -->
+      <button class="btn-dejar" (click)="dejarDeSeguir()">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+        Dejar de seguir
+      </button>
+
+      <div class="following-icon">
+        <svg width="17" height="17" fill="none" stroke="#fff" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+        </svg>
+      </div>
+
+      <div class="following-info">
+        <p class="following-label">Siguiendo en tiempo real</p>
+        <p class="following-bus-name">{{ busSiguiendo.label }}</p>
+      </div>
+
+      <!-- ETA grande -->
+      <div class="following-eta-box">
+        <span class="following-eta-label">ETA</span>
+        <span class="following-eta-num">{{ etaDinamicoMinutos }}</span>
+        <span class="following-eta-unit">min</span>
+      </div>
+
+      <!-- Stepper compacto -->
+      <div class="stepper-inline">
+        <span class="step-chip" [class.active]="pasoViaje === 'acercando'" [class.done]="pasoViaje === 'abordo' || pasoViaje === 'fin'">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6M3 16.5h.375"/>
+          </svg>
+          Acercando
+        </span>
+        <div class="step-sep"></div>
+        <span class="step-chip" [class.active]="pasoViaje === 'abordo'" [class.done]="pasoViaje === 'fin'">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          A bordo
+        </span>
+        <div class="step-sep"></div>
+        <span class="step-chip" [class.active]="pasoViaje === 'fin'">
+          <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+          </svg>
+          Destino
+        </span>
+      </div>
+
+      <!-- Barra de progreso -->
+      <div class="following-progress">
+        <div class="progress-track">
+          <div class="progress-fill"
+            [style.width]="(busSiguiendo.indiceActual / busSiguiendo.rutaWaypoints.length * 100) + '%'">
+          </div>
+        </div>
+        <div class="progress-labels">
+          <span class="progress-label-text">Origen</span>
+          <span class="progress-label-text">Destino</span>
+        </div>
+      </div>
+
+    </div><!-- /following-banner -->
+
+  </div><!-- /mapa-full -->
+
+</div><!-- /ubicacion-root -->

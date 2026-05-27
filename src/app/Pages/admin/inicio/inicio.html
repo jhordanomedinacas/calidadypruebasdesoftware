@@ -1,0 +1,485 @@
+<style>
+  /* ── HERO responsive ── */
+  @media (max-width: 640px) {
+    .hero-col-izq { padding: 24px 20px 16px 20px !important; }
+    .hero-col-der {
+      width: 100% !important;
+      padding: 0 20px 28px 20px !important;
+      align-items: flex-start !important;
+    }
+    .hero-stats { gap: 8px !important; }
+    .hero-stat-chip { padding: 10px 10px !important; gap: 8px !important; }
+  }
+
+  /* ── CARDS DE SERVICIO ── */
+  .service-card {
+    position: relative;
+    background: #ffffff;
+    border-radius: 1rem;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    text-align: left;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    transition:
+      background 350ms cubic-bezier(0.4,0,0.2,1),
+      border-color 350ms cubic-bezier(0.4,0,0.2,1),
+      box-shadow 350ms cubic-bezier(0.4,0,0.2,1),
+      transform 200ms cubic-bezier(0.4,0,0.2,1);
+    cursor: pointer;
+  }
+
+  /* SVG del trazo animado */
+  .service-card .border-trace {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  .service-card .border-trace .trace-rect {
+    fill: none;
+    stroke: rgba(255,255,255,0.85);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dashoffset: var(--perimeter, 9999);
+    stroke-dasharray:  var(--perimeter, 9999);
+    transition: stroke-dashoffset 0ms;
+  }
+
+  .service-card:hover .trace-rect {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 650ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .service-card > *:not(.border-trace) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HOVER STATE ── */
+  .service-card:hover {
+    background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 60%, #3b82f6 100%);
+    border-color: transparent;
+    box-shadow:
+      0 8px 30px rgba(35,102,206,0.45),
+      0 2px 8px rgba(35,102,206,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.15);
+    transform: translateY(-3px);
+  }
+
+  .service-card:hover .card-title       { color: #ffffff !important; }
+  .service-card:hover .card-subtitle    { color: rgba(255,255,255,0.70) !important; }
+  .service-card:hover .card-divider     { border-color: rgba(255,255,255,0.20) !important; }
+  .service-card:hover .card-status-text { color: rgba(255,255,255,0.70) !important; }
+  .service-card:hover .card-arrow       { stroke: rgba(255,255,255,0.60) !important; }
+  .service-card:hover .card-icon-wrap   { background-color: rgba(255,255,255,0.18) !important; }
+  .service-card:hover .card-icon-wrap svg { stroke: #ffffff !important; }
+
+  /* ── BARRA DE GESTIÓN ── */
+  .gestion-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .gestion-bar-titles h2 {
+    font-size: 18px; font-weight: 800; color: #111827;
+    font-family: 'Inter', sans-serif; margin: 0 0 2px 0;
+  }
+  .gestion-bar-titles p {
+    font-size: 13px; color: #6b7280;
+    font-family: 'Inter', sans-serif; margin: 0;
+  }
+
+  /* ── MASCOTA ── */
+  @keyframes floatMascota {
+    0%, 100% { transform: translateY(0px); }
+    50%       { transform: translateY(-8px); }
+  }
+  .mascota-img {
+    height: 100%;
+    max-height: 100%;
+    width: 100%;
+    object-fit: contain;
+    object-position: bottom center;
+    filter: drop-shadow(0 8px 24px rgba(0,0,0,0.25));
+    animation: floatMascota 4s ease-in-out infinite;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  @media (max-width: 768px) {
+    .hero-kpi-grid { grid-template-columns: 1fr 1fr !important; }
+
+    /* En móvil la llama deja de ser columna absoluta y se oculta */
+    .mascota-wrap {
+      display: none !important;
+    }
+
+    /* Columna izq ocupa todo el ancho, padding normal */
+    .hero-col-izq {
+      padding: 24px 20px 20px 20px !important;
+      width: 100% !important;
+    }
+
+    /* Mostrar la llama inline entre el saludo y los KPIs */
+    .mascota-mobile {
+      display: flex !important;
+    }
+  }
+
+  /* Desktop: ocultar el bloque móvil de la llama */
+  .mascota-mobile {
+    display: none;
+    justify-content: center;
+    align-items: center;
+    padding: 8px 0 4px 0;
+  }
+  .mascota-mobile img {
+    height: 220px;
+    object-fit: contain;
+    filter: drop-shadow(0 6px 16px rgba(0,0,0,0.25));
+    animation: floatMascota 4s ease-in-out infinite;
+    user-select: none;
+    pointer-events: none;
+  }
+</style>
+
+<div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
+
+  <!-- NAVBAR COMPONENTE -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <div style="display: flex; align-items: flex-start; width: 100%;">
+    <div style="flex: 1; min-width: 0; padding: 40px 16px 40px 16px; overflow-x: hidden;">
+
+      <!-- ══════════════ HERO ══════════════ -->
+      <div class="relative rounded-3xl mb-4 shadow-lg flex flex-wrap"
+           style="background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); min-height: 200px; overflow: hidden;">
+
+        <!-- COLUMNA IZQUIERDA: saludo -->
+        <div class="hero-col-izq flex flex-col justify-between flex-1 min-w-0"
+             style="padding: 32px 150px 28px 32px; gap: 24px;">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-widest mb-1.5"
+               style="color: rgba(255,255,255,0.65); font-family: 'Inter', sans-serif;">
+              BIENVENIDO DE NUEVO A LA VISTA ADMIN
+            </p>
+            <p class="font-bold text-white" style="font-size: 1.05rem; font-family: 'Inter', sans-serif; margin: 0 0 2px 0;">HOLA,</p>
+            <h1 class="font-black text-white leading-tight" style="font-size: clamp(2rem, 4vw, 3rem); font-family: 'Inter', sans-serif;">
+              {{ nombreAdmin }}
+            </h1>
+            <p class="text-sm mt-2" style="color: rgba(255,255,255,0.6); font-family: 'Inter', sans-serif;">¿Qué deseas hacer hoy?</p>
+          </div>
+
+          <!-- KPIs 2×3 -->
+          <div class="hero-kpi-grid hero-stats" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;">
+
+            <!-- Buses en ruta (activo) -->
+            <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+                 style="background: #2366CE; padding: 12px 14px; box-shadow: 0 4px 16px rgba(35,102,206,0.5);">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.95)" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+              </svg>
+              <div>
+                <p class="text-base font-bold text-white leading-none">{{ kpiBusesEnRuta }}</p>
+                <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.70);">Buses en ruta</p>
+              </div>
+            </div>
+
+            <!-- Usuarios activos -->
+            <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+                 style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+              </svg>
+              <div>
+                <p class="text-base font-bold text-white leading-none">{{ kpiUsuariosActivos | number }}</p>
+                <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Usuarios activos</p>
+              </div>
+            </div>
+
+            <!-- Alertas activas -->
+            <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+                 style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+              </svg>
+              <div>
+                <p class="text-base font-bold text-white leading-none">{{ kpiAlertasActivas }}</p>
+                <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Alertas activas</p>
+              </div>
+            </div>
+
+            <!-- Fila 2: Buses en ruta -->
+            <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+                 style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+              </svg>
+              <div>
+                <p class="text-base font-bold text-white leading-none">{{ kpiBusesEnRuta }}</p>
+                <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Buses en ruta</p>
+              </div>
+            </div>
+
+            <!-- Fila 2: Usuarios activos -->
+            <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+                 style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+              </svg>
+              <div>
+                <p class="text-base font-bold text-white leading-none">{{ kpiUsuariosActivos | number }}</p>
+                <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Usuarios activos</p>
+              </div>
+            </div>
+
+            <!-- Fila 2: Alertas activas -->
+            <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+                 style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+              <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+              </svg>
+              <div>
+                <p class="text-base font-bold text-white leading-none">{{ kpiAlertasActivas }}</p>
+                <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Alertas activas</p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Llama móvil: visible solo en mobile, debajo de los KPIs -->
+          <div class="mascota-mobile">
+            <img src="Llama2D.png" alt="Mascota ATU" onerror="this.src='Lllama2D.png'" />
+          </div>
+
+        </div>
+
+        <!-- COLUMNA DERECHA: mascota -->
+        <div class="mascota-wrap flex-shrink-0"
+             style="width: clamp(160px, 20vw, 260px); position: relative; align-self: stretch; overflow: visible;">
+          <img src="Llama2D.png" alt="Mascota ATU" class="mascota-img"
+               onerror="this.src='Lllama2D.png'"
+               style="position: absolute; bottom: 0; right: 0; height: 90%; width: auto; max-width: none;
+                      object-fit: contain; object-position: bottom right;
+                      filter: drop-shadow(0 8px 24px rgba(0,0,0,0.25));
+                      animation: floatMascota 4s ease-in-out infinite;
+                      user-select: none; pointer-events: none;" />
+        </div>
+
+      </div>
+
+      <!-- ══════════════ SERVICIOS ══════════════ -->
+      <div class="gestion-bar" style="margin-top: 48px;">
+        <div class="gestion-bar-titles">
+          <h2>Servicios</h2>
+          <p>Selecciona una opción para continuar</p>
+        </div>
+      </div>
+
+      <!-- GRID CARDS — misma estructura exacta que inicio.html -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+        <!-- Gestionar Usuarios -->
+        <button (click)="irA('admin/usuarios')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 19.128a9.38 9.38 0 002.625.372 9.337 9.337 0 004.121-.952 4.125 4.125 0 00-7.533-2.493M15 19.128v-.003c0-1.113-.285-2.16-.786-3.07M15 19.128v.106A12.318 12.318 0 018.624 21c-2.331 0-4.512-.645-6.374-1.766l-.001-.109a6.375 6.375 0 0111.964-3.07M12 6.375a3.375 3.375 0 11-6.75 0 3.375 3.375 0 016.75 0zm8.25 2.25a2.625 2.625 0 11-5.25 0 2.625 2.625 0 015.25 0z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Gestionar usuarios</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Revisa los usuarios logueados</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Gestionar Buses -->
+        <button (click)="irA('admin/buses')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Gestionar buses</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">{{ kpiBusesEnRuta }} buses en ruta</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Gestionar Noticias -->
+        <button (click)="irA('admin/noticias')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Gestionar Noticias</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Últimas actualizaciones</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Gestionar Tickets -->
+        <button (click)="irA('admin/tickets')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a3 3 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Gestionar Tickets</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Revisa los tickets de los usuarios</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Dashboard -->
+        <button (click)="irA('dashboarda')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Dashboard</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Métricas y estadísticas generales</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Gestionar Líneas -->
+        <button (click)="irA('admin/lineas')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Gestionar líneas</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Administra las líneas de transporte</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Gestionar FAQ -->
+        <button (click)="irA('admin/faq')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Gestionar FAQ</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Consultas comunes</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+        <!-- Comunicados -->
+        <button (click)="irA('admin/comunicados')" class="service-card">
+          <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+          <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+               style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+            <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10.34 15.84c-.688-.06-1.386-.09-2.09-.09H7.5a4.5 4.5 0 110-9h.75c.704 0 1.402-.03 2.09-.09m0 9.18c.253.962.584 1.892.985 2.783.247.55.06 1.21-.463 1.511l-.657.38c-.551.318-1.26.117-1.527-.461a20.845 20.845 0 01-1.44-4.282m3.102.069a18.03 18.03 0 01-.59-4.59c0-1.586.205-3.124.59-4.59m0 9.18a23.848 23.848 0 018.835 2.535M10.34 6.66a23.847 23.847 0 008.835-2.535m0 0A23.74 23.74 0 0018.795 3m.38 1.125a23.91 23.91 0 011.014 5.395m-1.014 8.855c-.118.38-.245.754-.38 1.125m.38-1.125a23.91 23.91 0 001.014-5.395m0-3.46c.495.413.811 1.035.811 1.73 0 .695-.316 1.317-.811 1.73m0-3.46a24.347 24.347 0 010 3.46"/>
+            </svg>
+          </div>
+          <div class="flex-1">
+            <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Comunicados</p>
+            <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Publica y gestiona comunicados</p>
+          </div>
+          <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+            <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+              <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Disponible
+            </span>
+            <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </div>
+        </button>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="mt-12 text-center text-xs text-gray-400" style="font-family: 'Inter', sans-serif;">
+        Corredor Azul © 2025 · Panel de Administración
+      </div>
+
+    </div>
+  </div>
+
+</div>

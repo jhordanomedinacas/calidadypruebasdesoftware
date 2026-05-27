@@ -1,0 +1,14 @@
+{
+  "/api/claude": {
+    "target": "https://api.anthropic.com",
+    "secure": true,
+    "changeOrigin": true,
+    "pathRewrite": {
+      "^/api/claude": "/v1/messages"
+    },
+    "headers": {
+      "anthropic-version": "2023-06-01"
+    },
+    "logLevel": "debug"
+  }
+}

@@ -1,0 +1,146 @@
+/* ============================================
+   OLVIDE CONTRASEÑA - ESTILOS RESPONSIVE
+   ============================================ */
+
+/* Logo móvil simple: oculto siempre */
+.olvide-mobile-logo {
+  display: none;
+}
+
+/* Layout principal */
+.olvide-main {
+  display: flex;
+  flex-direction: row;
+  flex: 1;
+  min-height: 100vh;
+}
+
+/* ============================================
+   RESPONSIVE - TABLET (≤ 1024px)
+   ============================================ */
+@media (max-width: 1024px) {
+  .olvide-brand-panel {
+    width: 40% !important;
+    padding: 2rem !important;
+  }
+
+  .olvide-form-panel {
+    width: 60% !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVIL (≤ 768px)
+   ============================================ */
+@media (max-width: 768px) {
+  .olvide-main {
+    flex-direction: column;
+    min-height: auto;
+  }
+
+  /* ── Panel izquierdo → hero banner superior ── */
+  .olvide-brand-panel {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    justify-content: flex-end !important;
+    padding: 1.5rem 1.5rem 2rem !important;
+    min-height: 220px !important;
+  }
+
+  /* Logo */
+  .olvide-logo {
+    position: relative;
+    z-index: 10;
+    margin-bottom: 1rem;
+  }
+
+  .olvide-logo img {
+    height: 2.25rem !important;
+  }
+
+  .olvide-logo::after {
+    content: 'Corredor Azul';
+    font-size: 1.0625rem;
+    font-weight: 700;
+    color: white;
+    margin-left: 0.5rem;
+    letter-spacing: 0.01em;
+  }
+
+  /* Mostrar título y subtítulo */
+  .olvide-brand-content {
+    display: block !important;
+    position: relative;
+    z-index: 10;
+  }
+
+  .olvide-brand-title {
+    font-size: 1.5rem !important;
+    margin-bottom: 0.375rem !important;
+  }
+
+  /* Ocultar lista de features */
+  .olvide-brand-content ul {
+    display: none;
+  }
+
+  /* Subtítulo compacto */
+  .olvide-brand-content p {
+    font-size: 0.75rem !important;
+    margin-bottom: 0 !important;
+    max-width: 90%;
+    line-height: 1.5;
+  }
+
+  /* Ocultar stats */
+  .olvide-stats {
+    display: none !important;
+  }
+
+  /* ── Panel derecho: full width ── */
+  .olvide-form-panel {
+    width: 100% !important;
+    padding: 1.75rem 1.25rem 2.5rem !important;
+    align-items: flex-start !important;
+    justify-content: flex-start !important;
+    min-height: auto !important;
+  }
+
+  .olvide-form-panel > div {
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  /* Evitar zoom en iOS */
+  input[type="text"],
+  input[type="email"],
+  input[type="password"] {
+    font-size: 1rem !important;
+  }
+
+  /* Icono paso 2 más compacto */
+  .w-14.h-14 {
+    width: 3rem !important;
+    height: 3rem !important;
+  }
+
+  .w-14.h-14 svg {
+    width: 1.5rem !important;
+    height: 1.5rem !important;
+  }
+}
+
+/* ============================================
+   RESPONSIVE - MÓVIL PEQUEÑO (≤ 390px)
+   ============================================ */
+@media (max-width: 390px) {
+  .olvide-brand-panel {
+    padding: 1.25rem 1.25rem 1.75rem !important;
+    min-height: 200px !important;
+  }
+
+  .olvide-form-panel {
+    padding: 1.25rem 1rem 2rem !important;
+  }
+}

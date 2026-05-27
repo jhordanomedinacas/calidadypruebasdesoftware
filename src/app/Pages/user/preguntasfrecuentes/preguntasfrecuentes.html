@@ -1,0 +1,397 @@
+<style>
+  /* ── Animación entrada ── */
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .faq-item {
+    animation: cardIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .faq-item:nth-child(1)  { animation-delay: 0ms; }
+  .faq-item:nth-child(2)  { animation-delay: 40ms; }
+  .faq-item:nth-child(3)  { animation-delay: 80ms; }
+  .faq-item:nth-child(4)  { animation-delay: 120ms; }
+  .faq-item:nth-child(5)  { animation-delay: 160ms; }
+  .faq-item:nth-child(6)  { animation-delay: 200ms; }
+  .faq-item:nth-child(7)  { animation-delay: 240ms; }
+  .faq-item:nth-child(8)  { animation-delay: 280ms; }
+
+  /* ── Accordion ── */
+  .faq-item {
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 14px;
+    overflow: hidden;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .faq-item:hover {
+    box-shadow: 0 4px 16px rgba(35,102,206,0.09);
+    border-color: #bfdbfe;
+  }
+  .faq-item.open {
+    border-color: #bfdbfe;
+    box-shadow: 0 4px 20px rgba(35,102,206,0.10);
+  }
+
+  .faq-trigger {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 20px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+  }
+
+  .faq-icon-wrap {
+    width: 38px;
+    height: 38px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+  }
+
+  .faq-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .faq-item.open .faq-content {
+    max-height: 400px;
+  }
+
+  .faq-chevron {
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    flex-shrink: 0;
+  }
+  .faq-item.open .faq-chevron {
+    transform: rotate(180deg);
+  }
+
+  /* ── Chips de categoría ── */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    padding: 7px 16px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    border: 1.5px solid transparent;
+    transition: all 0.18s;
+    font-family: 'Inter', sans-serif;
+    white-space: nowrap;
+  }
+  .chip.active {
+    background: linear-gradient(135deg, #1a3a8f, #2366CE);
+    color: #fff;
+    border-color: transparent;
+  }
+  .chip.inactive {
+    background: #fff;
+    color: #374151;
+    border-color: #e5e7eb;
+  }
+  .chip.inactive:hover {
+    border-color: #2366CE;
+    color: #2366CE;
+  }
+
+  /* ── Badge de categoría en pregunta ── */
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    margin-top: 4px;
+  }
+  .badge-servicio      { background: #dcfce7; color: #16a34a; }
+  .badge-prediccion    { background: #ede9fe; color: #7c3aed; }
+  .badge-pagos         { background: #fef9c3; color: #b45309; }
+  .badge-denuncias     { background: #fee2e2; color: #dc2626; }
+  .badge-plataforma    { background: #dbeafe; color: #1d4ed8; }
+  .badge-chatbot       { background: #e0f2fe; color: #0369a1; }
+
+  /* ── Buscador ── */
+  .search-input {
+    width: 100%;
+    padding: 12px 16px 12px 42px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: 'Inter', sans-serif;
+    color: #374151;
+    background: #fff;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    box-sizing: border-box;
+  }
+  .search-input:focus {
+    border-color: #2366CE;
+    box-shadow: 0 0 0 3px rgba(35,102,206,0.10);
+  }
+
+  /* ── Sección label ── */
+  .section-label {
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.09em;
+    color: #9ca3af;
+    font-family: 'Inter', sans-serif;
+    margin: 28px 0 12px 0;
+  }
+
+  /* ── Sin resultados ── */
+  .empty-state {
+    text-align: center;
+    padding: 48px 24px;
+    color: #9ca3af;
+    font-family: 'Inter', sans-serif;
+  }
+
+  @media (max-width: 640px) {
+    .chips-wrapper { gap: 6px !important; }
+    .chip { padding: 6px 12px; font-size: 12px; }
+  }
+</style>
+
+<div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div style="padding: 18px 32px 0 32px;">
+    <span style="font-size: 13px; color: #2366CE; font-weight: 600; cursor: pointer;" (click)="irA('inicio')">Inicio</span>
+    <span style="font-size: 13px; color: #9ca3af; margin: 0 6px;">›</span>
+    <span style="font-size: 13px; color: #9ca3af;">Preguntas frecuentes</span>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div style="padding: 24px 32px 48px 32px;">
+
+    <!-- ENCABEZADO -->
+    <div style="margin-bottom: 24px;">
+      <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2366CE; font-family: 'Inter', sans-serif; margin: 0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size: 24px; font-weight: 700; color: #111827; font-family: 'Inter', sans-serif; margin: 0 0 6px 0;">Preguntas frecuentes</h2>
+      <p style="font-size: 14px; color: #6b7280; font-family: 'Inter', sans-serif; margin: 0;">Encuentra respuestas rápidas sobre el servicio y la plataforma web</p>
+    </div>
+
+    <!-- BUSCADOR -->
+    <div style="position: relative; margin-bottom: 20px;">
+      <svg style="position: absolute; left: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;"
+           width="16" height="16" fill="none" stroke="#9ca3af" stroke-width="1.8" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+      </svg>
+      <input
+        class="search-input"
+        type="text"
+        placeholder="Busca tu pregunta aquí..."
+        [(ngModel)]="busqueda"
+        (input)="filtrar()"
+      />
+    </div>
+
+    <!-- CHIPS DE CATEGORÍA -->
+    <div class="chips-wrapper" style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 8px;">
+      <button class="chip" [class.active]="categoriaActiva === 'todos'" [class.inactive]="categoriaActiva !== 'todos'"
+              (click)="setCategoria('todos')">Todos</button>
+      <button class="chip" [class.active]="categoriaActiva === 'servicio'" [class.inactive]="categoriaActiva !== 'servicio'"
+              (click)="setCategoria('servicio')">Servicio</button>
+      <button class="chip" [class.active]="categoriaActiva === 'prediccion'" [class.inactive]="categoriaActiva !== 'prediccion'"
+              (click)="setCategoria('prediccion')">Predicción IA</button>
+      <button class="chip" [class.active]="categoriaActiva === 'chatbot'" [class.inactive]="categoriaActiva !== 'chatbot'"
+              (click)="setCategoria('chatbot')">Chatbot</button>
+      <button class="chip" [class.active]="categoriaActiva === 'pagos'" [class.inactive]="categoriaActiva !== 'pagos'"
+              (click)="setCategoria('pagos')">Pagos</button>
+      <button class="chip" [class.active]="categoriaActiva === 'denuncias'" [class.inactive]="categoriaActiva !== 'denuncias'"
+              (click)="setCategoria('denuncias')">Denuncias</button>
+      <button class="chip" [class.active]="categoriaActiva === 'plataforma'" [class.inactive]="categoriaActiva !== 'plataforma'"
+              (click)="setCategoria('plataforma')">Plataforma</button>
+    </div>
+
+    <!-- EMPTY STATE -->
+    <div *ngIf="preguntasFiltradas.length === 0" class="empty-state">
+      <svg width="48" height="48" fill="none" stroke="#d1d5db" stroke-width="1.2" viewBox="0 0 24 24" style="margin: 0 auto 12px auto; display: block;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+      </svg>
+      <p style="font-size: 14px; font-weight: 600; color: #6b7280; margin: 0 0 4px 0;">No se encontraron resultados</p>
+      <p style="font-size: 13px; color: #9ca3af; margin: 0;">Intenta con otras palabras o cambia la categoría</p>
+    </div>
+
+    <!-- GRUPO: SOBRE EL SERVICIO -->
+    <ng-container *ngIf="grupoVisible('servicio')">
+      <p class="section-label">Sobre el Servicio</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div *ngFor="let p of getGrupo('servicio')" class="faq-item" [class.open]="p.abierto">
+          <button class="faq-trigger" (click)="toggle(p)">
+            <div class="faq-icon-wrap" style="background: rgba(22,163,74,0.09);">
+              <svg width="18" height="18" fill="none" [attr.stroke]="p.iconColor || '#16a34a'" stroke-width="1.6" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.iconPath"/>
+              </svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <p style="font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">{{ p.pregunta }}</p>
+              <span class="badge badge-servicio">Servicio</span>
+            </div>
+            <svg class="faq-chevron" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </button>
+          <div class="faq-content">
+            <div style="padding: 0 20px 18px 72px; font-size: 13.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.65;">
+              {{ p.respuesta }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- GRUPO: PREDICCIÓN IA -->
+    <ng-container *ngIf="grupoVisible('prediccion')">
+      <p class="section-label">Predicción con IA</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div *ngFor="let p of getGrupo('prediccion')" class="faq-item" [class.open]="p.abierto">
+          <button class="faq-trigger" (click)="toggle(p)">
+            <div class="faq-icon-wrap" style="background: rgba(124,58,237,0.09);">
+              <svg width="18" height="18" fill="none" [attr.stroke]="p.iconColor || '#7c3aed'" stroke-width="1.6" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.iconPath"/>
+              </svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <p style="font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">{{ p.pregunta }}</p>
+              <span class="badge badge-prediccion">Predicción IA</span>
+            </div>
+            <svg class="faq-chevron" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </button>
+          <div class="faq-content">
+            <div style="padding: 0 20px 18px 72px; font-size: 13.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.65;">
+              {{ p.respuesta }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- GRUPO: PAGOS Y DENUNCIAS -->
+    <ng-container *ngIf="grupoVisible('pagos') || grupoVisible('denuncias')">
+      <p class="section-label">Sobre Pagos y Denuncias</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div *ngFor="let p of getGrupo('pagos')" class="faq-item" [class.open]="p.abierto">
+          <button class="faq-trigger" (click)="toggle(p)">
+            <div class="faq-icon-wrap" style="background: rgba(180,83,9,0.09);">
+              <svg width="18" height="18" fill="none" [attr.stroke]="p.iconColor || '#b45309'" stroke-width="1.6" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.iconPath"/>
+              </svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <p style="font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">{{ p.pregunta }}</p>
+              <span class="badge badge-pagos">Pagos</span>
+            </div>
+            <svg class="faq-chevron" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </button>
+          <div class="faq-content">
+            <div style="padding: 0 20px 18px 72px; font-size: 13.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.65;">
+              {{ p.respuesta }}
+            </div>
+          </div>
+        </div>
+        <div *ngFor="let p of getGrupo('denuncias')" class="faq-item" [class.open]="p.abierto">
+          <button class="faq-trigger" (click)="toggle(p)">
+            <div class="faq-icon-wrap" style="background: rgba(220,38,38,0.09);">
+              <svg width="18" height="18" fill="none" [attr.stroke]="p.iconColor || '#dc2626'" stroke-width="1.6" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.iconPath"/>
+              </svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <p style="font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">{{ p.pregunta }}</p>
+              <span class="badge badge-denuncias">Denuncias</span>
+            </div>
+            <svg class="faq-chevron" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </button>
+          <div class="faq-content">
+            <div style="padding: 0 20px 18px 72px; font-size: 13.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.65;">
+              {{ p.respuesta }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- GRUPO: CHATBOT -->
+    <ng-container *ngIf="grupoVisible('chatbot')">
+      <p class="section-label">Chatbot</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div *ngFor="let p of getGrupo('chatbot')" class="faq-item" [class.open]="p.abierto">
+          <button class="faq-trigger" (click)="toggle(p)">
+            <div class="faq-icon-wrap" style="background: rgba(3,105,161,0.09);">
+              <svg width="18" height="18" fill="none" [attr.stroke]="p.iconColor || '#0369a1'" stroke-width="1.6" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.iconPath"/>
+              </svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <p style="font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">{{ p.pregunta }}</p>
+              <span class="badge badge-chatbot">Chatbot</span>
+            </div>
+            <svg class="faq-chevron" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </button>
+          <div class="faq-content">
+            <div style="padding: 0 20px 18px 72px; font-size: 13.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.65;">
+              {{ p.respuesta }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- GRUPO: PLATAFORMA -->
+    <ng-container *ngIf="grupoVisible('plataforma')">
+      <p class="section-label">Plataforma</p>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <div *ngFor="let p of getGrupo('plataforma')" class="faq-item" [class.open]="p.abierto">
+          <button class="faq-trigger" (click)="toggle(p)">
+            <div class="faq-icon-wrap" style="background: rgba(29,78,216,0.09);">
+              <svg width="18" height="18" fill="none" [attr.stroke]="p.iconColor || '#1d4ed8'" stroke-width="1.6" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" [attr.d]="p.iconPath"/>
+              </svg>
+            </div>
+            <div style="flex: 1; min-width: 0;">
+              <p style="font-size: 14px; font-weight: 600; color: #111827; font-family: 'Inter', sans-serif; margin: 0;">{{ p.pregunta }}</p>
+              <span class="badge badge-plataforma">Plataforma</span>
+            </div>
+            <svg class="faq-chevron" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="1.8" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+            </svg>
+          </button>
+          <div class="faq-content">
+            <div style="padding: 0 20px 18px 72px; font-size: 13.5px; color: #4b5563; font-family: 'Inter', sans-serif; line-height: 1.65;">
+              {{ p.respuesta }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </ng-container>
+
+    <!-- Footer -->
+    <div class="mt-12 text-center text-xs text-gray-400" style="font-family: 'Inter', sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div>
+</div>

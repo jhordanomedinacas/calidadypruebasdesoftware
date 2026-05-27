@@ -1,0 +1,269 @@
+<div class="min-h-screen flex flex-col">
+
+  <!-- Logo para móvil -->
+  <div class="olvide-mobile-logo">
+    <img src="Logo_CorredorAzul.png" alt="Corredor Azul" />
+    <span>Corredor Azul</span>
+  </div>
+
+  <!-- Contenido principal -->
+  <div class="olvide-main">
+
+    <!-- Panel izquierdo -->
+    <div class="olvide-brand-panel w-1/2 flex flex-col justify-between p-12 relative"
+         style="background-image: url('FondoLoginCorredorAzul.jpg'); background-size: cover; background-position: center;"
+         @fadeSlideInLeftSlow>
+
+      <div class="absolute inset-0" style="background: rgba(20, 55, 120, 0.75);"></div>
+
+      <!-- Logo -->
+      <div class="olvide-logo flex items-center gap-3 relative z-10" @fadeSlideInLeft>
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="h-10 w-auto" />
+      </div>
+
+      <!-- Contenido central -->
+      <div class="olvide-brand-content relative z-10" @staggerItems>
+        <h1 class="olvide-brand-title text-4xl font-bold text-white leading-tight mb-4">
+          Recupera tu<br />acceso
+        </h1>
+        <p class="text-sm mb-10" style="color: rgba(255,255,255,0.80);">
+          Te enviaremos un enlace seguro a tu correo para restablecer tu contraseña.
+        </p>
+
+        <ul class="space-y-5">
+          <li class="olvide-feature-item flex items-start gap-3">
+            <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center border-2"
+                  style="border-color: rgba(255,255,255,0.6);">
+              <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </span>
+            <div>
+              <p class="font-semibold text-sm text-white">Enlace temporal seguro</p>
+              <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.65);">
+                El enlace expira en 15 minutos por tu seguridad
+              </p>
+            </div>
+          </li>
+          <li class="olvide-feature-item flex items-start gap-3">
+            <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center border-2"
+                  style="border-color: rgba(255,255,255,0.6);">
+              <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </span>
+            <div>
+              <p class="font-semibold text-sm text-white">Proceso encriptado</p>
+              <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.65);">
+                Tus datos están protegidos en todo momento
+              </p>
+            </div>
+          </li>
+          <li class="olvide-feature-item flex items-start gap-3">
+            <span class="mt-0.5 flex-shrink-0 w-5 h-5 rounded-full flex items-center justify-center border-2"
+                  style="border-color: rgba(255,255,255,0.6);">
+              <svg class="w-2.5 h-2.5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 7.5-9.75-7.5"/>
+              </svg>
+            </span>
+            <div>
+              <p class="font-semibold text-sm text-white">Revisa tu bandeja</p>
+              <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.65);">
+                Incluye spam si no lo encuentras en unos segundos
+              </p>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <!-- Stats -->
+      <div class="olvide-stats flex gap-10 relative z-10" @fadeSlideInUp>
+        <div>
+          <p class="text-3xl font-bold text-white">150+</p>
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.65);">Rutas activas</p>
+        </div>
+        <div>
+          <p class="text-3xl font-bold text-white">2M+</p>
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.65);">Usuarios diarios</p>
+        </div>
+        <div>
+          <p class="text-3xl font-bold text-white">99.9%</p>
+          <p class="text-xs mt-0.5" style="color: rgba(255,255,255,0.65);">Disponibilidad</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Panel derecho -->
+    <div class="olvide-form-panel w-1/2 flex items-center justify-center bg-white px-8 py-12" @fadeSlideIn>
+      <div class="w-full max-w-md">
+
+        <!-- PASO 1 — Ingresa tu correo -->
+        <div *ngIf="paso === 1" @stepTransition>
+
+          <a routerLink="/login"
+             class="flex items-center gap-1.5 text-sm font-medium mb-8 w-fit hover:opacity-75 transition-opacity"
+             style="color: #2366CE;">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Volver al inicio de sesión
+          </a>
+
+          <h2 class="text-2xl font-bold text-gray-900 mb-1">¿Olvidaste tu contraseña?</h2>
+          <p class="text-gray-500 text-sm mb-8">
+            Ingresa tu correo y te enviaremos un enlace para restablecerla.
+          </p>
+
+          <form [formGroup]="emailForm" (ngSubmit)="enviarToken()" class="space-y-4">
+            <div>
+              <label class="block text-sm font-medium text-gray-700 mb-1">Correo electrónico</label>
+              <div class="relative">
+                <span class="absolute inset-y-0 left-3 flex items-center" style="color: #2366CE;">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round"
+                      d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 7.5-9.75-7.5"/>
+                  </svg>
+                </span>
+                <input
+                  type="email"
+                  formControlName="email"
+                  placeholder="tu@correo.com"
+                  class="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm text-gray-800 placeholder-gray-400 outline-none transition"
+                  [class.border-red-400]="emailForm.get('email')?.invalid && emailForm.get('email')?.touched"
+                  (focus)="onFocus($event)"
+                  (blur)="onBlur($event)"
+                />
+              </div>
+              <p *ngIf="emailForm.get('email')?.invalid && emailForm.get('email')?.touched"
+                 class="text-xs text-red-500 mt-1">
+                Ingresa un correo válido.
+              </p>
+            </div>
+
+            <p *ngIf="errorMessage"
+               class="text-xs text-red-500 text-center bg-red-50 py-2 px-3 rounded-lg border border-red-100">
+              {{ errorMessage }}
+            </p>
+
+            <button
+              type="submit"
+              [disabled]="loading"
+              class="w-full flex items-center justify-center gap-2 text-white font-semibold py-2.5 rounded-lg transition-all text-sm disabled:opacity-60"
+              style="background-color: #2366CE;"
+              onmouseover="if(!this.disabled) this.style.backgroundColor='#1a4fa3'"
+              onmouseout="this.style.backgroundColor='#2366CE'"
+            >
+              <ng-container *ngIf="!loading">
+                Enviar enlace
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+                </svg>
+              </ng-container>
+              <ng-container *ngIf="loading">
+                <svg class="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+                Enviando...
+              </ng-container>
+            </button>
+          </form>
+
+        </div>
+
+        <!-- PASO 2 — Enlace enviado -->
+        <div *ngIf="paso === 2" @stepTransition>
+
+          <!-- Ícono check -->
+          <div class="w-14 h-14 rounded-full flex items-center justify-center mb-6"
+               style="background-color: rgba(35,102,206,0.10);">
+            <svg class="w-7 h-7" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25H4.5a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0l-9.75 7.5-9.75-7.5"/>
+            </svg>
+          </div>
+
+          <h2 class="text-2xl font-bold text-gray-900 mb-1">Revisa tu correo</h2>
+          <p class="text-gray-500 text-sm mb-2">
+            Enviamos un enlace de recuperación a
+            <span class="font-medium text-gray-700">{{ emailForm.get('email')?.value }}</span>
+          </p>
+
+          <!-- Countdown -->
+          <div class="flex items-center gap-2 mb-8">
+            <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"
+                 [style.color]="tiempoRestante > 120 ? '#2366CE' : '#ef4444'">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <span class="text-sm font-medium" [style.color]="tiempoRestante > 120 ? '#2366CE' : '#ef4444'">
+              {{ tiempoRestante > 0 ? 'El enlace expira en ' + formatTiempo(tiempoRestante) : 'Enlace expirado' }}
+            </span>
+          </div>
+
+          <!-- Info box -->
+          <div class="rounded-lg border border-blue-100 p-4 mb-6" style="background-color: #f0f5ff;">
+            <div class="flex items-start gap-3">
+              <svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round"
+                  d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+              </svg>
+              <p class="text-xs leading-relaxed" style="color: #2366CE;">
+                Abre el correo y haz clic en el botón <strong>Restablecer contraseña</strong>.
+                Si no lo encuentras, revisa tu carpeta de spam.
+              </p>
+            </div>
+          </div>
+
+          <p *ngIf="errorMessage"
+             class="text-xs text-red-500 text-center bg-red-50 py-2 px-3 rounded-lg border border-red-100 mb-4">
+            {{ errorMessage }}
+          </p>
+
+          <!-- Reenviar -->
+          <div class="text-center mb-6">
+            <span class="text-sm text-gray-500">¿No recibiste el enlace? </span>
+            <button
+              type="button"
+              (click)="reenviarToken()"
+              [disabled]="tiempoRestante > 0 || loading"
+              class="text-sm font-medium transition-opacity disabled:opacity-40 disabled:cursor-not-allowed hover:underline"
+              style="color: #2366CE;"
+            >
+              <ng-container *ngIf="!loading">Reenviar</ng-container>
+              <ng-container *ngIf="loading">
+                <svg class="animate-spin w-3.5 h-3.5 inline" fill="none" viewBox="0 0 24 24">
+                  <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                  <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                </svg>
+              </ng-container>
+            </button>
+          </div>
+
+          <button
+            type="button"
+            (click)="volverPaso1()"
+            class="flex items-center gap-1.5 text-sm font-medium hover:opacity-75 transition-opacity"
+            style="color: #2366CE;"
+          >
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            Cambiar correo
+          </button>
+
+        </div>
+
+        <!-- SSL badge -->
+        <div class="flex items-center justify-center gap-1.5 mt-10 text-xs text-gray-400">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+          </svg>
+          Conexión segura SSL/TLS
+        </div>
+
+      </div>
+    </div>
+
+  </div><!-- /olvide-main -->
+</div>

@@ -1,0 +1,1012 @@
+<style>
+  /* HERO: columna derecha apila en móvil */
+  @media (max-width: 640px) {
+    .hero-col-izq { padding: 24px 20px 16px 20px !important; }
+    .hero-col-der {
+      width: 100% !important;
+      padding: 0 20px 28px 20px !important;
+      align-items: flex-start !important;
+    }
+    .hero-stats { gap: 8px !important; }
+    .hero-stat-chip { padding: 10px 10px !important; gap: 8px !important; }
+  }
+
+  /* ── CARDS DE SERVICIO ── */
+  .service-card {
+    position: relative;
+    background: #ffffff;
+    border-radius: 1rem;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.07);
+    text-align: left;
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    transition:
+      background 350ms cubic-bezier(0.4,0,0.2,1),
+      border-color 350ms cubic-bezier(0.4,0,0.2,1),
+      box-shadow 350ms cubic-bezier(0.4,0,0.2,1),
+      transform 200ms cubic-bezier(0.4,0,0.2,1);
+    cursor: pointer;
+  }
+
+  /* SVG del trazo animado — cubre toda la card */
+  .service-card .border-trace {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 2;
+    overflow: visible;
+  }
+
+  /* El rect del trazo */
+  .service-card .border-trace .trace-rect {
+    fill: none;
+    stroke: rgba(255,255,255,0.85);
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-dashoffset: var(--perimeter, 9999);
+    stroke-dasharray:  var(--perimeter, 9999);
+    transition: stroke-dashoffset 0ms;
+  }
+
+  .service-card:hover .trace-rect {
+    stroke-dashoffset: 0;
+    transition: stroke-dashoffset 650ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .service-card > *:not(.border-trace) {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── HOVER STATE ── */
+  .service-card:hover {
+    background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 60%, #3b82f6 100%);
+    border-color: transparent;
+    box-shadow:
+      0 8px 30px rgba(35,102,206,0.45),
+      0 2px 8px rgba(35,102,206,0.25),
+      inset 0 1px 0 rgba(255,255,255,0.15);
+    transform: translateY(-3px);
+  }
+
+  .service-card:hover .card-title       { color: #ffffff !important; }
+  .service-card:hover .card-subtitle    { color: rgba(255,255,255,0.70) !important; }
+  .service-card:hover .card-divider     { border-color: rgba(255,255,255,0.20) !important; }
+  .service-card:hover .card-status-text { color: rgba(255,255,255,0.70) !important; }
+  .service-card:hover .card-arrow       { stroke: rgba(255,255,255,0.60) !important; }
+  .service-card:hover .card-icon-wrap   { background-color: rgba(255,255,255,0.18) !important; }
+  .service-card:hover .card-icon-wrap svg { stroke: #ffffff !important; }
+
+  /* ── STACK DE TARJETAS ── */
+  .card-stack-wrapper {
+    position: relative;
+    width: 100%;
+    /* altura = aspect-ratio 3/2 de la tarjeta + espacio para las cartas de atrás */
+    padding-bottom: calc(100% * 2/3 + 14px);
+    cursor: grab;
+    user-select: none;
+  }
+  .card-stack-wrapper:active { cursor: grabbing; }
+  .card-stack-item {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    will-change: transform, opacity;
+    transform-origin: center bottom;
+  }
+
+  /* ── BARRA DE GESTIÓN ── */
+  .gestion-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+  .gestion-bar-titles h2 {
+    font-size: 18px; font-weight: 800; color: #111827;
+    font-family: 'Inter', sans-serif; margin: 0 0 2px 0;
+  }
+  .gestion-bar-titles p {
+    font-size: 13px; color: #6b7280;
+    font-family: 'Inter', sans-serif; margin: 0;
+  }
+  .gestion-bar-actions { display: flex; align-items: center; gap: 8px; }
+
+  .btn-gestion {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 12px; font-weight: 700; padding: 8px 14px;
+    border-radius: 10px; border: none; cursor: pointer;
+    font-family: 'Inter', sans-serif; transition: all 0.18s;
+  }
+  .btn-gestion.agregar {
+    background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(35,102,206,0.3);
+  }
+  .btn-gestion.agregar:hover { opacity: 0.9; transform: translateY(-1px); }
+  .btn-gestion.editar {
+    background: rgba(255,255,255,0.18); color: #fff;
+    border: 1.5px solid rgba(255,255,255,0.35);
+  }
+  .btn-gestion.editar:hover { background: rgba(255,255,255,0.28); border-color: rgba(255,255,255,0.6); color: #fff; }
+  .btn-gestion.eliminar {
+    background: rgba(239,68,68,0.22); color: #fecaca;
+    border: 1.5px solid rgba(239,68,68,0.45);
+  }
+  .btn-gestion.eliminar:hover { background: rgba(239,68,68,0.35); border-color: #ef4444; }
+
+  /* ══════════════════════════════════════════
+     OVERLAY & MODALES — idéntico a rutas-favoritas
+  ══════════════════════════════════════════ */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 1000;
+    background: rgba(10, 20, 60, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .modal-panel {
+    background: #fff; border-radius: 20px;
+    width: 100%; max-width: 520px;
+    max-height: 90vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    animation: slideUp 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    overflow: hidden; font-family: 'Inter', sans-serif;
+  }
+  .modal-panel.sm { max-width: 440px; }
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .modal-header {
+    background: #fff;
+    padding: 20px 24px;
+    border-bottom: 1.5px solid #e5e7eb;
+    display: flex; align-items: center; gap: 14px; justify-content: space-between;
+    flex-shrink: 0;
+  }
+  .modal-logo { height: 36px; object-fit: contain; flex-shrink: 0; }
+  .modal-titulo    { font-size: 16px; font-weight: 800; color: #0f1f6e; font-family:'Inter',sans-serif; margin: 0 0 2px 0; }
+  .modal-subtitulo { font-size: 12px; color: #6b7280; font-family:'Inter',sans-serif; margin: 0; }
+  .modal-btn-cerrar {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    border: none; background: #f1f5f9; color: #374151; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.18s;
+  }
+  .modal-btn-cerrar:hover { background: #e5e7eb; }
+
+  .modal-body {
+    padding: 20px 24px;
+    display: flex; flex-direction: column; gap: 14px;
+    overflow-y: auto; flex: 1;
+  }
+  .modal-body::-webkit-scrollbar { width: 4px; }
+  .modal-body::-webkit-scrollbar-track { background: transparent; }
+  .modal-body::-webkit-scrollbar-thumb { background: #e5e7eb; border-radius: 4px; }
+
+  .modal-footer {
+    padding: 14px 24px 20px;
+    border-top: 1px solid #f1f5f9;
+    display: flex; justify-content: flex-end; gap: 10px;
+    flex-shrink: 0;
+  }
+
+  /* Form */
+  .form-group { display: flex; flex-direction: column; gap: 5px; }
+  .form-label { font-size: 11px; font-weight: 600; color: #6b7280; font-family:'Inter',sans-serif; text-transform: uppercase; letter-spacing: 0.04em; }
+  .form-input {
+    padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px;
+    font-size: 13px; color: #111827; font-family:'Inter',sans-serif;
+    outline: none; transition: border-color 0.18s, box-shadow 0.18s; background: #f9fafb;
+  }
+  .form-input:focus { border-color: #2366CE; box-shadow: 0 0 0 3px rgba(35,102,206,0.1); background: #fff; }
+  .form-select {
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='none' stroke='%236B7280' stroke-width='1.5' viewBox='0 0 24 24'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 10px center;
+    padding-right: 32px !important; cursor: pointer;
+  }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  /* Botones modal */
+  .btn-modal-cancel {
+    padding: 10px 20px; border-radius: 10px;
+    border: 1.5px solid #e5e7eb; background: #fff;
+    font-size: 13px; font-weight: 600; color: #6b7280;
+    font-family:'Inter',sans-serif; cursor: pointer; transition: all 0.15s;
+  }
+  .btn-modal-cancel:hover { background: #f9fafb; border-color: #d1d5db; color: #374151; }
+  .btn-modal-confirm {
+    padding: 10px 22px; border-radius: 10px; border: none;
+    font-size: 13px; font-weight: 700; color: #fff;
+    font-family:'Inter',sans-serif; cursor: pointer; transition: all 0.18s;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .btn-modal-confirm.azul { background: linear-gradient(135deg,#1a3a8f,#2366CE); box-shadow: 0 4px 14px rgba(35,102,206,0.3); }
+  .btn-modal-confirm.rojo { background: linear-gradient(135deg,#991b1b,#ef4444); box-shadow: 0 4px 14px rgba(239,68,68,0.3); }
+  .btn-modal-confirm:hover:not(:disabled) { opacity: 0.9; transform: translateY(-1px); }
+  .btn-modal-confirm:disabled { opacity: 0.45; cursor: not-allowed; transform: none; box-shadow: none; }
+
+  /* Warning eliminar */
+  .eliminar-warning {
+    background: #fff5f5; border: 1.5px solid #fecaca;
+    border-radius: 12px; padding: 14px 16px;
+    display: flex; align-items: flex-start; gap: 12px;
+  }
+
+  /* Info card en modales */
+  .card-info-modal {
+    background: #f9fafb; border-radius: 12px;
+    padding: 14px 16px; border: 1.5px solid #e5e7eb;
+    display: flex; align-items: center; gap: 12px;
+  }
+  .card-info-icon {
+    width: 36px; height: 36px; border-radius: 9px;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+
+  /* Selección de empresa (modal agregar) */
+  .empresa-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .empresa-option {
+    border: 2px solid #e5e7eb; border-radius: 12px;
+    padding: 12px 8px; cursor: pointer; text-align: center;
+    transition: all 0.18s; background: #f9fafb;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .empresa-option:hover { border-color: #2366CE; background: rgba(35,102,206,0.04); }
+  .empresa-option.selected {
+    border-color: #2366CE; background: rgba(35,102,206,0.07);
+    box-shadow: 0 0 0 3px rgba(35,102,206,0.12);
+  }
+  .empresa-option input[type="radio"] { display: none; }
+  .empresa-label { font-size: 11px; font-weight: 700; color: #374151; font-family:'Inter',sans-serif; line-height: 1.3; }
+  .empresa-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+  /* Aviso info en modal agregar */
+  .modal-info-box {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: rgba(35,102,206,0.07); border: 1.5px solid rgba(35,102,206,0.18);
+    border-radius: 12px; padding: 12px 14px;
+    font-size: 12px; color: #1e40af; font-family:'Inter',sans-serif; line-height: 1.5;
+  }
+
+  /* Mobile */
+  @media (max-width: 640px) {
+    .modal-overlay { align-items: flex-end !important; padding: 0 !important; }
+    .modal-panel {
+      max-width: 100% !important; width: 100% !important;
+      border-radius: 16px 16px 0 0 !important;
+      max-height: 85vh !important; animation: none !important;
+    }
+    .modal-panel.sm { max-width: 100% !important; }
+  }
+
+  /* ── FIX RESPONSIVE ZOOM ALTO (150%+) y viewports angostos ──
+     Los botones Agregar/Editar/Eliminar se salían del hero-col-der
+     porque el ancho clamp(220px,22vw,340px) se vuelve pequeño.
+     Solución: compactar padding/font y permitir wrap en <= 900px.
+  ── */
+  @media (max-width: 900px) {
+    /* La columna derecha del hero ocupa el ancho que necesite */
+    .hero-col-der {
+      width: clamp(200px, 30vw, 340px) !important;
+      padding: 20px 16px 20px 16px !important;
+    }
+
+    /* Botones más compactos: menos padding, sin texto si no caben */
+    .btn-gestion {
+      font-size: 11px !important;
+      padding: 7px 8px !important;
+      gap: 4px !important;
+    }
+
+    /* Row de botones: permite wrap */
+    .w-full.mb-3.flex.items-center.gap-2 {
+      flex-wrap: wrap !important;
+      gap: 6px !important;
+    }
+  }
+
+  /* Viewport muy angosto (tablet portrait / zoom 150% en desktop) */
+  @media (max-width: 700px) {
+    /* Hero apila columnas */
+    .hero-col-der {
+      width: 100% !important;
+      padding: 0 20px 24px 20px !important;
+    }
+
+    .btn-gestion {
+      font-size: 11px !important;
+      padding: 7px 10px !important;
+    }
+  }
+</style>
+
+<div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
+
+  <!-- NAVBAR COMPONENTE -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- LAYOUT 3 COLUMNAS -->
+  <div style="display: flex; align-items: flex-start; width: 100%;">
+
+    <!-- FRAME 2: Contenido principal -->
+    <div style="flex: 1; min-width: 0; padding: 40px 16px 40px 16px; overflow-x: hidden;">
+
+    <!-- HERO -->
+    <div class="relative rounded-3xl mb-4 shadow-lg flex flex-wrap"
+         style="background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); min-height: 200px; overflow: hidden;">
+
+      <!-- COLUMNA IZQUIERDA -->
+      <div class="hero-col-izq flex flex-col justify-between flex-1 min-w-0"
+           style="padding: 32px 32px 28px 32px; gap: 24px;">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-widest mb-1.5"
+             style="color: rgba(255,255,255,0.65); font-family: 'Inter', sans-serif;">Bienvenido de nuevo</p>
+          <h1 class="text-3xl font-bold text-white leading-tight" style="font-family: 'Inter', sans-serif;">
+            Hola, Jhordan
+          </h1>
+          <p class="text-sm mt-2" style="color: rgba(255,255,255,0.6); font-family: 'Inter', sans-serif;">¿Qué deseas hacer hoy?</p>
+        </div>
+
+        <div class="hero-stats grid grid-cols-3" style="gap: 10px;">
+
+          <!-- KPI: Viajes hoy -->
+          <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+               style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 6v.75m0 3v.75m0 3v.75m0 3V18m-9-5.25h5.25M7.5 15h3M3.375 5.25c-.621 0-1.125.504-1.125 1.125v3.026a2.999 2.999 0 010 5.198v3.026c0 .621.504 1.125 1.125 1.125h17.25c.621 0 1.125-.504 1.125-1.125v-3.026a3 3 0 010-5.198V6.375c0-.621-.504-1.125-1.125-1.125H3.375z"/>
+            </svg>
+            <div>
+              <p class="text-base font-bold text-white leading-none">5</p>
+              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Viajes hoy</p>
+            </div>
+          </div>
+
+          <!-- KPI: Km recorridos -->
+          <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+               style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 6.75V15m6-6v8.25m.503 3.498l4.875-2.437c.381-.19.622-.58.622-1.006V4.82c0-.836-.88-1.38-1.628-1.006l-3.869 1.934c-.317.159-.69.159-1.006 0L9.503 3.252a1.125 1.125 0 00-1.006 0L3.622 5.689C3.24 5.88 3 6.27 3 6.695V19.18c0 .836.88 1.38 1.628 1.006l3.869-1.934c.317-.159.69-.159 1.006 0l4.994 2.497z"/>
+            </svg>
+            <div>
+              <p class="text-base font-bold text-white leading-none">18 km</p>
+              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Km recorridos</p>
+            </div>
+          </div>
+
+          <!-- KPI: Última recarga -->
+          <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+               style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+            </svg>
+            <div>
+              <p class="text-base font-bold text-white leading-none">S/ 20</p>
+              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Última recarga</p>
+            </div>
+          </div>
+
+          <!-- KPI: Buses en ruta -->
+          <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+               style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+            </svg>
+            <div>
+              <p class="text-base font-bold text-white leading-none">12</p>
+              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Buses en ruta</p>
+            </div>
+          </div>
+
+          <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+               style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <div>
+              <p class="text-base font-bold text-white leading-none">3 min</p>
+              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Próximo bus</p>
+            </div>
+          </div>
+
+          <div class="hero-stat-chip rounded-2xl flex items-center gap-3"
+               style="background: rgba(255,255,255,0.14); padding: 12px 14px;">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="rgba(255,255,255,0.9)" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0zM19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+            </svg>
+            <div>
+              <p class="text-base font-bold text-white leading-none">8</p>
+              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.65);">Estaciones cercanas</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- COLUMNA DERECHA -->
+      <div class="hero-col-der flex flex-col justify-center flex-shrink-0"
+           style="width: clamp(200px, 28vw, 340px); padding: 32px 20px 28px 20px; min-width: 0;">
+
+        <!-- Saldo + acciones de tarjeta -->
+        <div class="w-full mb-3 flex items-center justify-between">
+          <div>
+            <p class="text-xs font-semibold uppercase tracking-widest"
+               style="color: rgba(255,255,255,0.65);">Saldo disponible</p>
+            <p *ngIf="tarjetas.length > 0" style="font-size: 10px; color: rgba(255,255,255,0.45); font-family:'Inter',sans-serif; margin-top: 1px;">
+              {{ tarjetaActivaObj?.alias }}
+            </p>
+          </div>
+          <p class="font-bold text-white" style="font-size: 1.4rem;">
+            <span class="text-sm font-medium mr-1" style="opacity:.7;">PEN</span>15.00
+          </p>
+        </div>
+
+        <!-- Botones Agregar / Editar / Eliminar -->
+        <div class="w-full mb-3 flex items-center gap-2">
+          <button class="btn-gestion agregar" style="flex:1; justify-content:center;" (click)="abrirModalAgregar()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+            </svg>
+            Agregar
+          </button>
+          <button class="btn-gestion editar" style="flex:1; justify-content:center;" (click)="abrirModalEditar()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+            </svg>
+            Editar
+          </button>
+          <button class="btn-gestion eliminar" style="flex:1; justify-content:center;" (click)="abrirModalEliminar()">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+            </svg>
+            Eliminar
+          </button>
+        </div>
+
+        <!-- ── STACK DE TARJETAS ── -->
+        <div class="w-full" style="position: relative;">
+
+          <div class="card-stack-wrapper"
+               (mousedown)="onDragStart($event)"
+               (mousemove)="onDragMove($event)"
+               (mouseup)="onDragEnd($event)"
+               (mouseleave)="onDragEnd($event)"
+               (touchstart)="onTouchStart($event)"
+               (touchmove)="onTouchMove($event)"
+               (touchend)="onTouchEnd($event)">
+
+            <!-- Renderizamos en orden inverso para que la activa quede encima -->
+            <ng-container *ngFor="let t of tarjetas; let i = index">
+              <div class="card-stack-item"
+                   [style.transform]="getStackTransform(i)"
+                   [style.opacity]="getStackOpacity(i)"
+                   [style.z-index]="getStackZ(i)"
+                   [style.transition]="dragging && i === tarjetaActiva ? 'none' : 'transform 0.42s cubic-bezier(0.4,0,0.2,1), opacity 0.35s ease'">
+
+                <div class="w-full relative rounded-2xl overflow-hidden shadow-xl"
+                     style="aspect-ratio: 3/2;">
+                  <img [src]="t.imagen" [alt]="t.alias"
+                       class="w-full h-full"
+                       style="object-fit: cover; display: block; user-select: none; pointer-events: none;" />
+                  <!-- Badge empresa -->
+                  <div class="absolute top-3 left-3"
+                       style="background: rgba(0,0,0,0.35); backdrop-filter: blur(6px);
+                              border-radius: 8px; padding: 3px 8px;">
+                    <span style="font-size: 10px; font-weight: 700; color: #fff; font-family:'Inter',sans-serif; letter-spacing: 0.04em;">
+                      {{ t.empresa }}
+                    </span>
+                  </div>
+                  <!-- Footer con alias + botón recarga (solo en la activa) -->
+                  <div *ngIf="i === tarjetaActiva"
+                       class="absolute bottom-0 left-0 right-0 px-4 py-3"
+                       style="background: linear-gradient(to top, rgba(10,28,80,0.78) 0%, transparent 100%);">
+                    <p style="font-size: 11px; font-weight: 600; color: rgba(255,255,255,0.75);
+                               font-family:'Inter',sans-serif; margin: 0 0 5px 0; letter-spacing: 0.02em;">
+                      {{ t.alias }}
+                    </p>
+                    <button (click)="irA('user/recargas')"
+                            class="w-full text-xs font-semibold py-2 rounded-xl transition-all hover:opacity-90 text-center"
+                            style="background:#fff; color:#2366CE; font-family:'Inter',sans-serif;">
+                      + Recargar saldo
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </ng-container>
+
+          </div>
+
+          <!-- Dots indicadores -->
+          <div *ngIf="tarjetas.length > 1"
+               style="display: flex; justify-content: center; gap: 6px; margin-top: 12px;">
+            <button *ngFor="let t of tarjetas; let i = index"
+                    (click)="irASlide(i)"
+                    style="border: none; cursor: pointer; padding: 0; background: none;">
+              <span [style.width]="tarjetaActiva === i ? '18px' : '6px'"
+                    style="height: 6px; border-radius: 3px; display: block; transition: all 0.3s ease;"
+                    [style.background]="tarjetaActiva === i ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.35)'">
+              </span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ── BARRA DE GESTIÓN DE SERVICIOS ── -->
+    <div class="gestion-bar" style="margin-top: 48px;">
+      <div class="gestion-bar-titles">
+        <h2>Servicios</h2>
+        <p>Selecciona una opción para continuar</p>
+      </div>
+    </div>
+
+    <!-- CARDS -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+
+      <!-- Ubicación -->
+      <button (click)="irA('user/ubicacion')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Ubicación</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Ver mapa en tiempo real</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Ver Buses -->
+      <button (click)="irA('user/verbuses')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Ver Buses</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">12 buses en ruta</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Noticias -->
+      <button (click)="irA('user/noticias')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 7.5h1.5m-1.5 3h1.5m-7.5 3h7.5m-7.5 3h7.5m3-9h3.375c.621 0 1.125.504 1.125 1.125V18a2.25 2.25 0 01-2.25 2.25M16.5 7.5V18a2.25 2.25 0 002.25 2.25M16.5 7.5V4.875c0-.621-.504-1.125-1.125-1.125H4.125C3.504 3.75 3 4.254 3 4.875V18a2.25 2.25 0 002.25 2.25h13.5M6 7.5h3v3H6v-3z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Noticias</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Últimas actualizaciones</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Mis Favoritos -->
+      <button (click)="irA('/rutas-favoritas')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.563.563 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Mis Favoritos</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Rutas guardadas</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Soporte Técnico -->
+      <button (click)="irA('user/soporte')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.496-3.03c.317-.384.74-.626 1.208-.766M11.42 15.17l-4.655 5.653a2.548 2.548 0 11-3.586-3.586l5.654-4.654m5.65-4.654l2.496-3.031a1.25 1.25 0 00-.87-2.087 2.547 2.547 0 00-1.835.872l-3.03 2.497m5.65 4.654l-5.65-4.654"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Soporte Técnico</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Reporta un problema técnico</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Canales de Atención -->
+      <button (click)="irA('user/canalatencion')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M16.712 4.33a9.027 9.027 0 011.652 1.306c.51.51.944 1.064 1.306 1.652M16.712 4.33l-3.448 4.138m3.448-4.138a9.014 9.014 0 00-9.424 0M19.67 7.288l-4.138 3.448m4.138-3.448a9.014 9.014 0 010 9.424m-4.138-5.976a3.736 3.736 0 00-.88-1.388 3.737 3.737 0 00-1.388-.88m2.268 2.268a3.765 3.765 0 010 2.528m-2.268-4.796a3.765 3.765 0 00-2.528 0m4.796 4.796a3.765 3.765 0 01-2.528 0m0 0a3.736 3.736 0 01-1.388-.88 3.737 3.737 0 01-.88-1.388m2.268 2.268l4.138 3.448m0 0a9.027 9.027 0 01-1.306 1.652c-.51.51-1.064.944-1.652 1.306m0 0l-3.448-4.138m3.448 4.138a9.014 9.014 0 01-9.424 0m5.976-4.138a3.765 3.765 0 01-2.528 0m0 0a3.736 3.736 0 01-1.388-.88 3.737 3.737 0 01-.88-1.388m2.268 2.268L7.288 19.67m0 0a9.024 9.024 0 01-1.652-1.306 9.027 9.027 0 01-1.306-1.652m0 0l4.138-3.448M4.33 16.712a9.014 9.014 0 010-9.424m4.138 5.976a3.765 3.765 0 010-2.528m0 0c.181-.506.475-.982.88-1.388a3.736 3.736 0 011.388-.88m-2.268 2.268L4.33 7.288m6.406 1.18L7.288 4.33m0 0a9.024 9.024 0 00-1.652 1.306A9.025 9.025 0 004.33 7.288"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Canales de Atención</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Medios de contacto</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Preguntas frecuentes -->
+      <button (click)="irA('user/faq')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9 5.25h.008v.008H12v-.008z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Preguntas frecuentes</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Consultas comunes</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Activo
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+      <!-- Recargar saldo -->
+      <button (click)="irA('user/recargas')" class="service-card">
+        <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
+        <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
+             style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
+          <svg class="w-5 h-5" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75M15 10.5a3 3 0 11-6 0 3 3 0 016 0zm3 0h.008v.008H18V10.5zm-12 0h.008v.008H6V10.5z"/>
+          </svg>
+        </div>
+        <div class="flex-1">
+          <p class="card-title text-sm font-semibold text-gray-800" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Recargar saldo</p>
+          <p class="card-subtitle text-xs text-gray-400 mt-0.5" style="font-family: 'Inter', sans-serif; transition: color 300ms ease;">Recarga tu tarjeta</p>
+        </div>
+        <div class="card-divider flex items-center justify-between pt-2 border-t border-gray-100" style="transition: border-color 300ms ease;">
+          <span class="card-status-text flex items-center gap-1 text-xs text-gray-400" style="transition: color 300ms ease;">
+            <span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>Disponible
+          </span>
+          <svg class="card-arrow w-4 h-4" fill="none" stroke="#d1d5db" stroke-width="1.5" viewBox="0 0 24 24" style="transition: stroke 300ms ease;">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+          </svg>
+        </div>
+      </button>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-12 text-center text-xs text-gray-400" style="font-family: 'Inter', sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+    </div><!-- fin FRAME 2 -->
+
+  </div><!-- fin 3 COLUMNAS -->
+
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL AGREGAR TARJETA
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="modalAgregarAbierto" (click)="cerrarOverlay($event, 'agregar')">
+  <div class="modal-panel sm">
+
+    <div class="modal-header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="modal-logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="modal-titulo">Agregar tarjeta</p>
+        <p class="modal-subtitulo">Vincula una nueva tarjeta a tu cuenta</p>
+      </div>
+      <button class="modal-btn-cerrar" (click)="cerrarModalAgregar()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Selector de empresa -->
+      <div class="form-group">
+        <label class="form-label">Empresa *</label>
+        <div class="empresa-grid">
+
+          <!-- Metropolitano -->
+          <label class="empresa-option" [class.selected]="empresaSeleccionada === 'metropolitano'"
+                 (click)="empresaSeleccionada = 'metropolitano'">
+            <input type="radio" name="empresa" value="metropolitano"/>
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg,#b91c1c,#ef4444);
+                        display: flex; align-items: center; justify-content: center;">
+              <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+              </svg>
+            </div>
+            <span class="empresa-label">Metropolitano</span>
+          </label>
+
+          <!-- Corredor Azul -->
+          <label class="empresa-option" [class.selected]="empresaSeleccionada === 'corredor'"
+                 (click)="empresaSeleccionada = 'corredor'">
+            <input type="radio" name="empresa" value="corredor"/>
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg,#1a3a8f,#2366CE);
+                        display: flex; align-items: center; justify-content: center;">
+              <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+              </svg>
+            </div>
+            <span class="empresa-label">Corredor Azul</span>
+          </label>
+
+          <!-- Metro de Lima -->
+          <label class="empresa-option" [class.selected]="empresaSeleccionada === 'metro'"
+                 (click)="empresaSeleccionada = 'metro'">
+            <input type="radio" name="empresa" value="metro"/>
+            <div style="width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg,#166534,#22c55e);
+                        display: flex; align-items: center; justify-content: center;">
+              <svg width="16" height="16" fill="none" stroke="#fff" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
+              </svg>
+            </div>
+            <span class="empresa-label">Metro de Lima</span>
+          </label>
+
+        </div>
+      </div>
+
+      <!-- Alias / nombre -->
+      <div class="form-group">
+        <label class="form-label">Alias (opcional)</label>
+        <input
+          class="form-input"
+          type="text"
+          placeholder="Ej: Mi tarjeta principal"
+          [(ngModel)]="aliasNueva"
+          maxlength="30"
+        />
+      </div>
+
+      <!-- Código de tarjeta -->
+      <div class="form-group">
+        <label class="form-label">Código de tarjeta *</label>
+        <input
+          class="form-input"
+          type="text"
+          placeholder="Ej: CA-2024-XXXXXX"
+          [(ngModel)]="codigoTarjeta"
+          maxlength="20"
+          style="font-family: 'Courier New', monospace; letter-spacing: 0.08em;"
+        />
+      </div>
+
+      <!-- Aviso informativo -->
+      <div class="modal-info-box">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+        </svg>
+        El código se encuentra en el reverso de tu tarjeta física o en el correo de activación.
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" (click)="cerrarModalAgregar()">Cancelar</button>
+      <button class="btn-modal-confirm azul"
+              [disabled]="!agregarValido()"
+              (click)="confirmarAgregar()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        Agregar tarjeta
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL EDITAR TARJETA
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="modalEditarAbierto" (click)="cerrarOverlay($event, 'editar')">
+  <div class="modal-panel sm">
+
+    <div class="modal-header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="modal-logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="modal-titulo">Editar tarjeta</p>
+        <p class="modal-subtitulo">{{ tarjetaActivaObj?.alias }}</p>
+      </div>
+      <button class="modal-btn-cerrar" (click)="cerrarModalEditar()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Tarjeta actual -->
+      <div class="card-info-modal">
+        <div class="card-info-icon" style="background: rgba(35,102,206,0.1);">
+          <svg width="18" height="18" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+          </svg>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <p style="font-size: 13px; font-weight: 700; color: #374151; margin: 0;">Tarjeta Corredor Azul</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">{{ editNombreActual }} · CA-2024-XXXXXX</p>
+        </div>
+      </div>
+
+      <!-- Nombre / alias -->
+      <div class="form-group">
+        <label class="form-label">Nombre o alias *</label>
+        <input
+          class="form-input"
+          type="text"
+          placeholder="Ej: Mi tarjeta principal"
+          [(ngModel)]="editNombre"
+        />
+      </div>
+
+      <!-- Empresa (solo lectura, informativa) -->
+      <div class="form-group">
+        <label class="form-label">Empresa</label>
+        <select class="form-input form-select" [(ngModel)]="editEmpresa">
+          <option value="metropolitano">Metropolitano</option>
+          <option value="corredor">Corredor Azul</option>
+          <option value="metro">Metro de Lima</option>
+        </select>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" (click)="cerrarModalEditar()">Cancelar</button>
+      <button class="btn-modal-confirm azul"
+              [disabled]="!editNombre.trim()"
+              (click)="confirmarEditar()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        Guardar cambios
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL ELIMINAR TARJETA
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="modalEliminarAbierto" (click)="cerrarOverlay($event, 'eliminar')">
+  <div class="modal-panel sm">
+
+    <div class="modal-header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="modal-logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="modal-titulo">Eliminar tarjeta</p>
+        <p class="modal-subtitulo">Esta acción no se puede deshacer</p>
+      </div>
+      <button class="modal-btn-cerrar" (click)="cerrarModalEliminar()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+
+      <!-- Warning -->
+      <div class="eliminar-warning">
+        <svg style="width: 20px; height: 20px; flex-shrink: 0; color: #ef4444; margin-top: 1px;"
+             fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+        <div>
+          <p style="font-size: 13px; font-weight: 700; color: #b91c1c; margin: 0 0 4px 0;">
+            ¿Eliminar tarjeta vinculada?
+          </p>
+          <p style="font-size: 12px; color: #dc2626; margin: 0; line-height: 1.5;">
+            Se desvinculará permanentemente de tu cuenta. Perderás el acceso al saldo y al historial de esta tarjeta.
+          </p>
+        </div>
+      </div>
+
+      <!-- Info de la tarjeta a eliminar -->
+      <div class="card-info-modal">
+        <div class="card-info-icon" style="background: rgba(239,68,68,0.1);">
+          <svg width="18" height="18" fill="none" stroke="#ef4444" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+          </svg>
+        </div>
+        <div style="flex: 1; min-width: 0;">
+          <p style="font-size: 13px; font-weight: 700; color: #374151; margin: 0;">Tarjeta Corredor Azul</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">Saldo disponible: S/ 15.00</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">CA-2024-XXXXXX</p>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" (click)="cerrarModalEliminar()">Cancelar</button>
+      <button class="btn-modal-confirm rojo" (click)="confirmarEliminar()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
+        </svg>
+        Sí, eliminar
+      </button>
+    </div>
+
+  </div>
+</div>
