@@ -7,7 +7,7 @@ import { NavbarComponent } from '../../../components/navbar/navbar';
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
 export type EstadoUsuario = 'activo' | 'baja' | 'suspendido';
-export type RolUsuario    = 'Pasajero' | 'Operador' | 'Administrador';
+export type RolUsuario = 'Admin' | 'Usuario' | 'Operario' | 'Conductor';
 
 export interface Usuario {
   id:              number;
@@ -55,9 +55,10 @@ function estadoMeta(estado: EstadoUsuario): { estadoLabel: string; estadoClass: 
 
 function rolMeta(rol: RolUsuario): { rolLabel: string; rolClass: string } {
   const map: Record<RolUsuario, { rolLabel: string; rolClass: string }> = {
-    Pasajero:       { rolLabel: 'Pasajero',      rolClass: 'pasajero'  },
-    Operador:       { rolLabel: 'Operador',       rolClass: 'operador'  },
-    Administrador:  { rolLabel: 'Administrador',  rolClass: 'admin'     },
+    Admin:      { rolLabel: 'Admin',      rolClass: 'admin'      },
+    Usuario:    { rolLabel: 'Usuario',    rolClass: 'usuario'    },
+    Operario:   { rolLabel: 'Operario',   rolClass: 'operario'   },
+    Conductor:  { rolLabel: 'Conductor',  rolClass: 'conductor'  },
   };
   return map[rol];
 }
@@ -86,19 +87,19 @@ export class GestionarUsuariosComponent implements OnInit {
 
   // ── Datos mock (reemplazar con llamada a servicio) ──────────────────────────
   private todosLosUsuarios: Usuario[] = [
-    { id: 1,  nombre: 'Jorge Luis Machado Flores',  iniciales: 'JM', saldo: 15.00, fechaRegistro: '12 Ene 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'j.machado@gmail.com',  telefono: '987654321', tipoDocumento: 'DNI', nroDocumento: '45678901' },
-    { id: 2,  nombre: 'Yerami Medina Quispe',       iniciales: 'YM', saldo: 15.00, fechaRegistro: '15 Ene 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'yerami.mq@gmail.com',  telefono: '912345678', tipoDocumento: 'DNI', nroDocumento: '46789012' },
-    { id: 3,  nombre: 'Carlos Alberto Paredes',     iniciales: 'CP', saldo: 15.00, fechaRegistro: '03 Feb 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'c.paredes@hotmail.com', telefono: '',          tipoDocumento: 'DNI', nroDocumento: '47890123' },
-    { id: 4,  nombre: 'Lucía Ríos Torres',          iniciales: 'LR', saldo: 15.00, fechaRegistro: '20 Feb 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'lucia.rt@gmail.com',   telefono: '934567890', tipoDocumento: 'DNI', nroDocumento: '48901234' },
-    { id: 5,  nombre: 'Miguel Alonzo Huanca',       iniciales: 'MA', saldo: 15.00, fechaRegistro: '08 Mar 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Operador',      ...rolMeta('Operador'),      correo: 'm.huanca@corredor.pe', telefono: '956789012', tipoDocumento: 'DNI', nroDocumento: '49012345' },
-    { id: 6,  nombre: 'Patricia Vega Salcedo',      iniciales: 'PV', saldo: 32.50, fechaRegistro: '22 Mar 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'pvega@gmail.com',      telefono: '978901234', tipoDocumento: 'CE',  nroDocumento: 'CE001122' },
-    { id: 7,  nombre: 'Rodrigo Castillo Mendoza',   iniciales: 'RC', saldo: 8.00,  fechaRegistro: '01 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Operador',      ...rolMeta('Operador'),      correo: 'r.castillo@corredor.pe', telefono: '900123456', tipoDocumento: 'DNI', nroDocumento: '50123456' },
-    { id: 8,  nombre: 'Sofía Mamani Apaza',         iniciales: 'SM', saldo: 21.00, fechaRegistro: '14 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'sofia.ma@gmail.com',   telefono: '921234567', tipoDocumento: 'DNI', nroDocumento: '51234567' },
-    { id: 9,  nombre: 'Diego Flores Cárdenas',      iniciales: 'DF', saldo: 5.50,  fechaRegistro: '30 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'd.flores@gmail.com',   telefono: '',          tipoDocumento: 'DNI', nroDocumento: '52345678' },
-    { id: 10, nombre: 'Ana Lucía Herrera Ramos',    iniciales: 'AH', saldo: 15.00, fechaRegistro: '05 May 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'ana.hr@gmail.com',     telefono: '943456789', tipoDocumento: 'DNI', nroDocumento: '53456789' },
-    { id: 11, nombre: 'Ernesto Tapia Villanueva',   iniciales: 'ET', saldo: 15.00, fechaRegistro: '18 May 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Administrador', ...rolMeta('Administrador'), correo: 'e.tapia@corredor.pe',  telefono: '964567890', tipoDocumento: 'DNI', nroDocumento: '54567890' },
-    { id: 12, nombre: 'Claudia Soto Quiroz',        iniciales: 'CS', saldo: 15.00, fechaRegistro: '02 Jun 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Pasajero',      ...rolMeta('Pasajero'),      correo: 'c.soto@gmail.com',     telefono: '',          tipoDocumento: 'CE',  nroDocumento: 'CE003344' },
-    { id: 13, nombre: 'Héctor Quispe Lazo',         iniciales: 'HQ', saldo: 15.00, fechaRegistro: '19 Jun 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Operador',      ...rolMeta('Operador'),      correo: 'h.quispe@corredor.pe', telefono: '975678901', tipoDocumento: 'DNI', nroDocumento: '55678901' },
+    { id: 1,  nombre: 'Jorge Luis Machado Flores',  iniciales: 'JM', saldo: 15.00, fechaRegistro: '12 Ene 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'j.machado@gmail.com',    telefono: '987654321', tipoDocumento: 'DNI', nroDocumento: '45678901' },
+    { id: 2,  nombre: 'Yerami Medina Quispe',       iniciales: 'YM', saldo: 15.00, fechaRegistro: '15 Ene 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'yerami.mq@gmail.com',    telefono: '912345678', tipoDocumento: 'DNI', nroDocumento: '46789012' },
+    { id: 3,  nombre: 'Carlos Alberto Paredes',     iniciales: 'CP', saldo: 15.00, fechaRegistro: '03 Feb 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Conductor', ...rolMeta('Conductor'), correo: 'c.paredes@hotmail.com',  telefono: '',          tipoDocumento: 'DNI', nroDocumento: '47890123' },
+    { id: 4,  nombre: 'Lucía Ríos Torres',          iniciales: 'LR', saldo: 15.00, fechaRegistro: '20 Feb 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'lucia.rt@gmail.com',     telefono: '934567890', tipoDocumento: 'DNI', nroDocumento: '48901234' },
+    { id: 5,  nombre: 'Miguel Alonzo Huanca',       iniciales: 'MA', saldo: 15.00, fechaRegistro: '08 Mar 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Operario',  ...rolMeta('Operario'),  correo: 'm.huanca@corredor.pe',  telefono: '956789012', tipoDocumento: 'DNI', nroDocumento: '49012345' },
+    { id: 6,  nombre: 'Patricia Vega Salcedo',      iniciales: 'PV', saldo: 32.50, fechaRegistro: '22 Mar 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'pvega@gmail.com',        telefono: '978901234', tipoDocumento: 'CE',  nroDocumento: 'CE001122' },
+    { id: 7,  nombre: 'Rodrigo Castillo Mendoza',   iniciales: 'RC', saldo: 8.00,  fechaRegistro: '01 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Conductor', ...rolMeta('Conductor'), correo: 'r.castillo@corredor.pe', telefono: '900123456', tipoDocumento: 'DNI', nroDocumento: '50123456' },
+    { id: 8,  nombre: 'Sofía Mamani Apaza',         iniciales: 'SM', saldo: 21.00, fechaRegistro: '14 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'sofia.ma@gmail.com',     telefono: '921234567', tipoDocumento: 'DNI', nroDocumento: '51234567' },
+    { id: 9,  nombre: 'Diego Flores Cárdenas',      iniciales: 'DF', saldo: 5.50,  fechaRegistro: '30 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'd.flores@gmail.com',     telefono: '',          tipoDocumento: 'DNI', nroDocumento: '52345678' },
+    { id: 10, nombre: 'Ana Lucía Herrera Ramos',    iniciales: 'AH', saldo: 15.00, fechaRegistro: '05 May 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'ana.hr@gmail.com',       telefono: '943456789', tipoDocumento: 'DNI', nroDocumento: '53456789' },
+    { id: 11, nombre: 'Ernesto Tapia Villanueva',   iniciales: 'ET', saldo: 15.00, fechaRegistro: '18 May 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Admin',     ...rolMeta('Admin'),     correo: 'e.tapia@corredor.pe',    telefono: '964567890', tipoDocumento: 'DNI', nroDocumento: '54567890' },
+    { id: 12, nombre: 'Claudia Soto Quiroz',        iniciales: 'CS', saldo: 15.00, fechaRegistro: '02 Jun 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Operario',  ...rolMeta('Operario'),  correo: 'c.soto@gmail.com',       telefono: '',          tipoDocumento: 'CE',  nroDocumento: 'CE003344' },
+    { id: 13, nombre: 'Héctor Quispe Lazo',         iniciales: 'HQ', saldo: 15.00, fechaRegistro: '19 Jun 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Conductor', ...rolMeta('Conductor'), correo: 'h.quispe@corredor.pe',   telefono: '975678901', tipoDocumento: 'DNI', nroDocumento: '55678901' },
   ];
 
   usuariosFiltrados: Usuario[] = [];
