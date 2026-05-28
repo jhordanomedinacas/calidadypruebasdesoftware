@@ -1,7 +1,7 @@
 import { Routes } from '@angular/router';
 import { LoginComponent } from './Pages/login/login';
 import { OlvidecontraComponent } from './Pages/olvidecontra/olvidecontra';
-import { InicioComponent } from './Pages/inicio/inicio';
+import { InicioComponent } from './Pages/user/inicio/inicio';
 import { RegistroComponent } from './Pages/registro/registro';
 import { VerBusesComponent } from './Pages/user/verbuses/verbuses';
 import { UbicacionComponent } from './Pages/user/ubicacion/ubicacion';
@@ -17,6 +17,7 @@ import { RutasFavoritasComponent } from './Pages/user/rutas-favoritas/rutas-favo
 import { DashboardComponent } from './Pages/admin/dashboard/dashboard';
 import { IniciAdminComponent } from './Pages/admin/inicio/inicio';
 import { GestionarUsuariosComponent } from './Pages/admin/gestionar-usuarios/gestionar-usuarios';
+
 
 export const routes: Routes = [
 

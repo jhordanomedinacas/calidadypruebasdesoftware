@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -116,7 +116,7 @@ export class GestionarUsuariosComponent implements OnInit {
   usuarioSeleccionado: Usuario | null = null;
   formEditar: FormEditar | null = null;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.usuariosFiltrados = [...this.todosLosUsuarios];
@@ -248,11 +248,11 @@ export class GestionarUsuariosComponent implements OnInit {
 
   // Abrir editar desde el modal de ver
   editarDesdeVer(): void {
-    const usuario = this.usuarioSeleccionado;
-    this.cerrarModalVer();
-    if (usuario) {
-      setTimeout(() => this.abrirModalEditar(usuario), 50);
-    }
+    const usuario = this.usuarioSeleccionado!;  // guardar ref antes de cerrar
+    this.modalVerAbierto = false;               // cerrar Ver sin nullear el usuario
+    this.usuarioSeleccionado = null;
+    this.cdr.detectChanges();                   // forzar que Angular quite el modal Ver del DOM
+    this.abrirModalEditar(usuario);             // abrir Editar con el usuario correcto
   }
 
   // ── Navegación ──────────────────────────────────────────────────────────────

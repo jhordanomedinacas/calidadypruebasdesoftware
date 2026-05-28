@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
-import { NavbarComponent } from '../../components/navbar/navbar';
+import { NavbarComponent } from '../../../components/navbar/navbar';
 
 const fadeSlideIn = trigger('fadeSlideIn', [
   transition(':enter', [
