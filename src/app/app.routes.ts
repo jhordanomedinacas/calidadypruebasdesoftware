@@ -17,6 +17,8 @@ import { RutasFavoritasComponent } from './Pages/user/rutas-favoritas/rutas-favo
 import { DashboardComponent } from './Pages/admin/dashboard/dashboard';
 import { IniciAdminComponent } from './Pages/admin/inicio/inicio';
 import { GestionarUsuariosComponent } from './Pages/admin/gestionar-usuarios/gestionar-usuarios';
+import { GestionarLineasComponent } from './Pages/admin/gestionar-lineas/gestionar-lineas';
+import { DashboardUsuarioComponent } from './Pages/user/dashboard/dashboard';
 
 
 export const routes: Routes = [
@@ -30,6 +32,7 @@ export const routes: Routes = [
 
   // ── Vista user Privadas (requieren estar autenticado) ─
   { path: 'inicio',               component: InicioComponent,               canActivate: [authGuard] },
+  { path: 'dashboardu', component: DashboardUsuarioComponent,      canActivate: [authGuard] },
   { path: 'user/verbuses',        component: VerBusesComponent,             canActivate: [authGuard] },
   { path: 'user/ubicacion',       component: UbicacionComponent,            canActivate: [authGuard] },
   { path: 'user/recargas',        component: RecargasComponent,             canActivate: [authGuard] },
@@ -43,5 +46,6 @@ export const routes: Routes = [
   //Vista Admin Privadas (requieren estar autenticado) ─
   { path: 'dashboarda', component: DashboardComponent,      canActivate: [authGuard] },
   { path: 'inicia', component: IniciAdminComponent,      canActivate: [authGuard] },
-  { path: 'gestion-usuarios', component: GestionarUsuariosComponent,      canActivate: [authGuard] }
+  { path: 'gestion-usuarios', component: GestionarUsuariosComponent,      canActivate: [authGuard] },
+  { path: 'gestion-lineas', component: GestionarLineasComponent,      canActivate: [authGuard] }
 ];

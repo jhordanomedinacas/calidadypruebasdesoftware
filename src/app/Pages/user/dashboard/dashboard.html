@@ -1,1 +1,634 @@
-<p>dashboard works!</p>
+<style>
+  /* ══════════════════════════════════════════════
+     TOKENS — mismos que admin
+  ══════════════════════════════════════════════ */
+  .dash-root {
+    --bg:        #f0f4fb;
+    --bg-card:   #ffffff;
+    --border:    #e5e7eb;
+    --blue-dark: #1a3a8f;
+    --blue:      #2366CE;
+    --blue-soft: rgba(35,102,206,0.10);
+    --green:     #22c55e;
+    --amber:     #f59e0b;
+    --red:       #ef4444;
+    --purple:    #8b5cf6;
+    --text-1:    #111827;
+    --text-2:    #6b7280;
+    --text-3:    #9ca3af;
+    --font:      'Inter', sans-serif;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.07);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
+    --r-lg:      16px;
+    --r-md:      12px;
+    --r-sm:      8px;
+  }
+
+  .dash-root {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text-1);
+  }
+
+  /* ══════════════════════════════════════════════
+     KPI GRID
+  ══════════════════════════════════════════════ */
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+  .kpi-card {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    padding: 20px 22px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    box-shadow: var(--shadow-sm);
+    transition: box-shadow 0.2s, transform 0.2s, border-color 0.2s;
+    animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+  }
+  .kpi-card:hover {
+    box-shadow: 0 8px 24px rgba(35,102,206,0.13);
+    border-color: #bfdbfe;
+    transform: translateY(-2px);
+  }
+  .kpi-label {
+    font-size: 12px;
+    color: var(--text-2);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .kpi-value {
+    font-size: 32px;
+    font-weight: 800;
+    color: var(--text-1);
+    letter-spacing: -0.02em;
+    line-height: 1;
+  }
+  .kpi-sub {
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .kpi-sub.green  { color: #16a34a; }
+  .kpi-sub.amber  { color: #b45309; }
+  .kpi-sub.red    { color: #dc2626; }
+  .kpi-sub.blue   { color: #2366CE; }
+
+  /* ══════════════════════════════════════════════
+     GRID PRINCIPAL
+  ══════════════════════════════════════════════ */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  .panel.full-width { grid-column: 1 / -1; }
+
+  /* ══════════════════════════════════════════════
+     PANEL BASE
+  ══════════════════════════════════════════════ */
+  .panel {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .panel:hover {
+    box-shadow: 0 8px 24px rgba(35,102,206,0.10);
+    border-color: #bfdbfe;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-1);
+  }
+  .panel-title-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-subtitle {
+    font-size: 12px;
+    color: var(--text-3);
+    font-weight: 400;
+  }
+  .panel-badge {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-3);
+    background: #f3f4f6;
+    padding: 3px 10px;
+    border-radius: 20px;
+  }
+  .panel-badge.live {
+    color: #16a34a;
+    background: rgba(34,197,94,0.10);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ══════════════════════════════════════════════
+     CHART WRAP (echarts)
+  ══════════════════════════════════════════════ */
+  .chart-body {
+    padding: 16px 20px 20px 20px;
+  }
+  .chart-hint {
+    font-size: 11px;
+    color: var(--text-3);
+    padding: 0 20px 12px 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+
+  /* ══════════════════════════════════════════════
+     TOP LÍNEAS (horario entre paraderos)
+  ══════════════════════════════════════════════ */
+  .linea-horario-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 13px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+  }
+  .linea-horario-item:last-child { border-bottom: none; }
+  .linea-horario-item:hover { background: #f8fafc; }
+
+  .linea-badge {
+    min-width: 52px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 800;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--blue-soft);
+    color: var(--blue-dark);
+    flex-shrink: 0;
+  }
+
+  .linea-info { flex: 1; min-width: 0; }
+  .linea-ruta {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-1);
+    margin: 0 0 3px 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .linea-paraderos {
+    font-size: 11px;
+    color: var(--text-3);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .linea-arrow { color: var(--blue); font-size: 10px; }
+
+  .linea-eta-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+    flex-shrink: 0;
+  }
+  .linea-eta-tiempo {
+    font-size: 13px;
+    font-weight: 800;
+    padding: 3px 10px;
+    border-radius: 8px;
+  }
+  .linea-eta-horario {
+    font-size: 10px;
+    color: var(--text-3);
+    font-weight: 500;
+  }
+  .eta-verde  { color: #16a34a; background: rgba(34,197,94,0.12); }
+  .eta-amber  { color: #b45309; background: rgba(245,158,11,0.12); }
+  .eta-rojo   { color: #dc2626; background: rgba(239,68,68,0.12); }
+
+  /* cumplimiento badge */
+  .cumpl-badge {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+  }
+  .cumpl-alto   { background: rgba(34,197,94,0.10);  color: #16a34a; }
+  .cumpl-medio  { background: rgba(245,158,11,0.10); color: #b45309; }
+  .cumpl-bajo   { background: rgba(239,68,68,0.10);  color: #dc2626; }
+
+  /* ══════════════════════════════════════════════
+     FRECUENCIA USO (tabs)
+  ══════════════════════════════════════════════ */
+  .freq-tabs {
+    display: flex;
+    gap: 6px;
+    padding: 12px 20px 0 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .freq-tab {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 14px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    color: var(--text-2);
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .freq-tab:hover { color: var(--blue); }
+  .freq-tab.active {
+    color: var(--blue);
+    border-bottom: 2px solid var(--blue);
+  }
+
+  /* ══════════════════════════════════════════════
+     MÉTODOS DE PAGO
+  ══════════════════════════════════════════════ */
+  .pago-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 20px;
+    border-bottom: 1px solid #f1f5f9;
+    transition: background 0.15s;
+  }
+  .pago-item:last-child { border-bottom: none; }
+  .pago-item:hover { background: #f8fafc; }
+
+  .pago-icon {
+    width: 38px;
+    height: 28px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    flex-shrink: 0;
+  }
+  .pago-icon.tarjeta    { background: linear-gradient(135deg,#1a3a8f,#2366CE); color:#fff; }
+  .pago-icon.efectivo   { background: rgba(34,197,94,0.12);  color: #16a34a; }
+  .pago-icon.digital    { background: rgba(139,92,246,0.12); color: #7c3aed; }
+
+  .pago-nombre { font-size: 13px; font-weight: 600; color: var(--text-1); margin: 0 0 2px 0; }
+  .pago-meta   { font-size: 11px; color: var(--text-3); margin: 0; }
+  .pago-monto  { font-size: 13px; font-weight: 700; color: var(--text-1); margin-left: auto; flex-shrink: 0; }
+
+  .pago-predeterminado {
+    font-size: 10px;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 6px;
+    background: var(--blue-soft);
+    color: var(--blue);
+    margin-left: 8px;
+  }
+
+  /* ══════════════════════════════════════════════
+     PULSE DOT
+  ══════════════════════════════════════════════ */
+  .pulse-dot {
+    width: 7px; height: 7px; border-radius: 50%;
+    background: #22c55e; position: relative; display: inline-block; flex-shrink: 0;
+  }
+  .pulse-dot::after {
+    content: ''; position: absolute; inset: -3px;
+    border-radius: 50%; border: 2px solid #22c55e;
+    animation: pulse 1.8s ease-out infinite;
+  }
+
+  /* ══════════════════════════════════════════════
+     ANIMACIONES
+  ══════════════════════════════════════════════ */
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes pulse {
+    0%   { transform: scale(1);   opacity: 0.6; }
+    70%  { transform: scale(2.2); opacity: 0;   }
+    100% { transform: scale(2.2); opacity: 0;   }
+  }
+
+  /* ══════════════════════════════════════════════
+     RESPONSIVE
+  ══════════════════════════════════════════════ */
+  @media (max-width: 1100px) {
+    .kpi-grid  { grid-template-columns: repeat(2, 1fr); }
+    .main-grid { grid-template-columns: 1fr; }
+    .panel.full-width { grid-column: 1; }
+  }
+  @media (max-width: 768px) {
+    .dash-content { padding: 16px 16px 48px 16px !important; }
+    .kpi-grid     { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 420px) {
+    .kpi-grid  { grid-template-columns: 1fr; }
+    .kpi-value { font-size: 26px; }
+  }
+</style>
+
+<div class="dash-root">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div style="padding: 18px 32px 0 32px; font-family: 'Inter', sans-serif;">
+    <span style="font-size:13px; color:#2366CE; font-weight:600; cursor:pointer;" (click)="irA('inicio')">Inicio</span>
+    <span style="font-size:13px; color:#9ca3af; margin:0 6px;">›</span>
+    <span style="font-size:13px; color:#9ca3af;">Mi Dashboard</span>
+  </div>
+
+  <!-- CONTENIDO -->
+  <div class="dash-content" style="padding: 24px 32px 64px 32px;">
+
+    <!-- ENCABEZADO -->
+    <div style="margin-bottom: 20px; animation: cardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;">
+      <p style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#2366CE; margin:0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size:24px; font-weight:700; color:#111827; margin:0;">Mi Dashboard — {{ nombreUsuario }}</h2>
+    </div>
+
+    <!-- ══ KPI CARDS ══ -->
+    <div class="kpi-grid">
+
+      <!-- Viajes este mes -->
+      <div class="kpi-card" style="animation-delay: 0ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
+          </svg>
+          Viajes este mes
+        </div>
+        <div class="kpi-value">{{ kpis.viajesMes }}</div>
+        <div class="kpi-sub green">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/>
+          </svg>
+          +{{ kpis.viajesMesDelta }}% vs mes anterior
+        </div>
+      </div>
+
+      <!-- Gasto mensual -->
+      <div class="kpi-card" style="animation-delay: 50ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0115.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 013 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 00-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 01-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 003 15h-.75"/>
+          </svg>
+          Gasto mensual
+        </div>
+        <div class="kpi-value">S/ {{ kpis.gastoMes | number:'1.2-2' }}</div>
+        <div class="kpi-sub amber">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 10.5L12 3m0 0l7.5 7.5M12 3v18"/>
+          </svg>
+          +{{ kpis.gastoDelta }}% vs mes anterior
+        </div>
+      </div>
+
+      <!-- Demora promedio -->
+      <div class="kpi-card" style="animation-delay: 100ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Demora promedio
+        </div>
+        <div class="kpi-value">{{ kpis.demoraPromedio }}<span style="font-size:16px; font-weight:600; color:#6b7280;"> min</span></div>
+        <div class="kpi-sub" [ngClass]="kpis.demoraPromedio <= 5 ? 'green' : kpis.demoraPromedio <= 10 ? 'amber' : 'red'">
+          <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 13.5L12 21m0 0l-7.5-7.5M12 21V3"/>
+          </svg>
+          -{{ kpis.demoraDelta }} min vs semana pasada
+        </div>
+      </div>
+
+      <!-- Buses en horario -->
+      <div class="kpi-card" style="animation-delay: 150ms;">
+        <div class="kpi-label">
+          <svg width="14" height="14" fill="none" stroke="#6b7280" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          Buses en horario hoy
+        </div>
+        <div class="kpi-value">{{ kpis.busesEnHorarioPct }}<span style="font-size:16px; font-weight:600; color:#6b7280;">%</span></div>
+        <div class="kpi-sub" [ngClass]="kpis.busesEnHorarioPct >= 80 ? 'green' : 'amber'">
+          <span class="pulse-dot" style="margin-top:1px;"></span>
+          {{ kpis.busesEnHorario }} de {{ kpis.busesTotales }} buses a tiempo
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ══ GRID PRINCIPAL ══ -->
+    <div class="main-grid">
+
+      <!-- ══ HORARIO PREFERIDO DE VIAJE (ngx-echarts) ══ -->
+      <div class="panel full-width" style="animation-delay: 30ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Horario preferido de viaje</span>
+            <span class="panel-subtitle">Distribución de viajes por hora del día</span>
+          </div>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <!-- Tabs franja -->
+            <button
+              *ngFor="let f of franjasHorario"
+              (click)="seleccionarFranja(f.key)"
+              style="font-size:11px; font-weight:600; padding:4px 12px; border-radius:20px; cursor:pointer; border:1.5px solid; transition: all 0.15s;"
+              [style.background]="franjaActiva === f.key ? '#2366CE' : 'transparent'"
+              [style.color]="franjaActiva === f.key ? '#fff' : '#6b7280'"
+              [style.borderColor]="franjaActiva === f.key ? '#2366CE' : '#e5e7eb'">
+              {{ f.label }}
+            </button>
+          </div>
+        </div>
+        <div class="chart-body">
+          <div echarts
+               [options]="graficoHorario"
+               (chartClick)="onHorarioClick($event)"
+               style="height: 260px; width: 100%;">
+          </div>
+        </div>
+        <div class="chart-hint">
+          Haz clic en una barra para ver el detalle de esa hora
+        </div>
+      </div>
+
+      <!-- ══ FRECUENCIA DE USO (ngx-echarts) ══ -->
+      <div class="panel" style="animation-delay: 60ms;">
+        <div class="panel-header">
+          <span class="panel-title">Frecuencia de uso</span>
+          <span class="panel-badge">Últimas 8 semanas</span>
+        </div>
+        <!-- Tabs vista -->
+        <div class="freq-tabs">
+          <button class="freq-tab" [class.active]="freqVista === 'semanal'" (click)="cambiarFreqVista('semanal')">Semanal</button>
+          <button class="freq-tab" [class.active]="freqVista === 'patron'"  (click)="cambiarFreqVista('patron')">Patrón</button>
+        </div>
+        <div class="chart-body">
+          <div echarts
+               [options]="graficoFrecuencia"
+               style="height: 230px; width: 100%;">
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ GASTO MENSUAL — línea histórica (ngx-echarts) ══ -->
+      <div class="panel" style="animation-delay: 80ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Gasto en pasajes</span>
+            <span class="panel-subtitle">Últimos 6 meses</span>
+          </div>
+          <span class="panel-badge">S/ {{ totalGastoHistorico | number:'1.2-2' }}</span>
+        </div>
+        <div class="chart-body">
+          <div echarts
+               [options]="graficoGasto"
+               style="height: 230px; width: 100%;">
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ DEMORA POR LÍNEA (ngx-echarts) ══ -->
+      <div class="panel full-width" style="animation-delay: 100ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Demora promedio por línea</span>
+            <span class="panel-subtitle">% viajes con demora >5 min · últimas 4 semanas</span>
+          </div>
+          <span class="panel-badge">Mis líneas</span>
+        </div>
+        <div class="chart-body">
+          <div echarts
+               [options]="graficoDemora"
+               (chartClick)="onDemoraClick($event)"
+               style="height: 260px; width: 100%;">
+          </div>
+        </div>
+        <div class="chart-hint">
+          Haz clic en una línea para ver el detalle semanal
+        </div>
+
+        <!-- Detalle demora drill-down -->
+        <div *ngIf="demoraDetalle.length > 0" style="padding: 0 20px 16px 20px;">
+          <div style="font-size:13px; font-weight:700; color:#111827; margin-bottom:8px;">
+            Detalle: {{ lineaSeleccionada }}
+          </div>
+          <div echarts
+               [options]="graficoDemoraDetalle"
+               style="height: 180px; width: 100%;">
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TOP LÍNEAS QUE CUMPLEN HORARIO (entre paraderos) ══ -->
+      <div class="panel full-width" style="animation-delay: 120ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Top líneas que cumplen tu horario</span>
+            <span class="panel-subtitle">Entre tus paraderos habituales · actualizado ahora</span>
+          </div>
+          <span class="panel-badge live">
+            <span class="pulse-dot"></span>
+            En vivo
+          </span>
+        </div>
+        <div>
+          <div class="linea-horario-item" *ngFor="let l of topLineas">
+            <span class="linea-badge">{{ l.codigo }}</span>
+            <div class="linea-info">
+              <p class="linea-ruta">{{ l.nombre }}</p>
+              <p class="linea-paraderos">
+                <span>{{ l.paraderoOrigen }}</span>
+                <span class="linea-arrow">→</span>
+                <span>{{ l.paraderoDestino }}</span>
+              </p>
+            </div>
+            <div class="linea-eta-wrap">
+              <span class="linea-eta-tiempo" [ngClass]="l.etaClass">{{ l.etaMin }} min</span>
+              <span class="linea-eta-horario">Sale: {{ l.horarioSalida }}</span>
+            </div>
+            <span class="cumpl-badge" [ngClass]="l.cumplimientoClass">{{ l.cumplimientoLabel }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ MÉTODOS DE PAGO ══ -->
+      <div class="panel" style="animation-delay: 140ms;">
+        <div class="panel-header">
+          <span class="panel-title">Métodos de pago</span>
+          <span class="panel-badge">{{ metodosPago.length }} guardados</span>
+        </div>
+        <div>
+          <div class="pago-item" *ngFor="let p of metodosPago">
+            <div class="pago-icon" [ngClass]="p.tipoClass">{{ p.icono }}</div>
+            <div style="flex:1; min-width:0;">
+              <p class="pago-nombre">
+                {{ p.nombre }}
+                <span class="pago-predeterminado" *ngIf="p.predeterminado">Predeterminado</span>
+              </p>
+              <p class="pago-meta">{{ p.meta }}</p>
+            </div>
+            <span class="pago-monto">S/ {{ p.gastoMes | number:'1.2-2' }}</span>
+          </div>
+        </div>
+        <div style="padding: 12px 20px; border-top: 1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+          <span style="font-size:12px; color:#6b7280; font-weight:500;">Total gastado este mes</span>
+          <span style="font-size:14px; font-weight:800; color:#111827;">S/ {{ gastoTotalMes | number:'1.2-2' }}</span>
+        </div>
+      </div>
+
+      <!-- ══ GASTO POR FRANJA — radial/pie (ngx-echarts) ══ -->
+      <div class="panel" style="animation-delay: 160ms;">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-title">Gasto por franja horaria</span>
+            <span class="panel-subtitle">Distribución del gasto total</span>
+          </div>
+        </div>
+        <div class="chart-body">
+          <div echarts
+               [options]="graficoGastoFranja"
+               style="height: 230px; width: 100%;">
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div style="margin-top:48px; text-align:center; font-size:12px; color:#9ca3af; font-family:'Inter',sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div>
+</div>
