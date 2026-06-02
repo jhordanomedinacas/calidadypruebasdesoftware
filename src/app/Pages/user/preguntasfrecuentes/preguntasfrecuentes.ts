@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 export interface Pregunta {
   id: number;
@@ -159,7 +160,7 @@ export class PreguntasFrecuentesComponent implements OnInit {
 
   preguntasFiltradas: Pregunta[] = [];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.preguntasFiltradas = [...this.todasLasPreguntas];
@@ -202,6 +203,7 @@ export class PreguntasFrecuentesComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 }

@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 interface Paradero {
   nombre: string;
@@ -127,7 +128,7 @@ export class RutasFavoritasComponent implements OnInit {
 
   rutasFiltradas: RutaFavorita[] = [];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.rutasFiltradas = [...this.rutas];
@@ -233,5 +234,7 @@ export class RutasFavoritasComponent implements OnInit {
   }
 
   irInicio(): void { this.router.navigate(['/inicio']); }
-  onLogout(): void { this.router.navigate(['/login']); }
+  onLogout(): void { 
+    this.auth.cerrarSesion();
+    this.router.navigate(['/login']); }
 }

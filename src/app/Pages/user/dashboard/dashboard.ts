@@ -6,6 +6,7 @@ import { Router } from '@angular/router';
 import { NgxEchartsDirective, provideEchartsCore } from 'ngx-echarts';
 import * as echarts from 'echarts';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 // ── Modelos ─────────────────────────────────────────────────────────────────
 
@@ -57,7 +58,7 @@ type LineaCodigo = 'L201' | 'L202' | 'L203' | 'L204';
 })
 export class DashboardUsuarioComponent implements OnInit, OnDestroy {
 
-  constructor(private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor(private router: Router, private cdr: ChangeDetectorRef, private auth: AuthService) {}
 
   // ── Datos básicos ──────────────────────────────────────────────────────────
   nombreUsuario = 'Jorge Machado';
@@ -483,6 +484,7 @@ export class DashboardUsuarioComponent implements OnInit, OnDestroy {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 }

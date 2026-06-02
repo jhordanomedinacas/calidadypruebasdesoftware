@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
@@ -115,8 +116,7 @@ export class GestionarUsuariosComponent implements OnInit {
 
   usuarioSeleccionado: Usuario | null = null;
   formEditar: FormEditar | null = null;
-
-  constructor(private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor(private auth: AuthService,private router: Router, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.usuariosFiltrados = [...this.todosLosUsuarios];
@@ -262,6 +262,7 @@ export class GestionarUsuariosComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 }

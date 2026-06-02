@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 const fadeSlideIn = trigger('fadeSlideIn', [
   transition(':enter', [
@@ -219,7 +220,7 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
   paginaAnterior(): void { if (this.paginaActual > 1) this.paginaActual--; }
   paginaSiguiente(): void { if (this.paginaActual < this.totalPaginas) this.paginaActual++; }
 
-  constructor(private router: Router, private ngZone: NgZone) {}
+  constructor(private router: Router, private ngZone: NgZone, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.busesFiltrados = [...this.todosBuses];
@@ -245,7 +246,9 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ── Navegación ───────────────────────────────────────────────────────────────
   irA(seccion: string): void { this.router.navigate([`/${seccion}`]); }
-  onLogout(): void { this.router.navigate(['/login']); }
+  onLogout(): void { 
+    this.auth.cerrarSesion();
+    this.router.navigate(['/login']); }
 
   // ── Filtrado ─────────────────────────────────────────────────────────────────
   filtrarBuses(): void {

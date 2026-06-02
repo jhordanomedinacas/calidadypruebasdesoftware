@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 const fadeSlideIn = trigger('fadeSlideIn', [
   transition(':enter', [
@@ -31,7 +32,12 @@ interface Tarjeta {
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class InicioComponent implements AfterViewInit, OnDestroy {
+  nombreUsuario = '';
 
+  constructor(private auth: AuthService, private router: Router) {
+    const datos = this.auth.obtenerDatosUsuario();
+    this.nombreUsuario = datos?.nombres ?? 'Usuario';
+  }
   private observers: ResizeObserver[] = [];
 
   /* ── Carrusel ── */
@@ -74,7 +80,7 @@ export class InicioComponent implements AfterViewInit, OnDestroy {
   editNombreActual = 'Mi tarjeta principal';
   editEmpresa: 'metropolitano' | 'corredor' | 'metro' = 'corredor';
 
-  constructor(private router: Router) {}
+
 
   ngAfterViewInit(): void {
     setTimeout(() => this.initBorderTraces(), 50);
@@ -286,5 +292,7 @@ export class InicioComponent implements AfterViewInit, OnDestroy {
   }
 
   irA(seccion: string): void { this.router.navigate([`/${seccion}`]); }
-  onLogout(): void { this.router.navigate(['/login']); }
+  onLogout(): void { 
+    this.auth.cerrarSesion();
+    this.router.navigate(['/login']); }
 }

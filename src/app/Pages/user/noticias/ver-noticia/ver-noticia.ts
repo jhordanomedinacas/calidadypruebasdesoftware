@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../../components/navbar/navbar';
+import { AuthService } from '../../../../services/auth';
 
 // ── Modelos ────────────────────────────────────────────────────────────────────
 
@@ -160,7 +161,7 @@ export class VerNoticiaComponent implements OnInit {
   usuarioIniciales = 'YM';
   usuarioColor     = 'linear-gradient(135deg,#1a3a8f,#2366CE)';
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {}
 
@@ -170,6 +171,7 @@ export class VerNoticiaComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 

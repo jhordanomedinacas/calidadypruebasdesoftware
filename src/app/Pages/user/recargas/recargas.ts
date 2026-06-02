@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 const fadeSlideIn = trigger('fadeSlideIn', [
   transition(':enter', [
@@ -79,7 +80,7 @@ export class RecargasComponent implements OnDestroy {
     { metodo: 'Yape',         fecha: '03 May, 08:14 am', monto: 10 },
   ];
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   ngOnDestroy(): void {
     this._limpiarTimer();
@@ -365,6 +366,7 @@ export class RecargasComponent implements OnDestroy {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 }

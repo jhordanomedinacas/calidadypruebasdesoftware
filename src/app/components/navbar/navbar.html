@@ -154,44 +154,6 @@
 
     <div class="reporte-modal__body">
 
-      <!-- Sistema de transporte — tarjetas -->
-      <div class="reporte-modal__field">
-        <label class="reporte-modal__label">Sistema de transporte</label>
-        <div class="reporte-linea__grid">
-
-          <button type="button" class="reporte-linea__card"
-            [class.reporte-linea__card--active]="reporteLinea === 'metropolitano'"
-            (click)="reporteLinea = 'metropolitano'">
-            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
-            </svg>
-            <span>Metropolitano</span>
-          </button>
-
-          <button type="button" class="reporte-linea__card"
-            [class.reporte-linea__card--active]="reporteLinea === 'corredor_azul'"
-            (click)="reporteLinea = 'corredor_azul'">
-            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M3.75 3.75v4.5m0-4.5h4.5m-4.5 0L9 9M3.75 20.25v-4.5m0 4.5h4.5m-4.5 0L9 15M20.25 3.75h-4.5m4.5 0v4.5m0-4.5L15 9m5.25 11.25h-4.5m4.5 0v-4.5m0 4.5L15 15"/>
-            </svg>
-            <span>Corredor Azul</span>
-          </button>
-
-          <button type="button" class="reporte-linea__card"
-            [class.reporte-linea__card--active]="reporteLinea === 'metro_lima'"
-            (click)="reporteLinea = 'metro_lima'">
-            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round"
-                d="M3.75 12h16.5m-16.5 3.75h16.5M3.75 19.5h16.5M5.625 4.5h12.75a1.875 1.875 0 010 3.75H5.625a1.875 1.875 0 010-3.75z"/>
-            </svg>
-            <span>Metro de Lima</span>
-          </button>
-
-        </div>
-      </div>
-
       <!-- Tipo de reporte — select custom con iconos por categoría -->
       <div class="reporte-modal__field">
         <label class="reporte-modal__label">Tipo de reporte</label>
@@ -330,7 +292,7 @@
     <div class="logout-modal__footer">
       <button class="logout-modal__btn-cancelar" (click)="cerrarModalReporte()">Cancelar</button>
       <button class="reporte-modal__btn-enviar"
-              [disabled]="!reporteTipo || !reporteLinea || !reporteDescripcion.trim()"
+              [disabled]="!reporteTipo || !reporteDescripcion.trim()"
               (click)="enviarReporte()">
         Enviar reporte
       </button>
@@ -376,6 +338,49 @@
       </button>
       <button class="logout-modal__btn-confirmar" (click)="confirmarLogout()">
         Sí, cerrar sesión
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL ÉXITO REPORTE ─────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalReporteExitoAbierto" (click)="cerrarModalReporteExito()">
+  <div class="reporte-exito-modal" (click)="$event.stopPropagation()">
+
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Reporte enviado</p>
+        <p class="logout-modal__sub">Corredor Azul</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalReporteExito()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="reporte-exito-modal__body">
+      <div class="reporte-exito-modal__icon-wrap">
+        <svg width="36" height="36" fill="none" stroke="#16a34a" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+      <p class="reporte-exito-modal__titulo">¡Gracias por tu reporte!</p>
+      <p class="reporte-exito-modal__desc">Tu reporte ha sido recibido correctamente. Nuestro equipo lo revisará a la brevedad y tomará las acciones necesarias para mejorar el servicio.</p>
+
+      <div class="reporte-exito-modal__badge">
+        <svg width="14" height="14" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+        </svg>
+        <span>Corredor Azul · Sistema de transportes Lima</span>
+      </div>
+    </div>
+
+    <div class="logout-modal__footer">
+      <button class="reporte-exito-modal__btn-ok" (click)="cerrarModalReporteExito()">
+        Aceptar
       </button>
     </div>
 

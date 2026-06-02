@@ -25,6 +25,7 @@ export class NavbarComponent {
   mostrarNotificaciones = false;
   modalLogoutAbierto = false;
   modalReporteAbierto = false;
+  modalReporteExitoAbierto = false;
   reporteTipo = '';
   reporteDescripcion = '';
   reporteImagen: File | null = null;
@@ -103,11 +104,16 @@ export class NavbarComponent {
     // TODO: integrar con el servicio de reportes
     console.log('Reporte enviado', {
       tipo: this.reporteTipo,
-      linea: this.reporteLinea,
+      linea: 'corredor_azul',
       descripcion: this.reporteDescripcion,
       imagen: this.reporteImagen
     });
     this.cerrarModalReporte();
+    this.modalReporteExitoAbierto = true;
+  }
+
+  cerrarModalReporteExito(): void {
+    this.modalReporteExitoAbierto = false;
   }
 
   notificaciones: Notificacion[] = [

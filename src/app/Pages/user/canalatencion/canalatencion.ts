@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 
 @Component({
@@ -17,7 +18,7 @@ export class CanalAtencionComponent {
   // Guarda el id del acordeón abierto (null = todos cerrados)
   acordeonAbierto: number | null = null;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   toggleAcc(id: number): void {
     // Si ya está abierto, lo cierra; si no, abre el clickeado

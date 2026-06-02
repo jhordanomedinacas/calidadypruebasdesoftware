@@ -2,6 +2,7 @@ import { Component, OnInit, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 // ── Modelos ────────────────────────────────────────────────────────────────────
 
@@ -209,7 +210,7 @@ export class NoticiasComponent implements OnInit, OnDestroy {
   // ── Ticker interval ────────────────────────────────────────────────────────
   private tickerInterval: any;
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   ngOnInit(): void {
     this.aplicarFiltro();
@@ -225,6 +226,7 @@ export class NoticiasComponent implements OnInit, OnDestroy {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 

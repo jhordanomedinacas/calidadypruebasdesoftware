@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 /* ─────────────── Interfaces ─────────────── */
 
@@ -43,7 +44,7 @@ export interface Linea {
 })
 export class GestionarLineasComponent implements OnInit {
 
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
 
   /* ── Estado de búsqueda y selección ── */
   busqueda = '';
@@ -266,7 +267,7 @@ export class GestionarLineasComponent implements OnInit {
   }
 
   /* ─────────────── Rutas ─────────────── */
-
+  
   guardarRuta(): void {
     if (!this.lineaSeleccionada) return;
     const nuevaRuta: Ruta = {
@@ -328,6 +329,7 @@ export class GestionarLineasComponent implements OnInit {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 }

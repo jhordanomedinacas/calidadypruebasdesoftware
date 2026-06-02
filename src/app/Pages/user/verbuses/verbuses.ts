@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 interface Paradero {
   nombre: string;
@@ -190,8 +191,9 @@ export class VerBusesComponent implements OnInit {
   irInicio(): void {
     this.router.navigate(['/inicio']);
   }
-  constructor(private router: Router) {}
+  constructor(private router: Router, private auth: AuthService) {}
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 }

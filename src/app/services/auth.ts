@@ -113,7 +113,29 @@ export class AuthService {
     localStorage.removeItem('auth_token');
   }
 
+  private decodificarToken(token: string): any | null {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch {
+      return null;
+    }
+  }
+
   estaAutenticado(): boolean {
-    return !!this.obtenerToken();
+    const token = this.obtenerToken();
+    if (!token) return false;
+
+    const payload = this.decodificarToken(token);
+    if (!payload?.exp) return false;
+
+    const expirado = Date.now() >= payload.exp * 1000;
+    if (expirado) this.cerrarSesion();
+    return !expirado;
+  }
+
+  obtenerDatosUsuario(): { sub: string; idRol: number; nombres: string } | null {
+    const token = this.obtenerToken();
+    if (!token) return null;
+    return this.decodificarToken(token);
   }
 }

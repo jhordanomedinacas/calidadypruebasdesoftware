@@ -6,6 +6,7 @@ import {
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
+import { AuthService } from '../../../services/auth';
 
 // ── Modelos ────────────────────────────────────────────────────────────────────
 
@@ -78,7 +79,7 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   @ViewChild('liveWc',    { static: false }) liveWcRef!:  ElementRef;
   @ViewChild('regCanvas', { static: false }) regCanvasRef!: ElementRef<HTMLCanvasElement>;
 
-  constructor(private router: Router, private cdr: ChangeDetectorRef) {}
+  constructor(private router: Router, private cdr: ChangeDetectorRef, private auth: AuthService) {}
 
   // ── KPIs ───────────────────────────────────────────────────────────────────
   kpis: KpiDashboard = {
@@ -204,7 +205,9 @@ export class DashboardComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   irA(seccion: string): void { this.router.navigate([`/${seccion}`]); }
-  onLogout(): void            { this.router.navigate(['/login']);      }
+  onLogout(): void            { 
+    this.auth.cerrarSesion();
+    this.router.navigate(['/login']);      }
 
   private actualizarKpis(): void {
     this.kpis = {

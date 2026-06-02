@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { NavbarComponent } from '../../../components/navbar/navbar';
-
+import { AuthService } from '../../../services/auth';
 const fadeSlideIn = trigger('fadeSlideIn', [
   transition(':enter', [
     style({ opacity: 0, transform: 'translateY(24px)' }),
@@ -22,18 +22,21 @@ const fadeSlideIn = trigger('fadeSlideIn', [
   schemas: [CUSTOM_ELEMENTS_SCHEMA]
 })
 export class IniciAdminComponent implements AfterViewInit, OnDestroy {
-
+  nombreAdmin = '';
+  constructor(private auth: AuthService, private router: Router) {
+  const datos = this.auth.obtenerDatosUsuario();
+  this.nombreAdmin = datos?.nombres ?? 'Usuario';
+}
   private observers: ResizeObserver[] = [];
 
   /* ── Datos del admin ── */
-  nombreAdmin = 'JHORDAN';
-
+  
   /* ── KPIs del hero (conectar con servicio real) ── */
   kpiBusesEnRuta     = 12;
   kpiUsuariosActivos = 3000;
   kpiAlertasActivas  = 7;
 
-  constructor(private router: Router) {}
+
 
   ngAfterViewInit(): void {
     setTimeout(() => this.initBorderTraces(), 50);
@@ -86,6 +89,7 @@ export class IniciAdminComponent implements AfterViewInit, OnDestroy {
   }
 
   onLogout(): void {
+    this.auth.cerrarSesion();
     this.router.navigate(['/login']);
   }
 }
