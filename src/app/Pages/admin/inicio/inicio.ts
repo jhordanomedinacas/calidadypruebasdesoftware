@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
@@ -23,10 +23,15 @@ const fadeSlideIn = trigger('fadeSlideIn', [
 })
 export class IniciAdminComponent implements AfterViewInit, OnDestroy {
   nombreAdmin = '';
-  constructor(private auth: AuthService, private router: Router) {
-  const datos = this.auth.obtenerDatosUsuario();
-  this.nombreAdmin = datos?.nombres ?? 'Usuario';
-}
+  constructor(private auth: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
+    const datos = this.auth.obtenerDatosUsuario();
+    this.nombreAdmin = datos?.nombres ?? 'Usuario';
+  }
+
+  onPerfilActualizado(nombre: string): void {
+    this.nombreAdmin = nombre;
+    this.cdr.detectChanges();
+  }
   private observers: ResizeObserver[] = [];
 
   /* ── Datos del admin ── */

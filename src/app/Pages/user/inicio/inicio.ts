@@ -1,4 +1,4 @@
-import { Component, AfterViewInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA } from '@angular/core';
+import { Component, AfterViewInit, OnDestroy, CUSTOM_ELEMENTS_SCHEMA, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -34,9 +34,14 @@ interface Tarjeta {
 export class InicioComponent implements AfterViewInit, OnDestroy {
   nombreUsuario = '';
 
-  constructor(private auth: AuthService, private router: Router) {
+  constructor(private auth: AuthService, private router: Router, private cdr: ChangeDetectorRef) {
     const datos = this.auth.obtenerDatosUsuario();
     this.nombreUsuario = datos?.nombres ?? 'Usuario';
+  }
+
+  onPerfilActualizado(nombre: string): void {
+    this.nombreUsuario = nombre;
+    this.cdr.detectChanges();
   }
   private observers: ResizeObserver[] = [];
 
@@ -71,13 +76,14 @@ export class InicioComponent implements AfterViewInit, OnDestroy {
   modalEliminarAbierto = false;
 
   /* ── Modal Agregar ── */
-  empresaSeleccionada: 'metropolitano' | 'corredor' | 'metro' | '' = '';
+  empresaSeleccionada: 'corredor' = 'corredor';
   codigoTarjeta = '';
   aliasNueva = '';
 
   /* ── Modal Editar ── */
   editNombre      = 'Mi tarjeta principal';
   editNombreActual = 'Mi tarjeta principal';
+  editCodigo      = '';
   editEmpresa: 'metropolitano' | 'corredor' | 'metro' = 'corredor';
 
 
@@ -221,14 +227,13 @@ export class InicioComponent implements AfterViewInit, OnDestroy {
 
   /* ── Modal Agregar ── */
   abrirModalAgregar(): void {
-    this.empresaSeleccionada = '';
     this.codigoTarjeta = '';
     this.aliasNueva = '';
     this.modalAgregarAbierto = true;
   }
   cerrarModalAgregar(): void { this.modalAgregarAbierto = false; }
   agregarValido(): boolean {
-    return this.empresaSeleccionada !== '' && this.codigoTarjeta.trim().length >= 4;
+    return this.codigoTarjeta.trim().length >= 4;
   }
   confirmarAgregar(): void {
     if (!this.agregarValido()) return;
@@ -256,6 +261,7 @@ export class InicioComponent implements AfterViewInit, OnDestroy {
     if (!t) return;
     this.editNombre      = t.alias;
     this.editNombreActual = t.alias;
+    this.editCodigo      = t.codigo;
     this.editEmpresa = (t.empresa === 'Metropolitano' ? 'metropolitano'
                        : t.empresa === 'Metro de Lima' ? 'metro' : 'corredor') as any;
     this.modalEditarAbierto = true;
@@ -265,7 +271,8 @@ export class InicioComponent implements AfterViewInit, OnDestroy {
     if (!this.editNombre.trim()) return;
     const t = this.tarjetaActivaObj;
     if (!t) return;
-    t.alias = this.editNombre.trim();
+    t.alias   = this.editNombre.trim();
+    t.codigo  = this.editCodigo.trim() || t.codigo;
     t.empresa = { metropolitano: 'Metropolitano', corredor: 'Corredor Azul', metro: 'Metro de Lima' }[this.editEmpresa];
     t.imagen  = this.imagenPorEmpresa[this.editEmpresa];
     this.editNombreActual = t.alias;

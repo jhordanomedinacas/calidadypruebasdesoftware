@@ -155,7 +155,7 @@
 <div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
 
   <!-- NAVBAR COMPONENTE -->
-  <app-navbar (logout)="onLogout()"></app-navbar>
+  <app-navbar (logout)="onLogout()" (perfilActualizado)="onPerfilActualizado($event)"></app-navbar>
 
   <div style="display: flex; align-items: flex-start; width: 100%;">
     <div style="flex: 1; min-width: 0; padding: 40px 16px 40px 16px; overflow-x: hidden;">

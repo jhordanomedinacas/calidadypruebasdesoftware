@@ -19,16 +19,16 @@ export type NivelTrafico = 'PESADO' | 'MODERADO' | 'FLUIDO';
 export interface Noticia {
   id: number;
   categoria: Exclude<CategoriaNoticia, 'Todas'>;
-  badge: string;           // texto del chip
+  badge: string;
   fecha: string;
   titulo: string;
   resumen: string;
-  imagen: string;          // url o ruta de asset
+  imagen: string;
   autor?: string;
   avatarAutor?: string;
   vistas?: number;
-  destacada?: boolean;     // hero
-  secundaria?: boolean;    // cards medianas
+  destacada?: boolean;
+  secundaria?: boolean;
 }
 
 export interface Alerta {
@@ -57,6 +57,8 @@ export interface ZonaTrafico {
 })
 export class NoticiasComponent implements OnInit, OnDestroy {
 
+  vista: 'resumen' | 'todas' = 'resumen';
+
   // ── Ticker ─────────────────────────────────────────────────────────────────
   tickerItems: string[] = [
     'Av. Arequipa con congestión moderada en hora punta — tiempo adicional: 12 min',
@@ -84,7 +86,7 @@ export class NoticiasComponent implements OnInit, OnDestroy {
       imagen: 'https://images.unsplash.com/photo-1544620347-c4fd4a3d5957?w=900&auto=format&fit=crop',
       autor: 'Jorge Luis',
       avatarAutor: 'assets/avatares/jorge.jpg',
-      vistas: 0,
+      vistas: 12340,
       destacada: true
     },
     {
@@ -117,8 +119,9 @@ export class NoticiasComponent implements OnInit, OnDestroy {
       badge: 'Servicios',
       fecha: '25 ago 2025',
       titulo: 'Rutas 301 y 305 amplían horario nocturno los fines de semana',
-      resumen: 'Desde el próximo viernes las unidades operarán hasta las 11 pm.',
+      resumen: 'Desde el próximo viernes las unidades operarán hasta las 11 pm, mejorando la conectividad nocturna en las principales avenidas.',
       imagen: 'https://images.unsplash.com/photo-1464219789935-c2d9d9aba644?w=800&auto=format&fit=crop',
+      vistas: 5310,
     },
     {
       id: 5,
@@ -126,70 +129,79 @@ export class NoticiasComponent implements OnInit, OnDestroy {
       badge: 'Institucional',
       fecha: '25 ago 2025',
       titulo: 'Rutas 301 y 305 amplían horario nocturno los fines de semana',
-      resumen: 'Desde el próximo viernes las unidades operarán hasta las 11 pm.',
+      resumen: 'Desde el próximo viernes las unidades operarán hasta las 11 pm, mejorando la conectividad nocturna en las principales avenidas.',
       imagen: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&auto=format&fit=crop',
+      vistas: 3200,
     },
     {
       id: 6,
       categoria: 'Alertas',
       badge: 'Operativo',
       fecha: '24 ago 2025',
-      titulo: 'Rutas 301 y 305 amplían horario nocturno los fines de semana',
-      resumen: 'Desde el próximo viernes las unidades operarán hasta las 11 pm.',
+      titulo: 'Desvío temporal en Av. Abancay por trabajos de mantenimiento',
+      resumen: 'Los servicios 301 y 305 desviarán su recorrido por Av. Tacna durante los próximos 3 días hábiles.',
       imagen: 'https://images.unsplash.com/photo-1494515843206-f3117d3f51b7?w=800&auto=format&fit=crop',
+      vistas: 2890,
     },
     {
       id: 7,
       categoria: 'Institucional',
       badge: 'Institucional',
       fecha: '24 ago 2025',
-      titulo: 'Rutas 301 y 305 amplían horario nocturno los fines de semana',
-      resumen: 'Desde el próximo viernes las unidades operarán hasta las 11 pm.',
+      titulo: 'Corredor Azul presenta nuevo plan de mantenimiento preventivo para su flota',
+      resumen: 'El plan contempla revisiones técnicas cada 5,000 km para garantizar la seguridad de los pasajeros en toda la red.',
       imagen: 'https://images.unsplash.com/photo-1567360425618-1594206637d2?w=800&auto=format&fit=crop',
-    }
+      vistas: 1740,
+    },
+    {
+      id: 8,
+      categoria: 'Rutas',
+      badge: 'Servicios',
+      fecha: '23 ago 2025',
+      titulo: 'Nuevos paraderos accesibles para personas con discapacidad en 12 estaciones',
+      resumen: 'Se implementarán rampas, señalética braille y asientos prioritarios en los paraderos de mayor afluencia.',
+      imagen: 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?w=800&auto=format&fit=crop',
+      vistas: 4120,
+    },
   ];
 
-  noticiaHero:       Noticia | null = null;
-  noticiasSecundarias: Noticia[]   = [];
-  noticiasGrid:      Noticia[]     = [];
+  // ── Vista resumen ──────────────────────────────────────────────────────────
+  noticiaHero:         Noticia | null = null;
+  noticiasSecundarias: Noticia[]      = [];
+  noticiasGrid:        Noticia[]      = [];
+
+  // ── Vista todas (paginación) ───────────────────────────────────────────────
+  readonly itemsPorPagina = 6;
+  paginaActual     = 1;
+  noticiasPagina:  Noticia[]          = [];
+  totalPaginas     = 1;
+  paginasVisibles: (number | '...')[] = [];
 
   // ── Alertas ────────────────────────────────────────────────────────────────
   alertas: Alerta[] = [
     {
-      id: 1,
-      tipo: 'warning',
+      id: 1, tipo: 'warning',
       titulo: 'Desvío por manifestación en Av. Abancay',
-      descripcion:
-        'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
-      hace: 'Hace 12 min',
-      lineas: ['301', '302']
+      descripcion: 'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
+      hace: 'Hace 12 min', lineas: ['301', '302']
     },
     {
-      id: 2,
-      tipo: 'warning',
+      id: 2, tipo: 'warning',
       titulo: 'Desvío por manifestación en Av. Abancay',
-      descripcion:
-        'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
-      hace: 'Hace 12 min',
-      lineas: ['301', '302']
+      descripcion: 'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
+      hace: 'Hace 12 min', lineas: ['301', '302']
     },
     {
-      id: 3,
-      tipo: 'warning',
+      id: 3, tipo: 'warning',
       titulo: 'Desvío por manifestación en Av. Abancay',
-      descripcion:
-        'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
-      hace: 'Hace 12 min',
-      lineas: ['301', '302']
+      descripcion: 'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
+      hace: 'Hace 12 min', lineas: ['301', '302']
     },
     {
-      id: 4,
-      tipo: 'warning',
+      id: 4, tipo: 'warning',
       titulo: 'Desvío por manifestación en Av. Abancay',
-      descripcion:
-        'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
-      hace: 'Hace 12 min',
-      lineas: ['301', '302']
+      descripcion: 'Los servicios 301 y 305 desvían su recorrido por Av. Tacna y Av. Garcilaso de la Vega en ambos sentidos. Se estima normalización en 45 minutos.',
+      hace: 'Hace 12 min', lineas: ['301', '302']
     }
   ];
 
@@ -207,7 +219,6 @@ export class NoticiasComponent implements OnInit, OnDestroy {
     { avenida: 'Av. Arequipa', tramo: 'Miraflores - Centro', nivel: 'FLUIDO' },
   ];
 
-  // ── Ticker interval ────────────────────────────────────────────────────────
   private tickerInterval: any;
 
   constructor(private router: Router, private auth: AuthService) {}
@@ -233,20 +244,76 @@ export class NoticiasComponent implements OnInit, OnDestroy {
   // ── Tabs ───────────────────────────────────────────────────────────────────
   seleccionarCategoria(cat: CategoriaNoticia): void {
     this.categoriaActiva = cat;
+    this.paginaActual = 1;
     this.aplicarFiltro();
   }
 
+  // ── Vista ──────────────────────────────────────────────────────────────────
+  verTodas(): void {
+    this.vista = 'todas';
+    this.paginaActual = 1;
+    this.aplicarFiltro();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  volverResumen(): void {
+    this.vista = 'resumen';
+  }
+
+  // ── Filtro + paginación ────────────────────────────────────────────────────
   private aplicarFiltro(): void {
     const filtradas = this.categoriaActiva === 'Todas'
       ? this.todasNoticias
       : this.todasNoticias.filter(n => n.categoria === this.categoriaActiva);
 
+    // Resumen
     this.noticiaHero         = filtradas.find(n => n.destacada) ?? filtradas[0] ?? null;
     this.noticiasSecundarias = filtradas.filter(n => n.secundaria).slice(0, 2);
     this.noticiasGrid        = filtradas.filter(n => !n.destacada && !n.secundaria);
+
+    // Todas
+    this.totalPaginas = Math.max(1, Math.ceil(filtradas.length / this.itemsPorPagina));
+    if (this.paginaActual > this.totalPaginas) this.paginaActual = this.totalPaginas;
+    const inicio = (this.paginaActual - 1) * this.itemsPorPagina;
+    this.noticiasPagina = filtradas.slice(inicio, inicio + this.itemsPorPagina);
+    this.calcularPaginasVisibles();
   }
 
-  // ── Helpers de tráfico ─────────────────────────────────────────────────────
+  private calcularPaginasVisibles(): void {
+    const total  = this.totalPaginas;
+    const actual = this.paginaActual;
+    const paginas: (number | '...')[] = [];
+
+    if (total <= 5) {
+      for (let i = 1; i <= total; i++) paginas.push(i);
+    } else {
+      paginas.push(1);
+      if (actual > 3) paginas.push('...');
+      for (let i = Math.max(2, actual - 1); i <= Math.min(total - 1, actual + 1); i++) {
+        paginas.push(i);
+      }
+      if (actual < total - 2) paginas.push('...');
+      paginas.push(total);
+    }
+    this.paginasVisibles = paginas;
+  }
+
+  irAPagina(pagina: number | '...'): void {
+    if (pagina === '...' || pagina === this.paginaActual) return;
+    this.paginaActual = pagina as number;
+    this.aplicarFiltro();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  paginaAnterior(): void {
+    if (this.paginaActual > 1) this.irAPagina(this.paginaActual - 1);
+  }
+
+  paginaSiguiente(): void {
+    if (this.paginaActual < this.totalPaginas) this.irAPagina(this.paginaActual + 1);
+  }
+
+  // ── Helpers tráfico ────────────────────────────────────────────────────────
   nivelColor(nivel: NivelTrafico): string {
     return nivel === 'PESADO'   ? '#ef4444'
          : nivel === 'MODERADO' ? '#f59e0b'
@@ -272,7 +339,8 @@ export class NoticiasComponent implements OnInit, OnDestroy {
   verMapa(): void {
     this.router.navigate(['/ubicacion']);
   }
-  verTodas(): void {
-    this.router.navigate(['/noticias/todas']);
+
+  verNoticia(): void {
+    this.router.navigate(['/user/noticias/ver-noticia']);
   }
 }

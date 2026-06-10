@@ -155,7 +155,13 @@ export class LoginComponent implements OnDestroy {
         this.limpiarIntervalo();
         this.authService.guardarToken(res.token);
         this.cdr.detectChanges();
-        this.router.navigate(['/inicio']);
+
+        const rol = this.authService.getRol();
+        if (rol === 2 || rol === 3) {
+          this.router.navigate(['/inicia']);
+        } else {
+          this.router.navigate(['/inicio']);
+        }
       }),
       error: (err: HttpErrorResponse) => this.ngZone.run(() => {
         this.loading      = false;

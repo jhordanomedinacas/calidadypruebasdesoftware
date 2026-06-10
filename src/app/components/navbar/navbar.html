@@ -112,14 +112,17 @@
     </button>
     <!-- FIN REPORTES -->
 
-    <!-- Avatar + nombre -->
-    <div class="flex items-center gap-2">
+    <!-- Avatar + nombre → abre modal perfil -->
+    <button
+      (click)="abrirModalPerfil()"
+      class="flex items-center gap-2 px-2 py-1.5 rounded-lg hover:bg-blue-50 transition-colors"
+      title="Ver mi perfil">
       <div class="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-semibold flex-shrink-0"
            style="background-color: #2366CE;">
-        J
+        {{ inicial }}
       </div>
-      <span class="nav-username text-sm font-medium text-gray-700">Jhordan</span>
-    </div>
+      <span class="nav-username text-sm font-medium text-gray-700">{{ primerNombre }}</span>
+    </button>
 
     <!-- Cerrar sesión -->
     <button
@@ -295,6 +298,387 @@
               [disabled]="!reporteTipo || !reporteDescripcion.trim()"
               (click)="enviarReporte()">
         Enviar reporte
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL PERFIL DE USUARIO ──────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalPerfilAbierto" (click)="cerrarModalPerfilSiOverlay($event)">
+  <div class="perfil-modal" (click)="$event.stopPropagation()">
+
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Mi perfil</p>
+        <p class="logout-modal__sub">Corredor Azul</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalPerfil()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Avatar grande + nombre -->
+    <div class="perfil-modal__hero">
+      <div class="perfil-modal__avatar">{{ inicial }}</div>
+      <p class="perfil-modal__nombre">{{ nombreCompleto }}</p>
+      <span class="perfil-modal__badge">
+        <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+        </svg>
+        Cuenta verificada
+      </span>
+    </div>
+
+    <!-- Datos del usuario -->
+    <div class="perfil-modal__body">
+
+      <!-- Nombre completo -->
+      <div class="perfil-modal__row">
+        <div class="perfil-modal__row-icon" style="background: rgba(35,102,206,0.08);">
+          <svg width="16" height="16" fill="none" stroke="#2366CE" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+          </svg>
+        </div>
+        <div class="perfil-modal__row-info">
+          <span class="perfil-modal__row-label">Nombre completo</span>
+          <span class="perfil-modal__row-value">{{ nombreCompleto }}</span>
+        </div>
+      </div>
+
+      <!-- Documento -->
+      <div class="perfil-modal__row">
+        <div class="perfil-modal__row-icon" style="background: rgba(124,58,237,0.08);">
+          <svg width="16" height="16" fill="none" stroke="#7c3aed" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M15 9h3.75M15 12h3.75M15 15h3.75M4.5 19.5h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5zm6-10.125a1.875 1.875 0 11-3.75 0 1.875 1.875 0 013.75 0zm1.294 6.336a6.721 6.721 0 01-3.17.789 6.721 6.721 0 01-3.168-.789 3.376 3.376 0 016.338 0z"/>
+          </svg>
+        </div>
+        <div class="perfil-modal__row-info">
+          <span class="perfil-modal__row-label">{{ tipoDocumento }}</span>
+          <span class="perfil-modal__row-value">{{ nroDocumento }}</span>
+        </div>
+      </div>
+
+      <!-- Correo -->
+      <div class="perfil-modal__row">
+        <div class="perfil-modal__row-icon" style="background: rgba(8,145,178,0.08);">
+          <svg width="16" height="16" fill="none" stroke="#0891b2" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75"/>
+          </svg>
+        </div>
+        <div class="perfil-modal__row-info">
+          <span class="perfil-modal__row-label">Correo electrónico</span>
+          <span class="perfil-modal__row-value">{{ correoElectronico }}</span>
+        </div>
+      </div>
+
+      <!-- Tipo de tarjeta -->
+      <div class="perfil-modal__row" style="border-bottom: none;">
+        <div class="perfil-modal__row-icon" style="background: rgba(22,163,74,0.08);">
+          <svg width="16" height="16" fill="none" stroke="#16a34a" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 002.25-2.25V6.75A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25v10.5A2.25 2.25 0 004.5 19.5z"/>
+          </svg>
+        </div>
+        <div class="perfil-modal__row-info">
+          <span class="perfil-modal__row-label">Tipo de tarjeta</span>
+          <span class="perfil-modal__row-value">{{ tipoTarjeta }}</span>
+        </div>
+      </div>
+
+    </div>
+
+    <div class="logout-modal__footer">
+      <button class="logout-modal__btn-cancelar" (click)="cerrarModalPerfil()">Cerrar</button>
+      <button class="perfil-modal__btn-contrasena" (click)="abrirModalContrasena()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z"/>
+        </svg>
+        Contraseña
+      </button>
+      <button class="perfil-modal__btn-editar" (click)="abrirModalEditarPerfil()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
+        </svg>
+        Editar perfil
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL EDITAR PERFIL ───────────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalEditarPerfilAbierto"
+     (click)="$event.target === $event.currentTarget && cerrarModalEditarPerfil()">
+  <div class="perfil-editar-modal">
+
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Editar perfil</p>
+        <p class="logout-modal__sub">Corredor Azul</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalEditarPerfil()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="perfil-editar-modal__body">
+
+      <div class="perfil-editar-modal__field">
+        <label class="reporte-modal__label">Nombres</label>
+        <input type="text" [(ngModel)]="editarNombres" class="perfil-editar-modal__input" placeholder="Tus nombres" />
+      </div>
+
+      <div class="perfil-editar-modal__field">
+        <label class="reporte-modal__label">Apellidos</label>
+        <input type="text" [(ngModel)]="editarApellidos" class="perfil-editar-modal__input" placeholder="Tus apellidos" />
+      </div>
+
+      <div class="perfil-editar-modal__row2">
+        <div class="perfil-editar-modal__field">
+          <label class="reporte-modal__label">Tipo de documento</label>
+          <select [(ngModel)]="editarTipoDoc" class="perfil-editar-modal__input">
+            <option value="DNI">DNI</option>
+            <option value="CE">Carnet de Extranjería</option>
+            <option value="Pasaporte">Pasaporte</option>
+          </select>
+        </div>
+        <div class="perfil-editar-modal__field">
+          <label class="reporte-modal__label">Nro. de documento</label>
+          <input type="text" [(ngModel)]="editarNroDoc" class="perfil-editar-modal__input" placeholder="Número de documento" />
+        </div>
+      </div>
+
+      <div class="perfil-editar-modal__field">
+        <label class="reporte-modal__label">Teléfono <span style="color:#9ca3af;">(opcional)</span></label>
+        <input type="text" [(ngModel)]="editarTelefono" class="perfil-editar-modal__input" placeholder="Ej: 987654321" />
+      </div>
+
+      <div *ngIf="editarError" class="perfil-editar-modal__msg perfil-editar-modal__msg--error">{{ editarError }}</div>
+
+    </div>
+
+    <div class="logout-modal__footer">
+      <button class="logout-modal__btn-cancelar" (click)="cerrarModalEditarPerfil()">Cancelar</button>
+      <button class="reporte-modal__btn-enviar"
+              [disabled]="!editarNombres.trim() || !editarApellidos.trim() || !editarNroDoc.trim() || editarGuardando"
+              (click)="guardarPerfil()">
+        {{ editarGuardando ? 'Guardando...' : 'Guardar cambios' }}
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL CAMBIAR CONTRASEÑA ──────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalContrasenaAbierto"
+     (click)="$event.target === $event.currentTarget && cerrarModalContrasena()">
+  <div class="perfil-editar-modal">
+
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Cambiar contraseña</p>
+        <p class="logout-modal__sub">Corredor Azul</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalContrasena()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="perfil-editar-modal__body">
+
+      <div class="perfil-editar-modal__field">
+        <label class="reporte-modal__label">Contraseña actual</label>
+        <div class="perfil-editar-modal__input-wrap">
+          <input [type]="mostrarContrasenaActual ? 'text' : 'password'"
+                 [(ngModel)]="contrasenaActual"
+                 class="perfil-editar-modal__input perfil-editar-modal__input--pass"
+                 placeholder="Tu contraseña actual" />
+          <button type="button" class="perfil-editar-modal__eye" (click)="mostrarContrasenaActual = !mostrarContrasenaActual">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <ng-container *ngIf="!mostrarContrasenaActual">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </ng-container>
+              <ng-container *ngIf="mostrarContrasenaActual">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+              </ng-container>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="perfil-editar-modal__field">
+        <label class="reporte-modal__label">Nueva contraseña</label>
+        <div class="perfil-editar-modal__input-wrap">
+          <input [type]="mostrarContrasenaNueva ? 'text' : 'password'"
+                 [(ngModel)]="contrasenaNueva"
+                 class="perfil-editar-modal__input perfil-editar-modal__input--pass"
+                 placeholder="Nueva contraseña" />
+          <button type="button" class="perfil-editar-modal__eye" (click)="mostrarContrasenaNueva = !mostrarContrasenaNueva">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <ng-container *ngIf="!mostrarContrasenaNueva">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </ng-container>
+              <ng-container *ngIf="mostrarContrasenaNueva">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+              </ng-container>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="perfil-editar-modal__field">
+        <label class="reporte-modal__label">Confirmar nueva contraseña</label>
+        <div class="perfil-editar-modal__input-wrap">
+          <input [type]="mostrarContrasenaConf ? 'text' : 'password'"
+                 [(ngModel)]="contrasenaConfirmar"
+                 class="perfil-editar-modal__input perfil-editar-modal__input--pass"
+                 placeholder="Repite la nueva contraseña" />
+          <button type="button" class="perfil-editar-modal__eye" (click)="mostrarContrasenaConf = !mostrarContrasenaConf">
+            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <ng-container *ngIf="!mostrarContrasenaConf">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              </ng-container>
+              <ng-container *ngIf="mostrarContrasenaConf">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>
+              </ng-container>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="contrasenaError" class="perfil-editar-modal__msg perfil-editar-modal__msg--error">{{ contrasenaError }}</div>
+
+    </div>
+
+    <div class="logout-modal__footer">
+      <button class="logout-modal__btn-cancelar" (click)="cerrarModalContrasena()">Cancelar</button>
+      <button class="reporte-modal__btn-enviar"
+              [disabled]="!contrasenaActual || !contrasenaNueva || !contrasenaConfirmar || contrasenaGuardando"
+              (click)="guardarContrasena()">
+        {{ contrasenaGuardando ? 'Guardando...' : 'Cambiar contraseña' }}
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL ÉXITO EDITAR PERFIL ────────────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalEditarExitoAbierto"
+     (click)="$event.target === $event.currentTarget && cerrarModalEditarExito()">
+  <div class="perfil-exito-modal">
+
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Corredor Azul</p>
+        <p class="logout-modal__sub">Sistema de transporte</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalEditarExito()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="logout-modal__body" style="padding: 32px 24px 24px;">
+      <div class="perfil-exito-modal__icon-wrap">
+        <svg width="36" height="36" fill="none" stroke="#16a34a" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+
+      <p class="logout-modal__pregunta" style="font-size: 18px;">¡Perfil actualizado!</p>
+
+      <p class="logout-modal__desc">
+        Tus datos han sido guardados correctamente.<br/>
+        Los cambios ya están reflejados en tu cuenta.
+      </p>
+
+      <div class="perfil-exito-modal__chip">
+        <svg width="15" height="15" fill="none" stroke="#16a34a" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
+        </svg>
+        <span>{{ nombreCompleto }}</span>
+      </div>
+    </div>
+
+    <div class="logout-modal__footer">
+      <button class="logout-modal__btn-confirmar"
+              style="background: linear-gradient(135deg, #1a4fa0 0%, #2366CE 100%); box-shadow: 0 4px 14px rgba(35,102,206,0.3);"
+              (click)="cerrarModalEditarExito()">
+        Aceptar
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- ── MODAL ÉXITO CAMBIAR CONTRASEÑA ───────────────────────────── -->
+<div class="modal-overlay" *ngIf="modalContrasenaExitoAbierto"
+     (click)="$event.target === $event.currentTarget && cerrarModalContrasenaExito()">
+  <div class="perfil-exito-modal" (click)="$event.stopPropagation()">
+
+    <div class="logout-modal__header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="logout-modal__titulo">Corredor Azul</p>
+        <p class="logout-modal__sub">Sistema de transporte</p>
+      </div>
+      <button class="logout-modal__close" (click)="cerrarModalContrasenaExito()">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="logout-modal__body" style="padding: 32px 24px 24px;">
+      <div class="perfil-exito-modal__icon-wrap">
+        <svg width="36" height="36" fill="none" stroke="#16a34a" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+      </div>
+
+      <p class="logout-modal__pregunta" style="font-size: 18px;">¡Contraseña actualizada!</p>
+
+      <p class="logout-modal__desc">
+        Tu contraseña ha sido cambiada correctamente.<br/>
+        Úsala la próxima vez que inicies sesión.
+      </p>
+
+      <div class="perfil-exito-modal__chip">
+        <svg width="15" height="15" fill="none" stroke="#16a34a" stroke-width="1.8" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"/>
+        </svg>
+        <span>Cuenta segura · Corredor Azul</span>
+      </div>
+    </div>
+
+    <div class="logout-modal__footer">
+      <button class="logout-modal__btn-confirmar"
+              style="background: linear-gradient(135deg, #1a4fa0 0%, #2366CE 100%); box-shadow: 0 4px 14px rgba(35,102,206,0.3);"
+              (click)="cerrarModalContrasenaExito()">
+        Aceptar
       </button>
     </div>
 

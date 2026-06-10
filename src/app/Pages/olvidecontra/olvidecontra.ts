@@ -1,4 +1,4 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -88,7 +88,8 @@ export class OlvidecontraComponent implements OnDestroy {
 
   constructor(
     private fb: FormBuilder,
-    private authService: AuthService
+    private authService: AuthService,
+    private cdr: ChangeDetectorRef
   ) {
     this.emailForm = this.fb.group({
       email: ['', [Validators.required, Validators.email]]
@@ -112,11 +113,13 @@ export class OlvidecontraComponent implements OnDestroy {
         this.loading = false;
         this.paso = 2;
         this.iniciarCountdown();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.loading = false;
         this.errorMessage =
           err.error?.mensaje ?? 'No pudimos enviar el correo. Intenta nuevamente.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -132,11 +135,13 @@ export class OlvidecontraComponent implements OnDestroy {
       next: () => {
         this.loading = false;
         this.iniciarCountdown();
+        this.cdr.detectChanges();
       },
       error: (err) => {
         this.loading = false;
         this.errorMessage =
           err.error?.mensaje ?? 'No pudimos reenviar el correo. Intenta nuevamente.';
+        this.cdr.detectChanges();
       }
     });
   }
@@ -152,6 +157,7 @@ export class OlvidecontraComponent implements OnDestroy {
       } else {
         this.limpiarIntervalo();
       }
+      this.cdr.detectChanges();
     }, 1000);
   }
 

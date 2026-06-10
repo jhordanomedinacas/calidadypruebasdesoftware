@@ -176,7 +176,7 @@ export class VerNoticiaComponent implements OnInit {
   }
 
   volverNoticias(): void {
-    this.router.navigate(['/noticias']);
+    this.router.navigate(['/user/noticias']);
   }
 
   // ── Badge color ────────────────────────────────────────────────────────────

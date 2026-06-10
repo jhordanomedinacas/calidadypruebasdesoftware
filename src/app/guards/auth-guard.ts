@@ -6,10 +6,31 @@ export const authGuard: CanActivateFn = () => {
   const auth   = inject(AuthService);
   const router = inject(Router);
 
-  if (auth.estaAutenticado()) {
-    return true;
+  if (!auth.estaAutenticado()) {
+    router.navigate(['/login']);
+    return false;
   }
+  return true;
+};
 
-  router.navigate(['/login']);
+export const adminGuard: CanActivateFn = () => {
+  const auth   = inject(AuthService);
+  const router = inject(Router);
+  const rol    = auth.getRol();
+
+  if (rol === 2 || rol === 3) return true;
+
+  router.navigate(['/inicio']);
+  return false;
+};
+
+export const userGuard: CanActivateFn = () => {
+  const auth   = inject(AuthService);
+  const router = inject(Router);
+  const rol    = auth.getRol();
+
+  if (rol === 1) return true;
+
+  router.navigate(['/inicia']);
   return false;
 };

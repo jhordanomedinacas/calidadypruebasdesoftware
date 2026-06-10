@@ -18,10 +18,14 @@ src/app/
 ├── app.routes.ts             # Definición de rutas
 │
 ├── services/
-│   └── auth.ts              # Servicio de autenticación
+│   ├── auth.ts              # Servicio de autenticación
+│   └── perfil.ts            # Servicio de perfil de usuario ← NUEVO
 │
 ├── guards/
 │   └── auth-guard.ts        # Guard de protección de rutas
+│
+├── interceptors/
+│   └── auth-interceptor.ts  # Inyecta Bearer token en cabeceras HTTP
 │
 ├── components/              # Componentes reutilizables
 │   ├── navbar/
@@ -32,22 +36,24 @@ src/app/
 │   ├── registro/
 │   ├── olvidecontra/
 │   ├── resetpassword/
-│   ├── inicio/              # Página principal usuario
-│   ├── user/                # Sección usuario autenticado
-│   │   ├── verbuses/
-│   │   ├── ubicacion/
-│   │   ├── recargas/
-│   │   ├── canalatencion/
-│   │   ├── noticias/
-│   │   ├── preguntasfrecuentes/
-│   │   ├── rutas-favoritas/
-│   │   ├── soporte/
-│   │   └── verestaciones/
+│   └── user/                # Sección usuario autenticado
+│       ├── inicio/
+│       ├── verbuses/
+│       ├── ubicacion/
+│       ├── recargas/
+│       ├── canalatencion/
+│       ├── noticias/
+│       │   └── ver-noticia/
+│       ├── preguntasfrecuentes/
+│       ├── rutas-favoritas/
+│       └── dashboard/
 │   └── admin/               # Sección administrador
 │       ├── dashboard/
-│       └── inicio/
+│       ├── inicio/
+│       ├── gestionar-usuarios/
+│       └── gestionar-lineas/
 │
-└── assets/                  # Recursos estáticos
+└── assets/
     └── liveline-wc/         # Web Component para liveline
 ```
 
@@ -59,6 +65,8 @@ src/app/
 - ✅ **Inyección de dependencias**: Servicios providedIn: 'root'
 - ✅ **localStorage**: Manejo de tokens y sesión en cliente
 - ✅ **Animaciones**: Transiciones personalizadas con `@angular/animations`
+- ✅ **HTTP Interceptor**: Inyecta token JWT automáticamente en todas las peticiones
+- ⚠️ **Sin Zone.js**: No se importa `zone.js` → change detection manual obligatorio (ver sección 10)
 
 ---
 
@@ -67,7 +75,6 @@ src/app/
 ### 2.1 Interfaces de Autenticación (auth.ts)
 
 ```typescript
-// Solicitudes de API
 export interface LoginRequest {
   correo: string;
   contrasena: string;
@@ -81,7 +88,7 @@ export interface VerificarRequest {
 export interface RegistroRequest {
   nombre: string;
   apellido1: string;
-  apellido2?: string;  // Opcional
+  apellido2?: string;
   tipoDocumento: string;
   numDocumento: string;
   telefono: string;
@@ -94,18 +101,40 @@ export interface ResetPasswordRequest {
   nuevaContrasena: string;
 }
 
-// Respuestas de API
-export interface MensajeResponse {
-  mensaje: string;
-}
-
-export interface TokenResponse {
-  token: string;
-  mensaje: string;
-}
+export interface MensajeResponse { mensaje: string; }
+export interface TokenResponse   { token: string; mensaje: string; }
 ```
 
-### 2.2 Interfaces del Dashboard (dashboard.ts)
+### 2.2 Interfaces de Perfil (perfil.ts) ← NUEVO
+
+```typescript
+export interface PerfilResponse {
+  nombres:       string;
+  apellidos:     string;
+  tipoDocumento: string;
+  nroDocumento:  string;
+  correo:        string;
+  telefono:      string;
+  tipoTarjeta:   string;
+}
+
+export interface EditarPerfilRequest {
+  nombres:       string;
+  apellidos:     string;
+  tipoDocumento: string;
+  nroDocumento:  string;
+  telefono:      string;
+}
+
+export interface CambiarContrasenaRequest {
+  contrasenaActual: string;
+  contrasenaNueva:  string;
+}
+
+export interface MensajeResponse { mensaje: string; }
+```
+
+### 2.3 Interfaces del Dashboard (dashboard.ts)
 
 ```typescript
 export interface KpiDashboard {
@@ -122,7 +151,7 @@ export interface UsuarioReciente {
   avatarClass: string;
   nombre: string;
   ruta: string;
-  hace: string;           // "hace 5 mins"
+  hace: string;
   rol: string;
   rolClass: string;
 }
@@ -163,7 +192,7 @@ export interface EventoImpacto {
 }
 ```
 
-### 2.3 Interfaces Locales de Componentes
+### 2.4 Interfaces Locales de Componentes
 
 #### Navbar (navbar.ts)
 ```typescript
@@ -177,14 +206,28 @@ interface Notificacion {
 }
 ```
 
+#### Ubicacion (ubicacion.ts)
+```typescript
+export interface Bus {
+  id: number; linea: string; origen: string; destino: string;
+  unidad: number; tiempoLlegada: number; distancia: number;
+  duracionTotal: number; estado: string; estadoColor: string;
+  estadoDot: string; siguiendo: boolean;
+}
+
+export interface Paradero {
+  id: string; nombre: string; lat: number; lng: number; lineas: string[];
+}
+
+type PasoViaje = 'acercando' | 'abordo' | 'fin';
+type EstadoGps  = 'inactivo' | 'cargando' | 'activo' | 'error';
+type EstadoIA   = 'idle' | 'pensando' | 'respondido';
+```
+
 #### Inicio Usuario (inicio.ts)
 ```typescript
 interface Tarjeta {
-  id: string;
-  alias: string;
-  empresa: string;
-  codigo: string;
-  imagen: string;
+  id: string; alias: string; empresa: string; codigo: string; imagen: string;
 }
 ```
 
@@ -192,643 +235,552 @@ interface Tarjeta {
 
 ## 🔐 3. FLUJO DE AUTENTICACIÓN Y AUTORIZACIÓN
 
-### 3.1 Flujo Paso a Paso
+### 3.1 Flujo Completo
 
-```mermaid
-graph TD
-    A[Usuario inicia app] -->|Accede a ruta privada| B{¿Token en localStorage?}
-    B -->|No| C[authGuard redirige a /login]
-    B -->|Sí| D[Permite acceso a ruta]
-    C --> E[Login Component - Paso 1]
-    E -->|Ingresa credenciales| F[authService.login correo/contraseña]
-    F -->|Success| G[Mostrar input para código OTP]
-    F -->|Error 401| H[Mostrar error: 'Correo o contraseña incorrectos']
-    G -->|Usuario ingresa código| I[authService.verificar correo/codigo]
-    I -->|Success| J[Recibe token]
-    J -->|guardarToken| K[Almacena en localStorage]
-    K --> L[Redirige a /inicio]
-    I -->|Expires| M[Mostrar 'Código expirado']
-    M --> N[Usuario puede reintentar]
+```
+1. Usuario accede a ruta privada
+   ↓
+2. authGuard verifica localStorage.auth_token
+   ├── NO → redirige a /login
+   └── SÍ → permite acceso
+        ↓
+3. auth-interceptor inyecta Bearer token en todas las peticiones HTTP
+
+Login (2 pasos):
+Paso 1: POST /api/v1/auth/login { correo, contrasena }
+   → success: mostrar formulario de código OTP (5 min de validez)
+   → error 401: "Correo o contraseña incorrectos"
+
+Paso 2: POST /api/v1/auth/verificar { correo, codigo }
+   → success: recibe { token } → guardarToken → redirige según rol
+   → error: "Código incorrecto o expirado"
+
+Roles detectados en JWT (getRol()):
+  rol 2 ó 3 → redirige a /inicia  (admin)
+  otro       → redirige a /inicio  (usuario)
 ```
 
-### 3.2 AuthService - Métodos
+### 3.2 AuthService — Métodos
 
 ```typescript
-@Injectable({ providedIn: 'root' })
-export class AuthService {
+login(body: LoginRequest)          → POST /api/v1/auth/login
+verificar(body: VerificarRequest)  → POST /api/v1/auth/verificar
+reenviar(correo: string)           → POST /api/v1/auth/reenviar
+recuperar(correo: string)          → POST /api/v1/auth/recuperar
+validarToken(token: string)        → GET  /api/v1/auth/validar-token?token=
+resetPassword(body)                → POST /api/v1/auth/reset-password
+registro(body: RegistroRequest)    → POST /api/v1/auth/registro
 
-  // ── AUTENTICACIÓN ──
-  login(body: LoginRequest): Observable<MensajeResponse>
-    → POST /api/v1/auth/login
-    → Respuesta: { mensaje: string }
-
-  verificar(body: VerificarRequest): Observable<TokenResponse>
-    → POST /api/v1/auth/verificar
-    → Respuesta: { token: string; mensaje: string }
-
-  reenviar(correo: string): Observable<MensajeResponse>
-    → POST /api/v1/auth/reenviar
-    → Reenvía código OTP al correo
-
-  // ── RECUPERACIÓN DE CONTRASEÑA ──
-  recuperar(correo: string): Observable<MensajeResponse>
-    → POST /api/v1/auth/recuperar
-    → Inicia flujo de recuperación
-
-  validarToken(token: string): Observable<MensajeResponse>
-    → GET /api/v1/auth/validar-token?token={token}
-    → Valida si token es válido
-
-  resetPassword(body: ResetPasswordRequest): Observable<MensajeResponse>
-    → POST /api/v1/auth/reset-password
-    → { token, nuevaContrasena }
-
-  // ── REGISTRO ──
-  registro(body: RegistroRequest): Observable<any>
-    → POST /api/v1/auth/registro
-    → Transforma estructura: apellido1 + apellido2 → apellidos
-
-  // ── SESIÓN ──
-  guardarToken(token: string): void
-    → localStorage.setItem('auth_token', token)
-
-  obtenerToken(): string | null
-    → localStorage.getItem('auth_token')
-
-  cerrarSesion(): void
-    → localStorage.removeItem('auth_token')
-
-  estaAutenticado(): boolean
-    → !!this.obtenerToken()
-}
+guardarToken(token)   → localStorage.setItem('auth_token', token)
+obtenerToken()        → localStorage.getItem('auth_token')
+cerrarSesion()        → localStorage.removeItem('auth_token')
+estaAutenticado()     → !!obtenerToken()
+obtenerDatosUsuario() → decodifica JWT y retorna payload
+getRol()              → retorna rol numérico del token
 ```
 
-### 3.3 AuthGuard
+### 3.3 PerfilService — Métodos ← NUEVO
+
+```typescript
+// Base: http://localhost:8080/api/v1/perfil
+obtener()                                → GET    /api/v1/perfil
+editar(body: EditarPerfilRequest)        → PUT    /api/v1/perfil
+cambiarContrasena(body: CambiarContras.) → PATCH  /api/v1/perfil/contrasena
+```
+
+### 3.4 AuthInterceptor
+
+```typescript
+// Inyecta automáticamente el token en TODAS las peticiones HTTP
+Authorization: Bearer <token>
+
+// Manejo de errores:
+// 401 → cerrarSesion() + redirige a /login
+```
+
+### 3.5 AuthGuard
 
 ```typescript
 export const authGuard: CanActivateFn = () => {
-  const auth = inject(AuthService);
-  const router = inject(Router);
-
-  if (auth.estaAutenticado()) {
-    return true;  // Permite acceso
-  }
-
-  router.navigate(['/login']);  // Redirige a login
-  return false;  // Denega acceso
+  if (auth.estaAutenticado()) return true;
+  router.navigate(['/login']);
+  return false;
 };
 ```
 
-**Nivel de seguridad:** ⚠️ Básico (solo verifica presencia de token)
-- No valida token con backend
-- No verifica roles/permisos
-- No maneja expiración de token
+**Nivel de seguridad:** ⚠️ Básico — no valida token con backend ni expiración.
 
 ---
 
 ## 🛣️ 4. RUTAS DEFINIDAS (app.routes.ts)
 
-### Rutas Públicas (sin autenticación)
+### Rutas Públicas
 
 | Ruta | Componente | Descripción |
 |------|-----------|-------------|
-| `/` | - | Redirecciona a `/login` |
-| `/login` | `LoginComponent` | Página de inicio de sesión |
-| `/registro` | `RegistroComponent` | Registro de nuevo usuario |
+| `/` | — | Redirecciona a `/login` |
+| `/login` | `LoginComponent` | Inicio de sesión (2FA OTP) |
+| `/registro` | `RegistroComponent` | Registro de usuario |
 | `/olvidecontra` | `OlvidecontraComponent` | Recuperación de contraseña |
 | `/reset-password` | `ResetPasswordComponent` | Resetear contraseña con token |
 
-### Rutas Privadas (requieren authGuard)
-
-#### Sección Usuario Autenticado
+### Rutas Privadas — Usuario
 
 | Ruta | Componente | Descripción |
 |------|-----------|-------------|
 | `/inicio` | `InicioComponent` | Dashboard del usuario |
 | `/user/verbuses` | `VerBusesComponent` | Ver buses disponibles |
-| `/user/ubicacion` | `UbicacionComponent` | Ubicación en tiempo real |
+| `/user/ubicacion` | `UbicacionComponent` | Mapa en tiempo real + GPS |
 | `/user/recargas` | `RecargasComponent` | Recargar tarjeta |
-| `/user/canalatencion` | `CanalAtencionComponent` | Canal de atención al cliente |
+| `/user/canalatencion` | `CanalAtencionComponent` | Atención al cliente |
 | `/user/noticias` | `NoticiasComponent` | Noticias del sistema |
 | `/user/faq` | `PreguntasFrecuentesComponent` | Preguntas frecuentes |
-| `/noticias/todas` | `TodasComponent` | Ver todas las noticias |
 | `/user/noticias/ver-noticia` | `VerNoticiaComponent` | Detalle de noticia |
-| `/rutas-favoritas` | `RutasFavoritasComponent` | Rutas favoritas del usuario |
+| `/rutas-favoritas` | `RutasFavoritasComponent` | Rutas favoritas |
 
-#### Sección Admin
+### Rutas Privadas — Admin
 
 | Ruta | Componente | Descripción |
 |------|-----------|-------------|
 | `/dashboarda` | `DashboardComponent` | Dashboard administrativo |
-| `/inicia` | `IniciAdminComponent` | Página inicio admin |
+| `/inicia` | `IniciAdminComponent` | Home admin |
+| *(admin extra)* | `GestionarUsuariosComponent` | Gestión de usuarios |
+| *(admin extra)* | `GestionarLineasComponent` | Gestión de líneas |
 
-⚠️ **Nota:** Las rutas admin `/dashboarda` e `/inicia` también están protegidas por `authGuard`, pero **no implementan validación de rol**. Cualquier usuario autenticado puede acceder.
+⚠️ Las rutas admin no implementan validación de rol — cualquier usuario autenticado puede acceder.
 
 ---
 
 ## 🧩 5. SERVICIOS Y RESPONSABILIDADES
 
-### AuthService (services/auth.ts)
+### AuthService (`services/auth.ts`)
+- Comunicación con backend de autenticación
+- Gestión de tokens en localStorage
+- Decodificación de JWT para datos de sesión
+- Endpoints: login, verificar, reenviar, recuperar, resetPassword, registro
 
-**Responsabilidades:**
-1. ✅ Comunicación con backend de autenticación
-2. ✅ Gestión de tokens en localStorage
-3. ✅ Validación de sesión en cliente
-4. ✅ Endpoints de login, registro y recuperación
-
-**Métodos públicos:**
-- `login()` - Autenticar usuario
-- `verificar()` - Verificar código OTP
-- `registro()` - Registrar nuevo usuario
-- `recuperar()` - Iniciar recuperación de contraseña
-- `resetPassword()` - Actualizar contraseña
-- `guardarToken()` / `obtenerToken()` - Gestión de token
-- `cerrarSesion()` - Limpiar sesión
-- `estaAutenticado()` - Verificar sesión activa
-
-**Problemas identificados:**
-- ⚠️ No hay servicio de API genérico (cada componente hace peticiones propias)
-- ⚠️ No hay interceptor HTTP para inyectar token
-- ⚠️ No hay manejo de errores centralizado
-- ⚠️ No hay servicio para otros recursos (noticias, rutas, buses, etc.)
+### PerfilService (`services/perfil.ts`) ← NUEVO
+- Gestión del perfil del usuario autenticado
+- `obtener()` → carga datos completos del perfil desde API
+- `editar()` → actualiza nombres, documento y teléfono
+- `cambiarContrasena()` → cambia contraseña con verificación de la actual
+- El token se inyecta automáticamente via `auth-interceptor`
 
 ---
 
-## 📱 6. COMPONENTES POR SECCIÓN
+## 📱 6. COMPONENTES — DETALLE
 
-### 6.1 Componentes Públicos (sin autenticación)
+### 6.1 Componentes Públicos
 
-#### **LoginComponent** (`Pages/login/login.ts`)
+#### LoginComponent (`Pages/login/login.ts`)
 ```
-Responsabilidad: Autenticación en 2 pasos (credenciales + OTP)
+Autenticación en 2 pasos (credenciales + OTP).
 
-Propiedades principales:
-- paso: number (1 = credenciales, 2 = código)
-- loginForm: FormGroup (email, password, remember)
-- codigoForm: FormGroup (código de 6 dígitos)
-- tiempoRestante: number (contador para expiración)
-- loading: boolean
-- errorMessage: string
+Estado:
+- paso: 1 | 2
+- loginForm: { email, password, remember }
+- codigoForm: { codigo (6 dígitos) }
+- tiempoRestante: número (countdown 5 min, usa Date.now() para precisión entre pestañas)
+- loading, errorMessage, showPassword
 
-Métodos:
-- onSubmit(): Valida y envía credenciales
-- verificarCodigo(): Valida y verifica código OTP
-- iniciarCountdown(): Inicia contador de 5 minutos
-
-Flujo:
-1. Usuario ingresa correo/contraseña → onSubmit()
-2. AuthService.login() → paso = 2
-3. Usuario ingresa código OTP → verificarCodigo()
-4. AuthService.verificar() → obtiene token
-5. Redirige a /inicio
-
-Validaciones:
-- Email debe ser válido (RFC)
-- Contraseña requerida
-- Código debe ser exactamente 6 dígitos
-- Código no debe estar expirado (5 minutos)
+Change detection: ChangeDetectorRef + NgZone.run() en todos los callbacks HTTP y setInterval.
+El countdown corre fuera de NgZone (runOutsideAngular) para no impactar performance,
+pero cada tick entra con ngZone.run() + cdr.detectChanges().
 ```
 
-#### **RegistroComponent** (`Pages/registro/registro.ts`)
+#### OlvidecontraComponent (`Pages/olvidecontra/olvidecontra.ts`)
 ```
-Responsabilidad: Registro de nuevo usuario
+Recuperación de contraseña en 2 pasos.
 
-Campos capturados:
-- nombre
-- apellido1, apellido2 (opcional)
-- tipoDocumento, numDocumento
-- telefono
-- correo
-- contrasena
+Paso 1: ingresa correo → POST /api/v1/auth/recuperar
+Paso 2: confirma recepción → puede reenviar
 
-Transformación antes de enviar:
-- apellido1 + apellido2 → apellidos (concatenados)
-- nombres → nombre
-- nroDocumento → numDocumento
-
-Animaciones incluidas: fadeSlideInLeft, staggerItems, fadeSlideInUp
+Countdown: 15 minutos (900s) → setInterval con cdr.detectChanges() en cada tick.
+Change detection: ChangeDetectorRef inyectado, detectChanges() en callbacks HTTP y setInterval.
 ```
 
-#### **OlvidecontraComponent** (`Pages/olvidecontra/olvidecontra.ts`)
+#### RegistroComponent (`Pages/registro/registro.ts`)
 ```
-Responsabilidad: Iniciar recuperación de contraseña
-
-Flujo:
-1. Usuario ingresa correo
-2. AuthService.recuperar(correo)
-3. Recibe token de recuperación
-4. Redirige a pantalla de reset-password
+Registro de nuevo usuario con modal de políticas de datos
+y modal de éxito al finalizar.
 ```
 
-#### **ResetPasswordComponent** (`Pages/resetpassword/resetpassword.ts`)
+#### ResetPasswordComponent (`Pages/resetpassword/resetpassword.ts`)
 ```
-Responsabilidad: Resetear contraseña con token válido
-
-Datos necesarios:
-- token (desde URL o sessionStorage)
-- nuevaContrasena
-
-Llamada: AuthService.resetPassword({ token, nuevaContrasena })
+Resetear contraseña con token de recuperación.
 ```
 
 ### 6.2 Componentes Usuario Autenticado
 
-#### **InicioComponent** (`Pages/inicio/inicio.ts`)
+#### InicioComponent (`Pages/user/inicio/inicio.ts`)
 ```
-Responsabilidad: Dashboard/home del usuario
+Dashboard/home del usuario.
+
+- Carrusel de tarjetas (drag/swipe con mouse y touch)
+- Modales: agregar tarjeta, editar tarjeta, eliminar tarjeta
+- nombreUsuario: leído del JWT en constructor
+
+Escucha (perfilActualizado) del navbar para actualizar el saludo
+"Hola, {nombre}" en tiempo real cuando el usuario edita su perfil.
+Change detection: ChangeDetectorRef + detectChanges() en el handler del evento.
+```
+
+#### UbicacionComponent (`Pages/user/ubicacion/ubicacion.ts`)
+```
+Mapa interactivo con Leaflet + GPS + buses simulados + IA.
 
 Características:
-- Carrusel de tarjetas de recarga
-- Información de saldo
-- Acceso rápido a funciones
-- Historial de transacciones
+- Carga Leaflet dinámicamente (no bundleado)
+- GPS via navigator.geolocation
+- Paraderos del Corredor Azul (10 paraderos reales de Lima)
+- 3 buses simulados con rutas OSRM reales
+- Animación de buses: avanza 1 waypoint cada 1.8s, parada en paraderos (~60s)
+- Seguir bus: zoom + oculta otros buses + ETA dinámico
+- Ver ruta: overlay de paraderos de la línea
+- IA: consulta a /api/claude para responder sobre destinos
+- ETA predictivo: POST http://localhost:8001/predecir-eta (FastAPI ML)
 
-Interfaz Tarjeta:
-{
-  id: string
-  alias: string (ej: "Mi tarjeta principal")
-  empresa: string
-  codigo: string
-  imagen: string
-}
+Change detection (5 puntos con cdr.detectChanges()):
+1. procesarUbicacion() — GPS callback
+2. consultarETA() — fetch FastAPI
+3. consultarIA() — fetch Claude API
+4. cargarLeaflet() script.onload
+5. iniciarSimulacion() setInterval cada 1.8s
 
-Animaciones: fadeSlideIn
-Integración: NavbarComponent
-```
-
-#### **VerBusesComponent** (`Pages/user/verbuses/verbuses.ts`)
-```
-Responsabilidad: Mostrar buses disponibles en tiempo real
-Integración: Navbar, posiblemente mapa o ubicación
+ngZone.run() usado en todos los callbacks async para evitar problemas de contexto.
 ```
 
-#### **UbicacionComponent** (`Pages/user/ubicacion/ubicacion.ts`)
+#### RecargasComponent (`Pages/user/recargas/recargas.ts`)
 ```
-Responsabilidad: Ubicación del usuario en tiempo real
-Integración: Mapa, tracking de buses
-```
-
-#### **RecargasComponent** (`Pages/user/recargas/recargas.ts`)
-```
-Responsabilidad: Recargar tarjeta/saldo
-Integración: Navbar, formularios de pago
+Recarga de tarjeta/saldo. Integra NavbarComponent.
 ```
 
-#### **CanalAtencionComponent** (`Pages/user/canalatencion/canalatencion.ts`)
+#### CanalAtencionComponent (`Pages/user/canalatencion/canalatencion.ts`)
 ```
-Responsabilidad: Soporte y atención al cliente
-Integración: Navbar, formularios de contacto
-```
-
-#### **NoticiasComponent** (`Pages/user/noticias/noticias.ts`)
-```
-Responsabilidad: Listar noticias del sistema
+Soporte y atención al cliente. Integra NavbarComponent.
 ```
 
-#### **TodasComponent** (`Pages/user/noticias/todas/todas.ts`)
+#### NoticiasComponent (`Pages/user/noticias/noticias.ts`)
 ```
-Responsabilidad: Ver todas las noticias (paginado)
-```
-
-#### **VerNoticiaComponent** (`Pages/user/noticias/ver-noticia/ver-noticia.ts`)
-```
-Responsabilidad: Detalle completo de una noticia
+Listado de noticias del sistema. Integra NavbarComponent.
 ```
 
-#### **PreguntasFrecuentesComponent** (`Pages/user/preguntasfrecuentes/preguntasfrecuentes.ts`)
+#### VerNoticiaComponent (`Pages/user/noticias/ver-noticia/ver-noticia.ts`)
 ```
-Responsabilidad: FAQ del sistema
-```
-
-#### **RutasFavoritasComponent** (`Pages/user/rutas-favoritas/rutas-favoritas.ts`)
-```
-Responsabilidad: Gestionar rutas favoritas del usuario
+Detalle completo de una noticia.
 ```
 
-#### **SoporteComponent** (`Pages/user/soporte/soporte.ts`)
+#### PreguntasFrecuentesComponent (`Pages/user/preguntasfrecuentes/preguntasfrecuentes.ts`)
 ```
-Responsabilidad: Enviar reportes de problemas
+FAQ del sistema. Integra NavbarComponent.
 ```
 
-#### **VerEstacionesComponent** (`Pages/user/verestaciones/...`)
+#### RutasFavoritasComponent (`Pages/user/rutas-favoritas/rutas-favoritas.ts`)
 ```
-Responsabilidad: Listar y ver detalles de estaciones
+Gestionar rutas favoritas del usuario. Integra NavbarComponent.
 ```
 
 ### 6.3 Componentes Admin
 
-#### **DashboardComponent** (`Pages/admin/dashboard/dashboard.ts`)
+#### IniciAdminComponent (`Pages/admin/inicio/inicio.ts`)
 ```
-Responsabilidad: Dashboard administrativo con analytics
+Home del administrador.
 
-Datos mostrados (KPI):
-- usuariosActivos: 3241
-- busesEnFlota: 38
-- recargasHoy: 412
-- montoRecargasHoy: 6180
-- reportesEnviados: 14
-- reportesPendientes: 3
-
-Secciones:
-- KPIs principales
-- Usuarios recientes
-- ETA de buses
-- Noticias más vistas
-- Líneas con más viajes
-- Eventos de alto impacto
-
-Integración: Gráficos (ng2-charts), Canvas rendering, Navbar
+nombreAdmin: leído del JWT en constructor.
+Escucha (perfilActualizado) del navbar para actualizar el saludo en tiempo real.
+Change detection: ChangeDetectorRef + detectChanges() en handler del evento.
 ```
 
-#### **IniciAdminComponent** (`Pages/admin/inicio/inicio.ts`)
+#### DashboardComponent (`Pages/admin/dashboard/dashboard.ts`)
 ```
-Responsabilidad: Home/inicio de sección admin
+Dashboard administrativo con KPIs, gráficos (ng2-charts),
+usuarios recientes, ETA de buses, noticias más vistas,
+líneas con más viajes, eventos de alto impacto.
 ```
 
 ### 6.4 Componentes Reutilizables
 
-#### **NavbarComponent** (`components/navbar/navbar.ts`)
+#### NavbarComponent (`components/navbar/navbar.ts`) ← ACTUALIZADO
+
 ```
-Responsabilidad: Barra de navegación
+Barra de navegación presente en todas las páginas autenticadas.
 
-Características:
-- Menú de usuario
-- Notificaciones (operativas y saldo)
-- Modal de logout
-- Modal de reporte de problemas
-- Tipos de reportes predefinidos (16 categorías):
-  * Estación: aglomeración, módulo recarga, torniquete, limpieza, inseguridad
-  * Bus: no llega, lleno, mal estado, conducta conductor, desvío ruta, velocidad
-  * Tarjeta: no carga, descuento, no se lee, perdida
-  * App: saldo incorrecto, error
-  * Otro
+Datos de usuario:
+- primerNombre, inicial: del JWT (constructor), actualizables al editar perfil
+- nombreCompleto, tipoDocumento, nroDocumento, correo, telefono, tipoTarjeta:
+  cargados desde PerfilService.obtener() en ngOnInit y cada vez que se abre el modal
 
-Interfaz Notificacion:
-{
-  id: number
-  tipo: 'operativa' | 'saldo'
-  titulo: string
-  descripcion: string
-  hora: string
-  leida: boolean
-}
+Modales disponibles:
+1. Mi perfil         — visualización de datos del usuario
+2. Editar perfil     — formulario de edición (nombres, apellidos, tipoDoc, nroDoc, teléfono)
+3. Cambiar contraseña — 3 campos con toggle show/hide + validación de coincidencia
+4. Éxito editar perfil    — modal de confirmación verde con chip del nombre actualizado
+5. Éxito cambiar contraseña — modal de confirmación verde con chip "Cuenta segura"
+6. Notificaciones    — dropdown con badge de no leídas
+7. Reporte de problema — 16 categorías, descripción, imagen opcional
+8. Éxito reporte     — confirmación de envío
+9. Cerrar sesión     — confirmación antes de logout
 
-Emite: logout (EventEmitter)
+Cierre de modales:
+- Todos los nuevos modales usan (click)="$event.target === $event.currentTarget && closeMethod()"
+  en el overlay (más robusto que classList.contains, no depende de stopPropagation).
+
+Outputs:
+- logout: EventEmitter<void>           → emite al confirmar cierre de sesión
+- perfilActualizado: EventEmitter<string> → emite el nuevo primerNombre al guardar el perfil
+
+Actualización de perfil (guardarPerfil()):
+- Llama PUT /api/v1/perfil
+- Al éxito: actualiza TODAS las propiedades de display inmediatamente (sin segunda llamada HTTP)
+- Emite perfilActualizado con el nuevo primerNombre
+- Llama cdr.detectChanges() para forzar re-render (sin zone.js)
+
+Change detection: ChangeDetectorRef.detectChanges() en todos los callbacks HTTP:
+- cargarPerfil() next/error
+- guardarPerfil() next/error
+- guardarContrasena() next/error
+
+Notificaciones: mock data (4 notificaciones), pendiente conectar con backend.
+Reporte: actualmente solo console.log, pendiente endpoint de envío.
 ```
 
-#### **HeadbotComponent** (`components/headbot/headbot.ts`)
+#### HeadbotComponent (`components/headbot/headbot.ts`)
 ```
-Responsabilidad: Chat bot en la esquina (Web Component)
-
-Características:
-- Carga script de liveline (headBot.js)
-- Se muestra en todas las rutas EXCEPTO:
-  * /login
-  * /registro
-  * /olvidecontra
-  * /reset-password
-
-Implementa: OnInit, OnDestroy
+Chat bot integrado como Web Component.
+Visible en todas las rutas EXCEPTO: /login, /registro, /olvidecontra, /reset-password.
 ```
 
 ---
 
-## 📦 7. DEPENDENCIAS PRINCIPALES (package.json)
-
-### Versiones
+## 📦 7. DEPENDENCIAS PRINCIPALES
 
 ```json
 {
-  "version": "0.0.0",
-  "packageManager": "npm@11.8.0",
-
-  // ANGULAR (v21.2.0)
-  "@angular/animations": "^21.2.10",
-  "@angular/common": "^21.2.0",
-  "@angular/compiler": "^21.2.0",
   "@angular/core": "^21.2.0",
-  "@angular/forms": "^21.2.0",      // Reactive Forms
-  "@angular/platform-browser": "^21.2.0",
+  "@angular/forms": "^21.2.0",
+  "@angular/animations": "^21.2.10",
   "@angular/router": "^21.2.0",
-
-  // GRÁFICOS Y VISUALIZACIÓN
+  "rxjs": "~7.8.0",
   "chart.js": "^4.5.1",
   "ng2-charts": "^10.0.0",
-
-  // UTILIDADES
-  "rxjs": "~7.8.0",                 // Observables
-  "tslib": "^2.3.0",
-
-  // WEB COMPONENTS
-  "liveline": "^0.0.7",             // Bot/Chat
-  "react": "^19.2.6",               // Para liveline-wc
+  "liveline": "^0.0.7",
+  "react": "^19.2.6",
   "react-dom": "^19.2.6",
-
-  // DEV DEPENDENCIES
-  "@angular/build": "^21.2.5",
-  "@angular/cli": "^21.2.5",
-  "@angular/compiler-cli": "^21.2.0",
-  "@tailwindcss/postcss": "^4.1.12", // CSS Framework
   "tailwindcss": "^4.1.12",
-  "postcss": "^8.5.3",
   "typescript": "~5.9.2",
-  "vitest": "^4.0.8",               // Testing framework
-  "prettier": "^3.8.1",
-  "jsdom": "^28.0.0"
+  "vitest": "^4.0.8"
 }
 ```
 
-### Stack Tecnológico
-
-- **Framework:** Angular 21 (últimas características)
-- **Lenguaje:** TypeScript 5.9
-- **Routing:** Angular Router con Hash Location
-- **Formularios:** Reactive Forms
-- **Styling:** Tailwind CSS + PostCSS
-- **Charts:** Chart.js + ng2-charts
-- **State Management:** RxJS Observables (sin NgRx)
-- **Testing:** Vitest + JSDOM
-- **Backend:** API REST en `http://localhost:8080/api/v1`
+**Backend API base:** `http://localhost:8080/api/v1`  
+**ML FastAPI (ETA):** `http://localhost:8001`  
+**Claude API proxy:** `/api/claude`
 
 ---
 
 ## 🔄 8. FLUJOS PRINCIPALES
 
-### Flujo 1: Autenticación Completa
+### Flujo 1: Login 2FA
 
 ```
-1. Usuario accede a aplicación
-   ↓
-2. App intenta cargar ruta /inicio
-   ↓
-3. authGuard verifica localStorage.auth_token
-   ↓
-4. Si no existe → redirige a /login
-   ↓
-5. LoginComponent muestra paso 1 (credenciales)
-   ↓
-6. Usuario ingresa correo/contraseña
-   ↓
-7. POST /api/v1/auth/login
-   ↓
-8. Si success → LoginComponent muestra paso 2 (código OTP)
-   ↓
-9. Usuario ingresa código (6 dígitos)
-   ↓
-10. POST /api/v1/auth/verificar
-    ↓
-11. Si success → recibe { token, mensaje }
-    ↓
-12. authService.guardarToken(token)
-    ↓
-13. Router.navigate(['/inicio'])
-    ↓
-14. authGuard verifica token → acceso concedido
-    ↓
-15. InicioComponent carga
+Login Form → POST /auth/login
+  ↓ success
+Formulario OTP (countdown 5 min, preciso con Date.now())
+  ↓ código válido
+POST /auth/verificar → recibe JWT
+  ↓
+guardarToken → localStorage
+  ↓
+Redirige: rol 2/3 → /inicia  |  otro → /inicio
 ```
 
-### Flujo 2: Recuperación de Contraseña
+### Flujo 2: Editar Perfil (desde Navbar)
 
 ```
-1. Usuario en /login → click "¿Olvidaste contraseña?"
-   ↓
-2. Redirige a /olvidecontra
-   ↓
-3. Usuario ingresa correo
-   ↓
-4. POST /api/v1/auth/recuperar?correo=...
-   ↓
-5. Backend envía link/token por correo
-   ↓
-6. Usuario clica link en correo → /reset-password?token=...
-   ↓
-7. ResetPasswordComponent carga
-   ↓
-8. Usuario ingresa nueva contraseña
-   ↓
-9. POST /api/v1/auth/reset-password { token, nuevaContrasena }
-   ↓
-10. Si success → redirige a /login
-    ↓
-11. Usuario inicia sesión con nueva contraseña
+Click "Editar perfil" en modal Mi Perfil
+  ↓
+Abre modal con campos pre-rellenos desde datos cargados
+  ↓
+Usuario modifica → click "Guardar cambios"
+  ↓
+PUT /api/v1/perfil { nombres, apellidos, tipoDocumento, nroDocumento, telefono }
+  ↓ success (sin esperar nueva llamada GET)
+Actualiza: nombreCompleto, primerNombre, inicial, tipoDocumento, nroDocumento, telefono
+Emite: perfilActualizado(primerNombre) → página padre actualiza "Hola, {nombre}"
+Abre: modal de éxito con chip del nombre actualizado
+cdr.detectChanges() → UI se actualiza inmediatamente
+  ↓ error
+Muestra mensaje de error inline en el formulario
 ```
 
-### Flujo 3: Reporte de Problema (desde Navbar)
+### Flujo 3: Cambiar Contraseña (desde Navbar)
 
 ```
-1. Usuario autenticado → click botón reporte en Navbar
-   ↓
-2. Modal de reporte abre
-   ↓
-3. Usuario selecciona tipo de problema (16 opciones)
-   ↓
-4. Se rellena automáticamente:
-   - Título (ej: "Aglomeración peligrosa en estación")
-   - Color (ej: naranja para estación, azul para bus)
-   - Icono SVG del tipo
-   ↓
-5. Usuario opcionalmente:
-   - Agrega descripción
-   - Agrega imagen
-   - Selecciona línea/ruta
-   ↓
-6. Envía reporte (POST a backend)
-   ↓
-7. Mensaje de éxito/error
-   ↓
-8. Modal se cierra
+Click "Contraseña" en modal Mi Perfil
+  ↓
+Abre modal con 3 campos (contraseña actual, nueva, confirmar)
+Toggle show/hide en cada campo
+  ↓
+Validación local: nueva === confirmar
+  ↓
+PATCH /api/v1/perfil/contrasena { contrasenaActual, contrasenaNueva }
+  ↓ success
+Abre modal de éxito "Cuenta segura"
+  ↓ error (401 = contraseña actual incorrecta)
+Muestra mensaje de error inline
 ```
 
-### Flujo 4: Navegación Protegida
+### Flujo 4: GPS y Mapa (Ubicacion)
 
 ```
-Usuario → Click en enlace privado
-   ↓
-¿Token existe en localStorage?
-   ├─ NO → authGuard redirige a /login
-   └─ SÍ → Carga componente
+ngAfterViewInit → cargarLeaflet()
+ngOnInit → activarGPS() (con 300ms delay)
+  ↓
+navigator.geolocation.getCurrentPosition()
+  → error: usa coordenadas por defecto (-12.0564, -77.0428 = Lima Centro)
+  ↓
+procesarUbicacion(lat, lng)
+  → calcula paraderoMasCercano (Haversine)
+  → consultarETA() → POST localhost:8001/predecir-eta
+  → renderizarMapaUnificado() (si Leaflet ya cargó)
+  ↓
+Mapa muestra:
+  - Mi ubicación (burbuja azul animada)
+  - 10 paraderos del Corredor Azul
+  - Ruta peatonal al paradero más cercano (OSRM foot)
+  - 3 buses simulados con rutas reales (OSRM driving multi-waypoint)
+  ↓
+Simulación: setInterval 1.8s
+  → avanza 1 waypoint por tick
+  → detecta paraderos (radio 80m) → pausa ~60s
+  → actualiza estado en card (En movimiento / Detenido / En paradero)
+  → cdr.detectChanges() en cada tick
+```
 
-Nota: No valida:
-- Expiración de token
-- Rol del usuario
-- Permisos específicos
+### Flujo 5: Recuperación de Contraseña
+
+```
+/olvidecontra → ingresa correo
+POST /auth/recuperar → paso 2 (countdown 15 min)
+  ↓
+Backend envía link al correo → /reset-password?token=...
+POST /auth/reset-password { token, nuevaContrasena }
+  ↓ success → /login
 ```
 
 ---
 
-## ⚠️ 9. PROBLEMAS Y MEJORAS IDENTIFICADAS
+## ⚠️ 9. PROBLEMAS CONOCIDOS Y ESTADO
 
-### Problemas Críticos
+### Resueltos en esta sesión ✅
 
-| # | Problema | Impacto | Solución |
-|---|----------|--------|----------|
-| 1 | No hay validación de token con backend | Alto | Implementar interceptor HTTP + endpoint de validación |
-| 2 | No hay manejo de roles/permisos | Alto | Agregar roles en token JWT, validar en guards |
-| 3 | Token nunca expira | Alto | Implementar refresh tokens + validación de expiración |
-| 4 | No hay interceptor HTTP | Medio | Agregar interceptor para inyectar token en headers |
-| 5 | Servicios solo para auth | Medio | Crear servicios para noticias, buses, rutas, etc. |
+| Problema | Solución aplicada |
+|----------|-------------------|
+| Navbar sin funcionalidad de editar perfil | Implementados modales de editar perfil y cambiar contraseña con PerfilService |
+| Modales cerraban al hacer clic en campos | Cambiado a `event.target === event.currentTarget` en overlay — no depende de stopPropagation |
+| UI no se actualizaba sin Zone.js | `ChangeDetectorRef.detectChanges()` en todos los callbacks HTTP y setInterval |
+| Login necesitaba clic para actualizar | Ya tenía NgZone + CDR correctamente implementado |
+| OlvidecontraComponent sin CDR | Añadido detectChanges() en HTTP callbacks y setInterval del countdown |
+| UbicacionComponent sin CDR | Añadido detectChanges() en 5 puntos asincrónicos |
+| "Hola, {nombre}" no se actualizaba en inicio/inicia | `@Output() perfilActualizado` en navbar + handler en ambas páginas |
+| primerNombre/inicial readonly (no actualizables) | Eliminado `readonly`, se actualizan al guardar perfil exitosamente |
 
-### Problemas de Seguridad
+### Pendientes ⚠️
 
-- ⚠️ Token en localStorage (vulnerable a XSS)
-- ⚠️ Sin CSRF protection
-- ⚠️ Sin rate limiting en frontend
-- ⚠️ Contraseñas viajan en POST sin encriptación (SSL previene)
-- ⚠️ Sin manejo de timeouts de sesión
-
-### Mejoras Funcionales
-
-1. **Crear servicio API genérico** para todas las llamadas
-2. **Implementar store de estado** (estado de usuario, notificaciones, etc.)
-3. **Agregar error handling centralizado**
-4. **Lazy loading** de rutas para performance
-5. **Validación de formularios más robusta**
-6. **Internacionalización (i18n)** para otros idiomas
+| # | Problema | Impacto |
+|---|----------|---------|
+| 1 | Token JWT no se refresca tras editar perfil | El nombre en JWT difiere del nombre real si se editó |
+| 2 | Sin validación de rol en rutas admin | Cualquier usuario autenticado accede a `/inicia` y `/dashboarda` |
+| 3 | Sin validación de expiración de JWT en cliente | Token expirado sigue pasando authGuard |
+| 4 | Notificaciones del navbar son mock data | Pendiente endpoint real |
+| 5 | Reporte de problema solo hace console.log | Pendiente endpoint de envío |
+| 6 | Sin refresh token | Sesión no se renueva automáticamente |
+| 7 | Token en localStorage | Vulnerable a XSS |
 
 ---
 
-## 📊 10. RESUMEN TÉCNICO
+## 🔧 10. PATRÓN CRÍTICO: CHANGE DETECTION SIN ZONE.JS
+
+> **IMPORTANTE para todo desarrollador en este proyecto.**
+
+### El problema
+
+`zone.js` **no está importado** en este proyecto (ni en `main.ts` ni en `angular.json`). Sin Zone.js, Angular no detecta automáticamente cambios originados en operaciones asíncronas como:
+- Callbacks de `HttpClient` (`.subscribe()`)
+- `setInterval` / `setTimeout`
+- Callbacks de `fetch()`
+- Callbacks de `navigator.geolocation`
+- Eventos de carga de scripts (`script.onload`)
+
+El efecto visible: el estado cambia internamente pero la UI permanece congelada hasta que el usuario hace clic en algo (que dispara change detection via el event handler de Angular).
+
+### La solución estándar en este proyecto
+
+Inyectar `ChangeDetectorRef` y llamar `detectChanges()` al final de cada callback asíncrono:
+
+```typescript
+import { ChangeDetectorRef } from '@angular/core';
+
+constructor(private cdr: ChangeDetectorRef) {}
+
+// En cualquier callback HTTP, setInterval, fetch, etc.:
+this.miServicio.llamada().subscribe({
+  next: (data) => {
+    this.miPropiedad = data;
+    this.cdr.detectChanges(); // ← SIEMPRE al final
+  },
+  error: (err) => {
+    this.errorMsg = '...';
+    this.cdr.detectChanges(); // ← También en error
+  }
+});
+
+setInterval(() => {
+  this.contador--;
+  this.cdr.detectChanges(); // ← En cada tick
+}, 1000);
+```
+
+### Componentes que ya implementan el patrón ✅
+
+| Componente | Callbacks cubiertos |
+|------------|---------------------|
+| `login.ts` | HTTP (3 callbacks) + setInterval countdown — también usa NgZone |
+| `olvidecontra.ts` | HTTP (4 callbacks) + setInterval countdown |
+| `navbar.ts` | HTTP (6 callbacks: cargarPerfil, guardarPerfil, guardarContrasena) |
+| `ubicacion.ts` | GPS callback, ETA fetch, IA fetch, Leaflet onload, setInterval simulación |
+| `user/inicio/inicio.ts` | Handler de @Output perfilActualizado |
+| `admin/inicio/inicio.ts` | Handler de @Output perfilActualizado |
+
+### Regla para nuevos componentes
+
+**Todo componente que realice operaciones asíncronas (HTTP, timers, eventos nativos) debe inyectar `ChangeDetectorRef` y llamar `detectChanges()` en cada callback.**
+
+---
+
+## 📊 11. RESUMEN TÉCNICO
 
 | Aspecto | Detalles |
 |--------|----------|
-| **Tipo de Aplicación** | SPA (Single Page Application) |
-| **Componentes** | 15+ standalone components |
-| **Rutas** | 14 públicas + 11 privadas = 25 total |
-| **Interfaces/Tipos** | 13+ interfaces definidas |
-| **Servicios** | 1 servicio (AuthService) |
-| **Guards** | 1 guard (authGuard) |
-| **Animaciones** | Transiciones personalizadas |
-| **Styling** | Tailwind CSS |
-| **Testing Framework** | Vitest |
+| **Tipo de Aplicación** | SPA con Hash Location |
+| **Versión Angular** | 21.2.0 (Standalone) |
+| **Zone.js** | ❌ No importado — change detection manual |
+| **Componentes** | 20+ standalone components |
+| **Servicios** | AuthService, PerfilService |
+| **Guards** | authGuard (verifica presencia de token) |
+| **Interceptores** | authInterceptor (inyecta Bearer token, maneja 401) |
+| **Styling** | Tailwind CSS v4 + CSS custom per componente |
+| **Charts** | Chart.js + ng2-charts |
+| **Mapa** | Leaflet 1.9.4 (cargado dinámicamente) |
+| **Rutas OSRM** | router.project-osrm.org (driving + foot) |
+| **ML/ETA** | FastAPI en localhost:8001 |
+| **IA Asistente** | Claude API proxy en /api/claude |
+| **Testing** | Vitest + JSDOM |
 | **Backend API** | http://localhost:8080/api/v1 |
-| **Autenticación** | 2FA (OTP por correo) |
+| **Autenticación** | JWT + 2FA OTP por correo |
 | **Token Storage** | localStorage (auth_token) |
-| **Interceptores** | Ninguno |
 
 ---
 
-## 🎯 11. PRÓXIMOS PASOS RECOMENDADOS
-
-### Corto Plazo (Urgente)
-1. ✅ Agregar validación de token en backend
-2. ✅ Implementar HTTP interceptor
-3. ✅ Agregar manejo de errores centralizado
-4. ✅ Implementar refresh tokens
-
-### Mediano Plazo
-1. ✅ Sistema de roles y permisos
-2. ✅ Servicios para cada recurso (noticias, buses, rutas)
-3. ✅ State management (NgRx o Signal State)
-4. ✅ Lazy loading de rutas
-
-### Largo Plazo
-1. ✅ Pruebas unitarias e integración
-2. ✅ Internacionalización
-3. ✅ PWA capabilities
-4. ✅ Optimización de performance
-
----
-
-**Análisis completado:** 27 May 2026  
-**Versión:** 1.0
+**Última actualización:** 04 Jun 2026  
+**Versión:** 2.0

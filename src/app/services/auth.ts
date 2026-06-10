@@ -81,7 +81,7 @@ export class AuthService {
   resetPassword(body: ResetPasswordRequest): Observable<MensajeResponse> {
     return this.http.post<MensajeResponse>(`${this.API}/auth/reset-password`, body);
   }
-
+  
   // ── Registro ──────────────────────────────
 
   registro(body: RegistroRequest): Observable<any> {
@@ -137,5 +137,8 @@ export class AuthService {
     const token = this.obtenerToken();
     if (!token) return null;
     return this.decodificarToken(token);
+  }
+  getRol(): number | null {
+    return this.obtenerDatosUsuario()?.idRol ?? null;
   }
 }

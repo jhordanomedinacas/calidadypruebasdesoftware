@@ -9,9 +9,8 @@ import { RecargasComponent } from './Pages/user/recargas/recargas';
 import { CanalAtencionComponent } from './Pages/user/canalatencion/canalatencion';
 import { NoticiasComponent } from './Pages/user/noticias/noticias';
 import { PreguntasFrecuentesComponent } from './Pages/user/preguntasfrecuentes/preguntasfrecuentes';
-import { TodasComponent } from './Pages/user/noticias/todas/todas';
 import { VerNoticiaComponent } from './Pages/user/noticias/ver-noticia/ver-noticia';
-import { authGuard } from './guards/auth-guard';
+import { authGuard, adminGuard, userGuard  } from './guards/auth-guard';
 import { ResetPasswordComponent } from './Pages/resetpassword/resetpassword';
 import { RutasFavoritasComponent } from './Pages/user/rutas-favoritas/rutas-favoritas';
 import { DashboardComponent } from './Pages/admin/dashboard/dashboard';
@@ -23,29 +22,28 @@ import { DashboardUsuarioComponent } from './Pages/user/dashboard/dashboard';
 
 export const routes: Routes = [
 
-  // ── Públicas ──────────────────────────────
-  { path: '',            redirectTo: 'login', pathMatch: 'full' },
-  { path: 'login',       component: LoginComponent },
-  { path: 'registro',    component: RegistroComponent },
-  { path: 'olvidecontra', component: OlvidecontraComponent },
+   // ── Públicas ──────────────────────────────
+  { path: '',               redirectTo: 'login', pathMatch: 'full' },
+  { path: 'login',          component: LoginComponent },
+  { path: 'registro',       component: RegistroComponent },
+  { path: 'olvidecontra',   component: OlvidecontraComponent },
   { path: 'reset-password', component: ResetPasswordComponent },
 
-  // ── Vista user Privadas (requieren estar autenticado) ─
-  { path: 'inicio',               component: InicioComponent,               canActivate: [authGuard] },
-  { path: 'dashboardu', component: DashboardUsuarioComponent,      canActivate: [authGuard] },
-  { path: 'user/verbuses',        component: VerBusesComponent,             canActivate: [authGuard] },
-  { path: 'user/ubicacion',       component: UbicacionComponent,            canActivate: [authGuard] },
-  { path: 'user/recargas',        component: RecargasComponent,             canActivate: [authGuard] },
-  { path: 'user/canalatencion',   component: CanalAtencionComponent,        canActivate: [authGuard] },
-  { path: 'user/noticias',        component: NoticiasComponent,             canActivate: [authGuard] },
-  { path: 'user/faq',             component: PreguntasFrecuentesComponent,  canActivate: [authGuard] },
-  { path: 'noticias/todas',       component: TodasComponent,                canActivate: [authGuard] },
-  { path: 'user/noticias/ver-noticia', component: VerNoticiaComponent,      canActivate: [authGuard] },
-  { path: 'rutas-favoritas', component: RutasFavoritasComponent,      canActivate: [authGuard] },
-  
-  //Vista Admin Privadas (requieren estar autenticado) ─
-  { path: 'dashboarda', component: DashboardComponent,      canActivate: [authGuard] },
-  { path: 'inicia', component: IniciAdminComponent,      canActivate: [authGuard] },
-  { path: 'gestion-usuarios', component: GestionarUsuariosComponent,      canActivate: [authGuard] },
-  { path: 'gestion-lineas', component: GestionarLineasComponent,      canActivate: [authGuard] }
+  // ── Rutas Usuario (rol 1) ─────────────────
+  { path: 'inicio',                    component: InicioComponent,              canActivate: [authGuard, userGuard] },
+  { path: 'dashboardu',                component: DashboardUsuarioComponent,    canActivate: [authGuard, userGuard] },
+  { path: 'user/verbuses',             component: VerBusesComponent,            canActivate: [authGuard, userGuard] },
+  { path: 'user/ubicacion',            component: UbicacionComponent,           canActivate: [authGuard, userGuard] },
+  { path: 'user/recargas',             component: RecargasComponent,            canActivate: [authGuard, userGuard] },
+  { path: 'user/canalatencion',        component: CanalAtencionComponent,       canActivate: [authGuard, userGuard] },
+  { path: 'user/noticias',             component: NoticiasComponent,            canActivate: [authGuard, userGuard] },
+  { path: 'user/faq',                  component: PreguntasFrecuentesComponent, canActivate: [authGuard, userGuard] },
+  { path: 'user/noticias/ver-noticia', component: VerNoticiaComponent,          canActivate: [authGuard, userGuard] },
+  { path: 'rutas-favoritas',           component: RutasFavoritasComponent,      canActivate: [authGuard, userGuard] },
+
+  // ── Rutas Admin (rol 2 y 3) ───────────────
+  { path: 'dashboarda',       component: DashboardComponent,         canActivate: [authGuard, adminGuard] },
+  { path: 'inicia',           component: IniciAdminComponent,        canActivate: [authGuard, adminGuard] },
+  { path: 'gestion-usuarios', component: GestionarUsuariosComponent, canActivate: [authGuard, adminGuard] },
+  { path: 'gestion-lineas',   component: GestionarLineasComponent,   canActivate: [authGuard, adminGuard] },
 ];

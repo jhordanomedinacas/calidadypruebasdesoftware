@@ -1,4 +1,4 @@
-import { Component, OnInit, OnDestroy, AfterViewInit, NgZone } from '@angular/core';
+import { Component, OnInit, OnDestroy, AfterViewInit, NgZone, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -220,7 +220,7 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
   paginaAnterior(): void { if (this.paginaActual > 1) this.paginaActual--; }
   paginaSiguiente(): void { if (this.paginaActual < this.totalPaginas) this.paginaActual++; }
 
-  constructor(private router: Router, private ngZone: NgZone, private auth: AuthService) {}
+  constructor(private router: Router, private ngZone: NgZone, private auth: AuthService, private cdr: ChangeDetectorRef) {}
 
   ngOnInit(): void {
     this.busesFiltrados = [...this.todosBuses];
@@ -508,12 +508,14 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
         this.respuestaIA       = texto || `El paradero más cercano a tu destino es ${paraderoDestino.nombre}. Activa tu GPS para ver la ruta en el mapa.`;
         this.paraderoDestinoIA = paraderoDestino;
         this.estadoIA          = 'respondido';
+        this.cdr.detectChanges();
       });
     } catch {
       this.ngZone.run(() => {
         this.respuestaIA       = `El paradero más cercano a tu destino es ${paraderoDestino.nombre}. Activa tu GPS para ver la ruta en el mapa interactivo.`;
         this.paraderoDestinoIA = paraderoDestino;
         this.estadoIA          = 'respondido';
+        this.cdr.detectChanges();
       });
     }
   }
@@ -577,13 +579,11 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     this.paraderoMasCercano  = this.calcularParaderoMasCercano(this.ubicacionActual);
     this.distanciaAlParadero = this.calcularDistancia(this.ubicacionActual, this.paraderoMasCercano);
     this.estadoGps           = 'activo';
+    this.cdr.detectChanges();
     this.consultarETA();
-    // El div #mapa-unificado siempre está en el DOM, solo esperamos
-    // un tick para que Leaflet ya esté cargado
     if (this.leafletCargado) {
       setTimeout(() => this.renderizarMapaUnificado(), 50);
     }
-    // Si Leaflet aún no cargó, cargarLeaflet() lo inicializará al terminar
   }
 
   // ── ETA (Modelo ML FastAPI) ────────────────────────────────────────────────────
@@ -622,9 +622,10 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
         this.etaHayAccidente = false;
         this.etaHayEvento    = false;
         this.estadoETA       = 'calculado';
+        this.cdr.detectChanges();
       });
     } catch {
-      this.ngZone.run(() => { this.estadoETA = 'error'; });
+      this.ngZone.run(() => { this.estadoETA = 'error'; this.cdr.detectChanges(); });
     }
   }
 
@@ -657,6 +658,7 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     script.src      = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
     script.onload   = () => this.ngZone.run(() => {
       this.leafletCargado = true;
+      this.cdr.detectChanges();
       if (this.estadoGps === 'activo') this.renderizarMapaUnificado();
     });
     document.head.appendChild(script);
@@ -984,6 +986,7 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
         for (const bus of this.busesEnMapa) {
           this.procesarTickBus(bus);
         }
+        this.cdr.detectChanges();
       });
     }, 1800);
   }
