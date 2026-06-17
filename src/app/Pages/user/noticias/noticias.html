@@ -360,7 +360,7 @@
               {{ noticiaHero.titulo }}
             </h3>
             <p style="font-size: 13px; color: rgba(255,255,255,0.8); margin: 0; font-family: 'Inter', sans-serif;">
-              20 buses nuevos cubrirán el trayecto Av. Tacna – Faucett con Quilca, con tarifa de S/ 2.00 y transbordo integrado a solo S/ 0.40 adicionales.
+              {{ noticiaHero.resumen }}
             </p>
           </div>
         </div>
@@ -374,13 +374,12 @@
           </div>
           <h2 style="font-size: 19px; font-weight: 800; color: #111827; margin: 0;
                      font-family: 'Inter', sans-serif; line-height: 1.35;">
-            Corredor Azul expande su cobertura hasta el Callao con buses cero kilómetro
+            {{ noticiaHero.titulo }}
           </h2>
           <div style="flex: 1; overflow: hidden;">
-            <p *ngFor="let parrafo of noticiaHero.resumen.split('\n\n')"
-               style="font-size: 13px; color: #4b5563; line-height: 1.7;
-                      font-family: 'Inter', sans-serif; margin: 0 0 12px 0;">
-              {{ parrafo }}
+            <p style="font-size: 13px; color: #4b5563; line-height: 1.7;
+                      font-family: 'Inter', sans-serif; margin: 0;">
+              {{ noticiaHero.resumen }}
             </p>
           </div>
           <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; margin-top: auto;">

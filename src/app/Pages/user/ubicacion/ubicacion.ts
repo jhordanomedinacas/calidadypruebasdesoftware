@@ -4,8 +4,13 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 
+import * as L from 'leaflet';
+import 'leaflet.markercluster';
+
 import { NavbarComponent } from '../../../components/navbar/navbar';
 import { AuthService } from '../../../services/auth';
+import { VerbusesService, LineaResponse, ParaderoResponse } from '../../../services/verbuses';
+import { ML_API_URL } from '../../../services/api/api';
 
 const fadeSlideIn = trigger('fadeSlideIn', [
   transition(':enter', [
@@ -33,7 +38,7 @@ export interface Bus {
 
 // ── Paradero del Corredor Azul (coordenadas reales Lima) ───────────────────────
 export interface Paradero {
-  id: string;
+  id: number;
   nombre: string;
   lat: number;
   lng: number;
@@ -45,14 +50,14 @@ interface BusEnMapa {
   busId: number;
   label: string;
   color: string;
-  rutaWaypoints: [number, number][];   // ruta completa OSRM
-  indiceActual: number;                // posición actual en la ruta
-  marker: any;                         // L.Marker
-  polylineRecorrido: any | null;       // L.Polyline de la ruta completa (tenue)
-  polylineRecorrida: any | null;       // L.Polyline del tramo ya recorrido
+  rutaWaypoints: [number, number][];
+  indiceActual: number;
+  marker: any;
+  polylineRecorrido: any | null;
+  polylineRecorrida: any | null;
   origenLatLng: [number, number];
   destinoLatLng: [number, number];
-  paraderoLatLngs: [number, number][]; // coords de cada paradero de su línea (para detectar paradas)
+  paraderoLatLngs: [number, number][];
 }
 
 // ── Tipo de paso del viaje ─────────────────────────────────────────────────────
@@ -63,6 +68,25 @@ type EstadoGps = 'inactivo' | 'cargando' | 'activo' | 'error';
 
 // ── Estado IA ─────────────────────────────────────────────────────────────────
 type EstadoIA = 'idle' | 'pensando' | 'respondido';
+
+// ── SVG paths reutilizables ───────────────────────────────────────────────────
+const SVG_BUS = `
+  <rect x="2" y="4" width="20" height="14" rx="3"/>
+  <path d="M5 20 L5 22M19 20 L19 22"/>
+  <rect x="4" y="8" width="4" height="4" rx="0.8" fill="white" stroke="none"/>
+  <rect x="16" y="8" width="4" height="4" rx="0.8" fill="white" stroke="none"/>
+  <line x1="11" y1="8" x2="11" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
+  <line x1="13" y1="8" x2="13" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>`;
+
+const SVG_PARADERO = `
+  <rect x="3" y="3" width="18" height="13" rx="3"/>
+  <path d="M5 19 L5 21M19 19 L19 21" stroke-width="2"/>
+  <rect x="6" y="7" width="4" height="3" rx="0.5" fill="white" stroke="none"/>
+  <rect x="14" y="7" width="4" height="3" rx="0.5" fill="white" stroke="none"/>`;
+
+const SVG_UBICACION = `
+  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
+  <circle cx="12" cy="9" r="2.5"/>`;
 
 @Component({
   selector: 'app-ubicacion',
@@ -79,16 +103,24 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
   origenSeleccionado   = '';
   destinoSeleccionado  = '';
 
+  paraderosDeLineaSeleccionada: Paradero[] = [];
+
+  // ── Datos reales de BD ───────────────────────────────────────────────────────
+  lineas:       LineaResponse[] = [];
+  cargandoDatos = true;
+
+  readonly ML_API_URL = ML_API_URL;
+
   // ── Estado del stepper ───────────────────────────────────────────────────────
   pasoViaje: PasoViaje = 'acercando';
 
-  // ── IA: pregunta de destino ──────────────────────────────────────────────────
+  // ── IA ───────────────────────────────────────────────────────────────────────
   preguntaDestino      = '';
   estadoIA: EstadoIA   = 'idle';
   respuestaIA          = '';
   paraderoDestinoIA: Paradero | null = null;
 
-  // ── ETA (Predicción ML) ───────────────────────────────────────────────────────
+  // ── ETA ──────────────────────────────────────────────────────────────────────
   estadoETA: 'idle' | 'calculando' | 'calculado' | 'error' = 'idle';
   etaMinutos        = 0;
   etaClima          = '';
@@ -111,84 +143,42 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   // ── Modal GPS ────────────────────────────────────────────────────────────────
-  modalGpsAbierto: boolean = false;
+  modalGpsAbierto = false;
 
   // ── Mapa ─────────────────────────────────────────────────────────────────────
   private mapaUnificadoInst: any = null;
   private leafletCargado         = false;
   private mapaRef: any           = null;
+  private clusterParaderos: L.MarkerClusterGroup | null = null;
 
-  // ── Simulación de buses ───────────────────────────────────────────────────────
-  // Buses que están siendo animados en el mapa
-  private busesEnMapa: BusEnMapa[] = [];
-  // Intervalo de animación (mueve todos los buses cada tick)
-  private intervalSimulacion: any  = null;
-  // Marcadores de paraderos en el mapa (para poder ocultarlos al seguir un bus)
-  private marcadoresParaderos: any[] = [];
-  // Marcador de mi ubicación
-  private marcadorUbicacion: any   = null;
-  // Polyline de ruta peatonal
-  private polylinePeatonal: any    = null;
+  // ── Simulación ───────────────────────────────────────────────────────────────
+  private busesEnMapa: BusEnMapa[]                     = [];
+  private intervalSimulacion: any                      = null;
+  private marcadoresParaderos: { paraderoId: number; marker: any }[] = [];
+  private marcadorUbicacion: any                       = null;
+  private polylinePeatonal: any                        = null;
 
-  // ── Bus que se está siguiendo actualmente ─────────────────────────────────────
-  // null = modo normal (todos los buses visibles)
   busSiguiendo: BusEnMapa | null = null;
-
-  // ETA dinámico del bus que se sigue
   etaDinamicoMinutos = 0;
 
-  // ── Vista previa de ruta (Ver Ruta) ───────────────────────────────────────────
-  busViendoRuta: Bus | null = null;
+  // ── Vista previa de ruta ──────────────────────────────────────────────────────
+  busViendoRuta: Bus | null    = null;
   private rutaOverlayMarkers: any[] = [];
   private rutaOverlayPolyline: any  = null;
 
-  // ── Paraderos del Corredor Azul (Lima) ────────────────────────────────────────
-  readonly paraderos: Paradero[] = [
-    { id: 'P01', nombre: 'Paradero Barranco',      lat: -12.1480, lng: -77.0215, lineas: ['204','412'] },
-    { id: 'P02', nombre: 'Paradero Miraflores',    lat: -12.1196, lng: -77.0302, lineas: ['204','301'] },
-    { id: 'P03', nombre: 'Paradero Surco',         lat: -12.1494, lng: -76.9997, lineas: ['301'] },
-    { id: 'P04', nombre: 'Paradero San Isidro',    lat: -12.0972, lng: -77.0364, lineas: ['204'] },
-    { id: 'P05', nombre: 'Paradero Lince',         lat: -12.0838, lng: -77.0368, lineas: ['204','301'] },
-    { id: 'P06', nombre: 'Paradero Breña',         lat: -12.0601, lng: -77.0490, lineas: ['204'] },
-    { id: 'P07', nombre: 'Paradero Centro Lima',   lat: -12.0464, lng: -77.0428, lineas: ['204','301','412'] },
-    { id: 'P08', nombre: 'Paradero Rímac',         lat: -12.0352, lng: -77.0312, lineas: ['204'] },
-    { id: 'P09', nombre: 'Paradero Independencia', lat: -12.0082, lng: -77.0530, lineas: ['204','412'] },
-    { id: 'P10', nombre: 'Paradero Comas',         lat: -11.9333, lng: -77.0500, lineas: ['204'] },
-  ];
+  // ── Paraderos y buses ─────────────────────────────────────────────────────────
+  paraderos: Paradero[] = [];
 
-  // ── Datos de rutas de cada bus simulado ───────────────────────────────────────
-  // paraderoIds define la secuencia completa de paraderos que recorre el bus.
-  // OSRM recibirá todos como waypoints para que la ruta pase por cada uno.
-  private readonly CONFIG_BUSES = [
-    {
-      busId:      1,
-      label:      'Bus 47 · L204 · En movimiento',
-      color:      '#22c55e',
-      paraderoIds: ['P01','P02','P04','P05','P06','P07','P08','P09','P10'],
-    },
-    {
-      busId:      2,
-      label:      'Bus 12 · L204 · Detenido',
-      color:      '#f59e0b',
-      paraderoIds: ['P02','P04','P05','P06','P07','P08','P09','P10'],
-    },
-    {
-      busId:      3,
-      label:      'Bus 47 · L301 · Demorado',
-      color:      '#ef4444',
-      paraderoIds: ['P03','P05','P07'],
-    },
-  ];
+  private configBusesSimulados: {
+    busId:      number;
+    label:      string;
+    color:      string;
+    paraderoIds: number[];
+    paraderos:  Paradero[];
+  }[] = [];
 
-  // ── Datos de buses (cards) ───────────────────────────────────────────────────
-  private todosBuses: Bus[] = [
-    { id: 1, linea: '204', origen: 'Barranco',   destino: 'Comas',       unidad: 47, tiempoLlegada: 1, distancia: 1.5, duracionTotal: 45, estado: 'En movimiento', estadoColor: '#22c55e', estadoDot: 'green',  siguiendo: false },
-    { id: 2, linea: '204', origen: 'Miraflores', destino: 'Comas',       unidad: 12, tiempoLlegada: 3, distancia: 2.8, duracionTotal: 48, estado: 'Detenido',      estadoColor: '#f59e0b', estadoDot: 'yellow', siguiendo: false },
-    { id: 3, linea: '301', origen: 'Surco',      destino: 'Centro Lima', unidad: 47, tiempoLlegada: 2, distancia: 1.9, duracionTotal: 32, estado: 'Demorado',      estadoColor: '#ef4444', estadoDot: 'red',    siguiendo: false },
-    { id: 4, linea: '412', origen: 'Barranco',   destino: 'Comas',       unidad: 47, tiempoLlegada: 2, distancia: 1.9, duracionTotal: 32, estado: 'Demorado',      estadoColor: '#ef4444', estadoDot: 'red',    siguiendo: false },
-  ];
-
-  busesFiltrados: Bus[] = [];
+  private todosBuses:   Bus[] = [];
+  busesFiltrados:       Bus[] = [];
 
   // ── Paginación ───────────────────────────────────────────────────────────────
   paginaActual   = 1;
@@ -220,17 +210,21 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
   paginaAnterior(): void { if (this.paginaActual > 1) this.paginaActual--; }
   paginaSiguiente(): void { if (this.paginaActual < this.totalPaginas) this.paginaActual++; }
 
-  constructor(private router: Router, private ngZone: NgZone, private auth: AuthService, private cdr: ChangeDetectorRef) {}
+  constructor(
+    private router: Router,
+    private ngZone: NgZone,
+    private auth: AuthService,
+    private cdr: ChangeDetectorRef,
+    private verbusesService: VerbusesService
+  ) {}
 
   ngOnInit(): void {
-    this.busesFiltrados = [...this.todosBuses];
-    // Activar GPS automáticamente al cargar la vista
+    this.cargarDatosBackend();
     setTimeout(() => this.activarGPS(), 300);
   }
 
   ngAfterViewInit(): void {
     this.cargarLeaflet();
-    // Auto-expand el bottom sheet al cargar
     setTimeout(() => { this.sheetExpanded = true; }, 800);
   }
 
@@ -246,68 +240,219 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
 
   // ── Navegación ───────────────────────────────────────────────────────────────
   irA(seccion: string): void { this.router.navigate([`/${seccion}`]); }
-  onLogout(): void { 
+  onLogout(): void {
     this.auth.cerrarSesion();
-    this.router.navigate(['/login']); }
+    this.router.navigate(['/login']);
+  }
+
+  // ── Carga inicial desde BD ───────────────────────────────────────────────────
+  private cargarDatosBackend(): void {
+    this.verbusesService.obtenerLineas().subscribe({
+      next: (lineas) => {
+        this.lineas = lineas;
+
+        const peticionesParaderos = lineas.map(l =>
+          this.verbusesService.obtenerParaderos(l.idLinea, 'ida').toPromise()
+            .then(ps => ({ linea: l, paraderos: (ps ?? []) as ParaderoResponse[] }))
+            .catch(() => ({ linea: l, paraderos: [] as ParaderoResponse[] }))
+        );
+
+        Promise.all(peticionesParaderos).then(resultadosParaderos => {
+          const mapaParaderos = new Map<number, Paradero>();
+
+          for (const { linea, paraderos } of resultadosParaderos) {
+            for (const p of paraderos) {
+              if (p.latitud == null || p.longitud == null) continue;
+              const existente = mapaParaderos.get(p.idParadero);
+              if (existente) {
+                if (!existente.lineas.includes(linea.nombreLinea)) {
+                  existente.lineas.push(linea.nombreLinea);
+                }
+              } else {
+                mapaParaderos.set(p.idParadero, {
+                  id:     p.idParadero,
+                  nombre: p.nombre,
+                  lat:    p.latitud,
+                  lng:    p.longitud,
+                  lineas: [linea.nombreLinea]
+                });
+              }
+            }
+          }
+
+          this.paraderos = Array.from(mapaParaderos.values());
+
+          const peticionesBuses = lineas.map(l =>
+            this.verbusesService.obtenerBuses(l.idLinea).toPromise()
+              .then(bs => ({ linea: l, buses: bs ?? [] }))
+              .catch(() => ({ linea: l, buses: [] }))
+          );
+
+          Promise.all(peticionesBuses).then(resultadosBuses => {
+            const colores = ['#22c55e', '#f59e0b', '#ef4444', '#6366f1', '#0ea5e9'];
+            let contadorId = 1;
+
+            this.configBusesSimulados = [];
+
+            for (const { linea, buses } of resultadosBuses) {
+              const paraderosLinea = resultadosParaderos
+                .find(r => r.linea.idLinea === linea.idLinea)?.paraderos
+                .filter(p => p.latitud != null && p.longitud != null) ?? [];
+
+              if (paraderosLinea.length < 2) continue;
+
+              const origen  = paraderosLinea[0].nombre;
+              const destino = paraderosLinea[paraderosLinea.length - 1].nombre;
+
+              for (const bus of buses) {
+                const id    = contadorId++;
+                const color = colores[(id - 1) % colores.length];
+
+                this.todosBuses.push({
+                  id,
+                  linea:         linea.nombreLinea,
+                  origen,
+                  destino,
+                  unidad:        bus.idBus,
+                  tiempoLlegada: Math.floor(Math.random() * 5) + 1,
+                  distancia:     parseFloat((Math.random() * 3 + 0.5).toFixed(1)),
+                  duracionTotal: Math.floor(Math.random() * 30) + 20,
+                  estado:        'En movimiento',
+                  estadoColor:   color,
+                  estadoDot:     'green',
+                  siguiendo:     false
+                });
+
+                this.configBusesSimulados.push({
+                  busId:       id,
+                  label:       `Bus ${bus.idBus} · ${linea.nombreLinea} · En movimiento`,
+                  color,
+                  paraderoIds: paraderosLinea.map(p => p.idParadero),
+                  paraderos:   paraderosLinea
+                    .filter(p => p.latitud != null && p.longitud != null)
+                    .map(p => ({
+                      id:     p.idParadero,
+                      nombre: p.nombre,
+                      lat:    p.latitud!,
+                      lng:    p.longitud!,
+                      lineas: [linea.nombreLinea]
+                    }))
+                });
+              }
+            }
+
+            this.busesFiltrados = [...this.todosBuses];
+            this.cargandoDatos  = false;
+            this.cdr.detectChanges();
+
+            if (this.estadoGps === 'activo' && this.leafletCargado) {
+              setTimeout(() => this.renderizarMapaUnificado(), 50);
+            }
+          });
+        });
+      },
+      error: () => {
+        this.cargandoDatos = false;
+        this.busesFiltrados = [];
+        this.cdr.detectChanges();
+      }
+    });
+  }
 
   // ── Filtrado ─────────────────────────────────────────────────────────────────
   filtrarBuses(): void {
+    if (this.lineaSeleccionada) {
+      const cfg = this.configBusesSimulados.find(c => {
+        const bus = this.todosBuses.find(b => b.id === c.busId);
+        return bus?.linea === this.lineaSeleccionada;
+      });
+      this.paraderosDeLineaSeleccionada = cfg?.paraderos ?? [];
+    } else {
+      this.paraderosDeLineaSeleccionada = [];
+    }
+
+    this.origenSeleccionado  = '';
+    this.destinoSeleccionado = '';
+
+    this.busesFiltrados = this.todosBuses.filter(bus =>
+      !this.lineaSeleccionada || bus.linea === this.lineaSeleccionada
+    );
+    this.paginaActual = 1;
+    this.mostrarParaderos();
+  }
+
+  buscarBuses(): void {
     this.busesFiltrados = this.todosBuses.filter(bus => {
-      const matchLinea   = !this.lineaSeleccionada   || bus.linea === this.lineaSeleccionada;
-      const matchOrigen  = !this.origenSeleccionado  || bus.origen.toLowerCase()  === this.origenSeleccionado;
-      const matchDestino = !this.destinoSeleccionado || bus.destino.toLowerCase() === this.destinoSeleccionado;
+      const matchLinea   = !this.lineaSeleccionada   || bus.linea   === this.lineaSeleccionada;
+      const matchOrigen  = !this.origenSeleccionado  || bus.origen  === this.origenSeleccionado;
+      const matchDestino = !this.destinoSeleccionado || bus.destino === this.destinoSeleccionado;
       return matchLinea && matchOrigen && matchDestino;
     });
     this.paginaActual = 1;
+    this.aplicarFiltroParaderosEnMapa();
   }
 
-  buscarBuses(): void { this.filtrarBuses(); }
+  private aplicarFiltroParaderosEnMapa(): void {
+    if (!this.mapaRef) return;
+    if (!this.lineaSeleccionada) { this.mostrarParaderos(); return; }
+
+    const cfg = this.configBusesSimulados.find(c => {
+      const bus = this.todosBuses.find(b => b.id === c.busId);
+      return bus?.linea === this.lineaSeleccionada;
+    });
+    if (!cfg) { this.mostrarParaderos(); return; }
+
+    const paraderosLinea = cfg.paraderos;
+    let inicio = 0;
+    let fin    = paraderosLinea.length - 1;
+
+    if (this.origenSeleccionado) {
+      const idx = paraderosLinea.findIndex(p => p.nombre === this.origenSeleccionado);
+      if (idx !== -1) inicio = idx;
+    }
+    if (this.destinoSeleccionado) {
+      const idx = paraderosLinea.findIndex(p => p.nombre === this.destinoSeleccionado);
+      if (idx !== -1) fin = idx;
+    }
+
+    if (inicio > fin) [inicio, fin] = [fin, inicio];
+
+    const idsVisibles = new Set(
+      paraderosLinea.slice(inicio, fin + 1).map(p => p.id)
+    );
+
+    this.filtrarParaderosEnMapa(idsVisibles);
+
+    if (this.mapaRef) {
+      const coords = paraderosLinea.slice(inicio, fin + 1).map(p => [p.lat, p.lng] as [number, number]);
+      if (coords.length > 1) {
+        this.mapaRef.fitBounds(L.latLngBounds(coords), { padding: [60, 60], animate: true });
+      }
+    }
+  }
 
   // ── Acciones de tarjeta ──────────────────────────────────────────────────────
-
-  /**
-   * Seguir un bus:
-   * - Marca ese bus como "siguiendo" en las cards
-   * - En el mapa: oculta todos los otros buses y paraderos
-   * - Muestra el recorrido completo del bus seguido (origen → destino)
-   * - El mapa hace zoom/fit sobre ese bus y su ruta
-   */
   seguirBus(bus: Bus): void {
     this.todosBuses.forEach(b => b.siguiendo = false);
     bus.siguiendo  = true;
     this.pasoViaje = 'acercando';
     this.filtrarBuses();
 
-    // Encontrar el BusEnMapa correspondiente
     const busEnMapa = this.busesEnMapa.find(b => b.busId === bus.id);
     if (!busEnMapa) return;
 
     this.busSiguiendo = busEnMapa;
 
-    // Ocultar todos los buses que NO son el seguido
     for (const b of this.busesEnMapa) {
-      if (b.busId !== bus.id) {
-        this.ocultarBusEnMapa(b);
-      } else {
-        this.mostrarBusEnMapa(b);
-      }
+      b.busId !== bus.id ? this.ocultarBusEnMapa(b) : this.mostrarBusEnMapa(b);
     }
 
-    // Ocultar paraderos que no pertenecen a la línea del bus seguido
-    // (o simplemente ocultarlos todos para foco total)
     this.ocultarParaderos();
-
-    // Mostrar la ruta completa del bus seguido con línea destacada
     this.mostrarRecorridoCompleto(busEnMapa);
-
-    // Calcular ETA dinámico inicial
     this.actualizarEtaDinamico(busEnMapa);
 
-    // Ajustar el mapa para que muestre toda la ruta del bus + mi ubicación
     if (this.mapaRef && busEnMapa.rutaWaypoints.length > 1) {
-      const L      = (window as any).L;
-      const bounds = L.latLngBounds(busEnMapa.rutaWaypoints);
-      // Extender los bounds para incluir siempre la ubicación del usuario
+      const bounds = L.latLngBounds(busEnMapa.rutaWaypoints as any);
       if (this.ubicacionActual) {
         bounds.extend([this.ubicacionActual.lat, this.ubicacionActual.lng]);
       }
@@ -315,44 +460,33 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
     }
   }
 
-  /**
-   * Dejar de seguir: vuelve al modo normal (todos los buses visibles)
-   */
   dejarDeSeguir(): void {
     this.todosBuses.forEach(b => b.siguiendo = false);
     this.busSiguiendo = null;
     this.filtrarBuses();
 
-    // Mostrar todos los buses de nuevo
     for (const b of this.busesEnMapa) {
       this.mostrarBusEnMapa(b);
-      // Quitar la polyline de recorrido completo destacado
       if (b.polylineRecorrido) {
         b.polylineRecorrido.setStyle({ weight: 2, opacity: 0.45 });
       }
     }
 
-    // Restaurar paraderos
     this.mostrarParaderos();
 
-    // Volver al fit de la ubicación actual
     if (this.mapaRef && this.ubicacionActual && this.paraderoMasCercano) {
-      const L = (window as any).L;
       const bounds = L.latLngBounds([
         [this.ubicacionActual.lat, this.ubicacionActual.lng],
         [this.paraderoMasCercano.lat, this.paraderoMasCercano.lng],
-      ]);
+      ] as any);
       this.mapaRef.fitBounds(bounds, { padding: [80, 80], animate: true });
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // VER RUTA — muestra los paraderos de la línea y la ruta en el mapa
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── Ver ruta ─────────────────────────────────────────────────────────────────
   verRuta(bus: Bus): void {
     if (!this.mapaRef) return;
 
-    // Si ya se estaba viendo la ruta del mismo bus, cerrarla (toggle)
     if (this.busViendoRuta?.id === bus.id) {
       this.cerrarVistaRuta();
       return;
@@ -361,11 +495,13 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
     this.cerrarVistaRuta();
     this.busViendoRuta = bus;
 
-    const paraderosDeLinea = this.paraderos.filter(p => p.lineas.includes(bus.linea));
-    if (paraderosDeLinea.length === 0) return;
+    const cfg = this.configBusesSimulados.find(c => c.busId === bus.id);
+    const paraderosOrdenados = cfg?.paraderos ?? this.paraderos.filter(p => p.lineas.includes(bus.linea));
 
-    this.dibujarParaderosDeRuta(paraderosDeLinea);
-    this.dibujarPolylineDeRuta(paraderosDeLinea);
+    if (paraderosOrdenados.length === 0) return;
+
+    this.dibujarParaderosDeRuta(paraderosOrdenados);
+    this.dibujarPolylineDeRuta(paraderosOrdenados);
     this.ajustarVistaRuta();
   }
 
@@ -377,12 +513,10 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
 
     this.rutaOverlayMarkers  = [];
     this.rutaOverlayPolyline = null;
-    this.busViendoRuta        = null;
+    this.busViendoRuta       = null;
   }
 
   private dibujarParaderosDeRuta(paraderos: Paradero[]): void {
-    const L = (window as any).L;
-
     paraderos.forEach((paradero, index) => {
       const esOrigen  = index === 0;
       const esDestino = index === paraderos.length - 1;
@@ -432,7 +566,6 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
   }
 
   private dibujarPolylineDeRuta(paraderos: Paradero[]): void {
-    const L      = (window as any).L;
     const coords = paraderos.map(p => [p.lat, p.lng] as [number, number]);
 
     this.rutaOverlayPolyline = L.polyline(coords, {
@@ -453,67 +586,65 @@ export class UbicacionComponent implements OnInit, OnDestroy, AfterViewInit {
 
   quitarBus(bus: Bus): void {
     if (bus.siguiendo) {
-      this.pasoViaje   = 'acercando';
+      this.pasoViaje    = 'acercando';
       this.busSiguiendo = null;
     }
-    // Remover del mapa
     const busEnMapa = this.busesEnMapa.find(b => b.busId === bus.id);
     if (busEnMapa) this.destruirBusEnMapa(busEnMapa);
-    this.busesEnMapa     = this.busesEnMapa.filter(b => b.busId !== bus.id);
-    this.busesFiltrados  = this.busesFiltrados.filter(b => b.id !== bus.id);
-    this.todosBuses      = this.todosBuses.filter(b => b.id !== bus.id);
+    this.busesEnMapa    = this.busesEnMapa.filter(b => b.busId !== bus.id);
+    this.busesFiltrados = this.busesFiltrados.filter(b => b.id !== bus.id);
+    this.todosBuses     = this.todosBuses.filter(b => b.id !== bus.id);
   }
 
-  // ── IA ────────────────────────────────────────────────────────────────────────
+  // ── Buscador IA ───────────────────────────────────────────────────────────────
   async consultarIA(): Promise<void> {
     const q = this.preguntaDestino.trim();
-    if (!q) return;
+    if (!q || this.paraderos.length === 0) return;
 
     this.estadoIA          = 'pensando';
     this.respuestaIA       = '';
     this.paraderoDestinoIA = null;
 
-    const paraderoDestino = this.buscarParaderoPorTexto(q);
-
     try {
-      const systemPrompt = `Eres el asistente de navegación del Corredor Azul de Lima, Perú.
-Tu rol es ayudar a los pasajeros a encontrar su paradero más cercano.
-Responde siempre en español, de forma amigable y concisa (máximo 3 oraciones).
-No uses markdown.
-Lista de paraderos disponibles: ${this.paraderos.map(p => p.nombre).join(', ')}.`;
-
-      const userMsg = `El usuario preguntó: "${q}".
-El paradero más cercano a ese destino es: ${paraderoDestino.nombre}.
-${this.ubicacionActual
-  ? `La ubicación actual del usuario es aproximadamente lat ${this.ubicacionActual.lat.toFixed(4)}, lng ${this.ubicacionActual.lng.toFixed(4)}.`
-  : 'El usuario aún no ha activado su GPS.'
-}
-Responde mencionando el paradero destino y pídele que active el GPS si aún no lo hizo.`;
-
-      const response = await fetch('/api/claude', {
+      const response = await fetch(`${this.ML_API_URL}/ubicacion/coordenadas-destino`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userMsg }]
-        })
+        body: JSON.stringify({ pregunta: q })
       });
 
-      const data  = await response.json();
-      const texto = data.content?.find((b: any) => b.type === 'text')?.text ?? '';
+      if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+      const data: { latitud: number; longitud: number; lugar: string } = await response.json();
+      const destino = { lat: data.latitud, lng: data.longitud };
+
+      const paraderoMasCercano = this.paraderos.reduce((min, p) =>
+        this.calcularDistancia(destino, { lat: p.lat, lng: p.lng }) <
+        this.calcularDistancia(destino, { lat: min.lat, lng: min.lng }) ? p : min
+      );
+
+      const distancia    = this.calcularDistancia(destino, { lat: paraderoMasCercano.lat, lng: paraderoMasCercano.lng });
+      const lineasTexto  = paraderoMasCercano.lineas.length > 0
+        ? ` Pasan las líneas: ${paraderoMasCercano.lineas.join(', ')}.`
+        : '';
+      const gpsHint      = this.estadoGps === 'activo'
+        ? ` Tú estás a ${this.formatearDistancia(this.calcularDistancia(
+            this.ubicacionActual!,
+            { lat: paraderoMasCercano.lat, lng: paraderoMasCercano.lng }
+          ))} de ese paradero.`
+        : ' Activa tu GPS para ver la distancia desde tu ubicación.';
 
       this.ngZone.run(() => {
-        this.respuestaIA       = texto || `El paradero más cercano a tu destino es ${paraderoDestino.nombre}. Activa tu GPS para ver la ruta en el mapa.`;
-        this.paraderoDestinoIA = paraderoDestino;
+        this.respuestaIA       = `El paradero más cercano a ${data.lugar} es ${paraderoMasCercano.nombre} (a ${this.formatearDistancia(distancia)} del destino).${lineasTexto}${gpsHint}`;
+        this.paraderoDestinoIA = paraderoMasCercano;
         this.estadoIA          = 'respondido';
         this.cdr.detectChanges();
       });
+
     } catch {
+      const fallback = this.paraderoMasCercano ?? this.paraderos[0];
       this.ngZone.run(() => {
-        this.respuestaIA       = `El paradero más cercano a tu destino es ${paraderoDestino.nombre}. Activa tu GPS para ver la ruta en el mapa interactivo.`;
-        this.paraderoDestinoIA = paraderoDestino;
+        this.respuestaIA       = `El paradero más cercano es ${fallback.nombre}. Activa tu GPS para ver la ruta en el mapa.`;
+        this.paraderoDestinoIA = fallback;
         this.estadoIA          = 'respondido';
         this.cdr.detectChanges();
       });
@@ -537,13 +668,30 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     }
   }
 
+  // ── Normalización de texto (helper reutilizable) ───────────────────────────
+  private normalizarTexto(s: string): string {
+    return s.toLowerCase()
+      .replace(/[áàä]/g, 'a').replace(/[éèë]/g, 'e')
+      .replace(/[íìï]/g, 'i').replace(/[óòö]/g, 'o')
+      .replace(/[úùü]/g, 'u').replace(/ñ/g, 'n');
+  }
+
   private buscarParaderoPorTexto(texto: string): Paradero {
-    const t     = texto.toLowerCase();
-    const match = this.paraderos.find(p =>
-      p.nombre.toLowerCase().includes(t) ||
-      t.includes(p.nombre.toLowerCase().replace('paradero ', ''))
-    );
-    return match ?? this.paraderos[Math.floor(Math.random() * this.paraderos.length)];
+    if (this.paraderos.length === 0) {
+      return { id: 0, nombre: 'paradero más cercano', lat: 0, lng: 0, lineas: [] };
+    }
+
+    const t = this.normalizarTexto(texto);
+
+    const match = this.paraderos.find(p => {
+      const nombre     = this.normalizarTexto(p.nombre);
+      const sinPrefijo = nombre.replace(/paradero\s+/g, '');
+      return nombre.includes(t) || t.includes(sinPrefijo) || sinPrefijo.includes(t);
+    });
+
+    if (match) return match;
+    if (this.paraderoMasCercano) return this.paraderoMasCercano;
+    return this.paraderos[0];
   }
 
   // ── Modal GPS ─────────────────────────────────────────────────────────────────
@@ -581,21 +729,21 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     this.estadoGps           = 'activo';
     this.cdr.detectChanges();
     this.consultarETA();
-    if (this.leafletCargado) {
+    if (this.leafletCargado && !this.cargandoDatos) {
       setTimeout(() => this.renderizarMapaUnificado(), 50);
     }
   }
 
-  // ── ETA (Modelo ML FastAPI) ────────────────────────────────────────────────────
+  // ── ETA ───────────────────────────────────────────────────────────────────────
   async consultarETA(): Promise<void> {
     if (!this.ubicacionActual || !this.paraderoMasCercano) return;
 
     this.estadoETA = 'calculando';
 
-    const ahora      = new Date();
-    const hora       = ahora.getHours();
-    const diaSemana  = ahora.getDay() === 0 ? 6 : ahora.getDay() - 1;
-    const horaPunta  = (hora >= 7 && hora <= 9) || (hora >= 17 && hora <= 19);
+    const ahora     = new Date();
+    const hora      = ahora.getHours();
+    const diaSemana = ahora.getDay() === 0 ? 6 : ahora.getDay() - 1;
+    const horaPunta = (hora >= 7 && hora <= 9) || (hora >= 17 && hora <= 19);
 
     this.etaHoraPunta = horaPunta;
 
@@ -645,51 +793,77 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     return R * 2 * Math.atan2(Math.sqrt(x), Math.sqrt(1 - x));
   }
 
-  // ── Cargar Leaflet ────────────────────────────────────────────────────────────
+  // ── Leaflet ───────────────────────────────────────────────────────────────────
   private cargarLeaflet(): void {
-    if ((window as any).L) { this.leafletCargado = true; return; }
-
-    const link  = document.createElement('link');
-    link.rel    = 'stylesheet';
-    link.href   = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-    document.head.appendChild(link);
-
-    const script    = document.createElement('script');
-    script.src      = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-    script.onload   = () => this.ngZone.run(() => {
-      this.leafletCargado = true;
-      this.cdr.detectChanges();
-      if (this.estadoGps === 'activo') this.renderizarMapaUnificado();
-    });
-    document.head.appendChild(script);
+    this.leafletCargado = true;
+    this.cdr.detectChanges();
+    if (this.estadoGps === 'activo') this.renderizarMapaUnificado();
   }
 
-  // ════════════════════════════════════════════════════════════════════════════
-  // ESPERAR A QUE EL DIV DEL MAPA EXISTA EN EL DOM (via MutationObserver)
-  // Esto resuelve el mapa en blanco causado por *ngIf que aún no renderizó
-  // ════════════════════════════════════════════════════════════════════════════
+  // ── Burbuja (helper reutilizable) ─────────────────────────────────────────────
+  private crearBurbuja(
+    iconSvgPath: string,
+    texto: string,
+    bgColor: string,
+    textColor: string = '#fff',
+  ): string {
+    const ancho = Math.max(texto.length * 7 + 44, 100);
+    return `
+      <div style="position:relative;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
+        <div style="background:${bgColor};color:${textColor};padding:5px 10px 5px 7px;border-radius:20px;
+          font-size:11.5px;font-weight:700;font-family:'Inter',sans-serif;white-space:nowrap;
+          box-shadow:0 3px 12px rgba(0,0,0,0.22);display:flex;align-items:center;gap:5px;
+          min-width:${ancho}px;border:1.5px solid rgba(255,255,255,0.25);">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">${iconSvgPath}</svg>
+          ${texto}
+        </div>
+        <svg width="12" height="8" viewBox="0 0 12 8" fill="none" style="margin-top:-1px;display:block;">
+          <path d="M0 0 L6 8 L12 0 Z" fill="${bgColor}"/>
+        </svg>
+      </div>`;
+  }
+
+  // ── Ícono del bus (helper reutilizable) ───────────────────────────────────────
+  private buildIconoBusHtml(label: string, color: string): string {
+    const lineaMatch = label.match(/L(\d+)/);
+    const lineaText  = lineaMatch ? `L${lineaMatch[1]}` : label.split('·')[1]?.trim() ?? '';
+
+    return `
+      <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.28));">
+        <div style="background:${color};border-radius:10px;padding:5px 9px;
+                    display:flex;align-items:center;gap:5px;border:2px solid rgba(255,255,255,0.7);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"
+               stroke-linecap="round" stroke-linejoin="round">${SVG_BUS}</svg>
+          <span style="font-size:11px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;
+                       letter-spacing:0.04em;">${lineaText}</span>
+        </div>
+        <svg width="8" height="6" viewBox="0 0 8 6" fill="none" style="margin-top:-1px;display:block;">
+          <path d="M0 0 L4 6 L8 0 Z" fill="${color}"/>
+        </svg>
+      </div>`;
+  }
+
   // ════════════════════════════════════════════════════════════════════════════
   // MAPA UNIFICADO
   // ════════════════════════════════════════════════════════════════════════════
   renderizarMapaUnificado(): void {
-    const L   = (window as any).L;
     const ubi = this.ubicacionActual;
     const par = this.paraderoMasCercano;
-    if (!L || !ubi || !par) return;
+    if (!ubi || !par) return;
 
-    // Destruir instancia previa y limpiar estado de simulación
     this.detenerSimulacion();
     if (this.mapaUnificadoInst) {
       this.mapaUnificadoInst.remove();
       this.mapaUnificadoInst = null;
     }
-    this.busesEnMapa           = [];
-    this.marcadoresParaderos   = [];
-    this.marcadorUbicacion     = null;
-    this.polylinePeatonal      = null;
-    this.busSiguiendo          = null;
+    this.busesEnMapa         = [];
+    this.marcadoresParaderos = [];
+    this.marcadorUbicacion   = null;
+    this.polylinePeatonal    = null;
+    this.busSiguiendo        = null;
+    this.clusterParaderos    = null;
 
-    // ── Crear mapa ────────────────────────────────────────────────────────────
     const map = L.map('mapa-unificado').setView([ubi.lat, ubi.lng], 14);
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
       attribution: '© <a href="https://openstreetmap.org">OpenStreetMap</a>, © <a href="https://carto.com">CARTO</a>',
@@ -699,60 +873,32 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     this.mapaUnificadoInst = map;
     this.mapaRef = map;
 
-    // ResizeObserver: detecta cuando el contenedor realmente tiene tamaño
-    // y llama invalidateSize — fix para el mapa "dormido" al entrar
+    // ResizeObserver — fix mapa dormido
     const contenedorMapa = document.getElementById('mapa-unificado');
     if (contenedorMapa) {
       const ro = new ResizeObserver(() => { map.invalidateSize(); });
       ro.observe(contenedorMapa);
-      setTimeout(() => ro.disconnect(), 3000); // desconectar tras 3s
+      setTimeout(() => ro.disconnect(), 3000);
     }
-    // Simular click en el centro del mapa para que Leaflet se active sin interacción del usuario
     setTimeout(() => {
       const el = document.getElementById('mapa-unificado');
       if (el) {
         map.invalidateSize();
         const rect = el.getBoundingClientRect();
-        const cx = rect.left + rect.width / 2;
-        const cy = rect.top + rect.height / 2;
-        el.dispatchEvent(new MouseEvent('click', { bubbles: true, clientX: cx, clientY: cy }));
+        el.dispatchEvent(new MouseEvent('click', {
+          bubbles: true,
+          clientX: rect.left + rect.width / 2,
+          clientY: rect.top + rect.height / 2
+        }));
       }
     }, 400);
 
-    // ── Helper SVG burbuja ────────────────────────────────────────────────────
-    const crearBurbuja = (
-      iconSvgPath: string,
-      texto: string,
-      bgColor: string,
-      textColor: string = '#fff',
-    ): string => {
-      const ancho = Math.max(texto.length * 7 + 44, 100);
-      return `
-        <div style="position:relative;display:flex;flex-direction:column;align-items:center;pointer-events:none;">
-          <div style="background:${bgColor};color:${textColor};padding:5px 10px 5px 7px;border-radius:20px;
-            font-size:11.5px;font-weight:700;font-family:'Inter',sans-serif;white-space:nowrap;
-            box-shadow:0 3px 12px rgba(0,0,0,0.22);display:flex;align-items:center;gap:5px;
-            min-width:${ancho}px;border:1.5px solid rgba(255,255,255,0.25);">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"
-                 stroke-linecap="round" stroke-linejoin="round">${iconSvgPath}</svg>
-            ${texto}
-          </div>
-          <svg width="12" height="8" viewBox="0 0 12 8" fill="none" style="margin-top:-1px;display:block;">
-            <path d="M0 0 L6 8 L12 0 Z" fill="${bgColor}"/>
-          </svg>
-        </div>`;
-    };
-
-    // ── 1. Mi ubicación ───────────────────────────────────────────────────────
+    // ── Mi ubicación ─────────────────────────────────────────────────────────
     const iconoMiUbicacion = L.divIcon({
       className: '',
       html: `
         <div style="display:flex;flex-direction:column;align-items:center;">
-          ${crearBurbuja(
-            `<path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/>
-             <circle cx="12" cy="9" r="2.5"/>`,
-            'Mi ubicación', '#2366CE'
-          )}
+          ${this.crearBurbuja(SVG_UBICACION, 'Mi ubicación', '#2366CE')}
           <div style="position:relative;width:18px;height:18px;margin-top:2px;">
             <div style="position:absolute;inset:0;background:rgba(35,102,206,0.25);border-radius:50%;
                         animation:pulse 1.8s ease-out infinite;"></div>
@@ -768,12 +914,22 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
       .addTo(map)
       .bindPopup(`<b>Mi ubicación</b><br>Lat: ${ubi.lat.toFixed(5)}, Lng: ${ubi.lng.toFixed(5)}`);
 
-    // ── 2. Paraderos ──────────────────────────────────────────────────────────
-    const iconSvgParadero = `
-      <rect x="3" y="3" width="18" height="13" rx="3"/>
-      <path d="M5 19 L5 21M19 19 L19 21" stroke-width="2"/>
-      <rect x="6" y="7" width="4" height="3" rx="0.5" fill="white" stroke="none"/>
-      <rect x="14" y="7" width="4" height="3" rx="0.5" fill="white" stroke="none"/>`;
+    // ── Paraderos (con clustering) ───────────────────────────────────────────
+    this.clusterParaderos = L.markerClusterGroup({
+      maxClusterRadius: 50,
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      disableClusteringAtZoom: 16,
+      iconCreateFunction: (cluster) => L.divIcon({
+        className: '',
+        html: `<div style="background:#1a3a8f;color:#fff;border-radius:50%;width:36px;height:36px;
+                           display:flex;align-items:center;justify-content:center;font-size:13px;
+                           font-weight:800;font-family:'Inter',sans-serif;border:2.5px solid #fff;
+                           box-shadow:0 2px 8px rgba(0,0,0,0.3);">${cluster.getChildCount()}</div>`,
+        iconSize: [36, 36],
+        iconAnchor: [18, 18]
+      })
+    });
 
     for (const paradero of this.paraderos) {
       const esCercano   = paradero.id === this.paraderoMasCercano?.id;
@@ -781,15 +937,15 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
       const esRelevante = esCercano || esDestino;
 
       const bgColor = esDestino ? '#059669' : esCercano ? '#1a3a8f' : '#475569';
-      const label   = esDestino  ? `${paradero.nombre} · Destino` :
-                      esCercano  ? `${paradero.nombre} · Cercano` :
+      const label   = esDestino ? `${paradero.nombre} · Destino` :
+                      esCercano ? `${paradero.nombre} · Cercano` :
                       paradero.nombre;
 
       const iconoParadero = L.divIcon({
         className: '',
         html: `
           <div style="display:flex;flex-direction:column;align-items:center;opacity:${esRelevante ? '1' : '0.65'};">
-            ${crearBurbuja(iconSvgParadero, label, bgColor)}
+            ${this.crearBurbuja(SVG_PARADERO, label, bgColor)}
             <div style="width:10px;height:10px;background:${bgColor};border:2px solid #fff;
                         border-radius:3px;box-shadow:0 2px 6px rgba(0,0,0,0.3);margin-top:2px;"></div>
           </div>`,
@@ -798,78 +954,84 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
       });
 
       const marker = L.marker([paradero.lat, paradero.lng], { icon: iconoParadero })
-        .addTo(map)
         .bindPopup(`<b>${paradero.nombre}</b><br>Líneas: ${paradero.lineas.join(', ')}`);
 
-      this.marcadoresParaderos.push(marker);
+      this.clusterParaderos.addLayer(marker);
+      this.marcadoresParaderos.push({ paraderoId: paradero.id, marker });
     }
 
-    // ── 3. Ruta peatonal (mi ubicación → paradero más cercano) ────────────────
-    this.trazarRutaPeatonal(map, ubi, par);
+    map.addLayer(this.clusterParaderos);
 
-    // ── 4. Iniciar buses simulados con rutas reales (OSRM) ────────────────────
-    this.inicializarBusesSimulados(map, crearBurbuja);
+    // ── Ruta peatonal + Buses simulados ───────────────────────────────────────
+    this.trazarRutaPeatonal(map, ubi, par);
+    this.inicializarBusesSimulados(map);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // RUTA PEATONAL
-  // ─────────────────────────────────────────────────────────────────────────────
-  private trazarRutaPeatonal(map: any, ubi: {lat:number;lng:number}, par: Paradero): void {
-    const L = (window as any).L;
-    const url = `https://router.project-osrm.org/route/v1/foot/${ubi.lng},${ubi.lat};${par.lng},${par.lat}?overview=full&geometries=geojson`;
+  // ── Ruta peatonal ─────────────────────────────────────────────────────────────
+  private trazarRutaPeatonal(map: any, ubi: { lat: number; lng: number }, par: Paradero): void {
+    const fallback  = () => {
+      this.polylinePeatonal = L.polyline(
+        [[ubi.lat, ubi.lng], [par.lat, par.lng]],
+        { color: '#2366CE', weight: 4, dashArray: '10,8', opacity: 0.9 }
+      ).addTo(map);
+      map.fitBounds([[ubi.lat, ubi.lng], [par.lat, par.lng]], { padding: [80, 80] });
+    };
 
-    fetch(url)
-      .then(r => r.json())
-      .then(data => {
-        const coords = data.routes?.[0]?.geometry?.coordinates?.map((c: number[]) => [c[1], c[0]]);
-        if (coords?.length) {
+    this.fetchRutaOsrm('foot', [ubi, par])
+      .then(coords => {
+        if (coords.length) {
           this.polylinePeatonal = L.polyline(coords, { color: '#2366CE', weight: 4, dashArray: '10,8', opacity: 0.9 }).addTo(map);
           map.fitBounds(coords, { padding: [80, 80] });
         } else {
-          this.polylinePeatonal = L.polyline([[ubi.lat, ubi.lng], [par.lat, par.lng]], { color: '#2366CE', weight: 4, dashArray: '10,8', opacity: 0.9 }).addTo(map);
-          map.fitBounds([[ubi.lat, ubi.lng], [par.lat, par.lng]], { padding: [80, 80] });
+          fallback();
         }
       })
-      .catch(() => {
-        const L2 = (window as any).L;
-        this.polylinePeatonal = L2.polyline([[ubi.lat, ubi.lng], [par.lat, par.lng]], { color: '#2366CE', weight: 4, dashArray: '10,8', opacity: 0.9 }).addTo(map);
-        map.fitBounds([[ubi.lat, ubi.lng], [par.lat, par.lng]], { padding: [80, 80] });
-      });
+      .catch(fallback);
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // INICIALIZAR BUSES SIMULADOS
-  // Obtiene la ruta OSRM pasando por TODOS los paraderos de la línea en orden.
-  // El bus empieza en un ~15% del recorrido para que se vea en movimiento
-  // desde el primer frame.
-  // ─────────────────────────────────────────────────────────────────────────────
-  private inicializarBusesSimulados(map: any, crearBurbuja: Function): void {
-    const L = (window as any).L;
+  // ── OSRM helper (único punto de fetch OSRM) ───────────────────────────────────
+  private async fetchRutaOsrm(
+    perfil: 'foot' | 'driving',
+    puntos: { lat: number; lng: number }[]
+  ): Promise<[number, number][]> {
+    const coordsStr = puntos.map(p => `${p.lng},${p.lat}`).join(';');
+    const url = `https://router.project-osrm.org/route/v1/${perfil}/${coordsStr}?overview=full&geometries=geojson`;
 
-    const iconSvgBus = `
-      <rect x="2" y="4" width="20" height="14" rx="3"/>
-      <path d="M5 20 L5 22M19 20 L19 22"/>
-      <rect x="4" y="8" width="4" height="4" rx="0.8" fill="white" stroke="none"/>
-      <rect x="16" y="8" width="4" height="4" rx="0.8" fill="white" stroke="none"/>
-      <line x1="11" y1="8" x2="11" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>
-      <line x1="13" y1="8" x2="13" y2="12" stroke="rgba(255,255,255,0.4)" stroke-width="1"/>`;
+    try {
+      const resp   = await fetch(url);
+      const data   = await resp.json();
+      const coords = data.routes?.[0]?.geometry?.coordinates;
+      if (coords?.length) {
+        return coords.map((c: number[]) => [c[1], c[0]] as [number, number]);
+      }
+    } catch { /* fallback al caller */ }
 
-    const promesas = this.CONFIG_BUSES.map(async cfg => {
-      const paraderosDeBus = cfg.paraderoIds
-        .map(id => this.paraderos.find(p => p.id === id))
-        .filter((p): p is Paradero => !!p);
+    // Fallback: línea recta
+    return puntos.map(p => [p.lat, p.lng] as [number, number]);
+  }
 
+  // ── Buses simulados ───────────────────────────────────────────────────────────
+  private inicializarBusesSimulados(map: any): void {
+    const promesas = this.configBusesSimulados.map(async cfg => {
+      const paraderosDeBus = cfg.paraderos;
       if (paraderosDeBus.length < 2) return;
 
-      const origenLatLng:  [number, number] = [paraderosDeBus[0].lat,  paraderosDeBus[0].lng];
-      const destinoLatLng: [number, number] = [paraderosDeBus[paraderosDeBus.length - 1].lat,
-                                               paraderosDeBus[paraderosDeBus.length - 1].lng];
+      const origenLatLng:  [number, number] = [paraderosDeBus[0].lat, paraderosDeBus[0].lng];
+      const destinoLatLng: [number, number] = [
+        paraderosDeBus[paraderosDeBus.length - 1].lat,
+        paraderosDeBus[paraderosDeBus.length - 1].lng
+      ];
 
-      const waypoints = await this.obtenerRutaOsrmMultiParadero(paraderosDeBus);
-
+      const waypoints     = await this.fetchRutaOsrm('driving', paraderosDeBus);
       const indiceInicial = Math.floor(waypoints.length * 0.15);
       const posInicial    = waypoints[indiceInicial];
-      const iconoBus      = this.crearIconoBus(L, iconSvgBus, cfg.label, cfg.color, crearBurbuja as any);
+
+      const iconoBus = L.divIcon({
+        className: '',
+        html: this.buildIconoBusHtml(cfg.label, cfg.color),
+        iconSize:   [70, 36],
+        iconAnchor: [35, 34]
+      });
 
       const marker = L.marker(posInicial, { icon: iconoBus, zIndexOffset: 1000 })
         .addTo(map)
@@ -910,89 +1072,22 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // OSRM MULTI-PARADERO
-  // Construye la URL con todos los paraderos como waypoints y devuelve los
-  // coords decodificados. Si OSRM falla, hace fallback a línea recta entre
-  // paraderos consecutivos.
-  // ─────────────────────────────────────────────────────────────────────────────
-  private async obtenerRutaOsrmMultiParadero(paraderos: Paradero[]): Promise<[number, number][]> {
-    const coordsStr = paraderos.map(p => `${p.lng},${p.lat}`).join(';');
-    const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson`;
-
-    try {
-      const resp   = await fetch(url);
-      const data   = await resp.json();
-      const coords = data.routes?.[0]?.geometry?.coordinates;
-
-      if (coords?.length) {
-        return coords.map((c: number[]) => [c[1], c[0]] as [number, number]);
-      }
-    } catch { /* fallback abajo */ }
-
-    // Fallback: línea recta entre cada par de paraderos consecutivos
-    return paraderos.map(p => [p.lat, p.lng] as [number, number]);
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // CREAR ÍCONO SVG DEL BUS — badge compacto
-  // ─────────────────────────────────────────────────────────────────────────────
-  private crearIconoBus(L: any, iconSvgBus: string, label: string, color: string, _crearBurbuja: (a:string,b:string,c:string)=>string): any {
-    // Extraer "L204", "L301", etc. del label para mostrarlo en el badge
-    const lineaMatch = label.match(/L(\d+)/);
-    const lineaText  = lineaMatch ? `L${lineaMatch[1]}` : label.split('·')[1]?.trim() ?? '';
-
-    return L.divIcon({
-      className: '',
-      html: `
-        <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.28));">
-          <div style="background:${color};border-radius:10px;padding:5px 9px;
-                      display:flex;align-items:center;gap:5px;border:2px solid rgba(255,255,255,0.7);">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"
-                 stroke-linecap="round" stroke-linejoin="round">${iconSvgBus}</svg>
-            <span style="font-size:11px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;
-                         letter-spacing:0.04em;">${lineaText}</span>
-          </div>
-          <svg width="8" height="6" viewBox="0 0 8 6" fill="none" style="margin-top:-1px;display:block;">
-            <path d="M0 0 L4 6 L8 0 Z" fill="${color}"/>
-          </svg>
-        </div>`,
-      iconSize: [70, 36],
-      iconAnchor: [35, 34]
-    });
-  }
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // SIMULACIÓN — tick cada 1.8 segundos
-  // Avanza cada bus 1 waypoint por tick.
-  // Al llegar a un paradero hace una parada de ~33 ticks (≈ 1 minuto real).
-  // Cuando llega al destino, reinicia desde el origen (loop).
-  // ─────────────────────────────────────────────────────────────────────────────
-
-  // Ticks restantes de parada por busId. Solo se usa cuando el bus está en paradero.
+  // ── Simulación ────────────────────────────────────────────────────────────────
   private ticksDetenido: Map<number, number> = new Map();
-
-  // Radio en metros para considerar que el bus "llegó" a un paradero
-  private readonly RADIO_PARADERO_M = 80;
-
-  // Ticks de parada en paradero (1.8s × 33 ≈ 60s)
-  private readonly TICKS_PARADA_PARADERO = 33;
+  private readonly RADIO_PARADERO_M          = 80;
+  private readonly TICKS_PARADA_PARADERO     = 33;
 
   private iniciarSimulacion(): void {
     this.detenerSimulacion();
-
     this.intervalSimulacion = setInterval(() => {
       this.ngZone.run(() => {
-        for (const bus of this.busesEnMapa) {
-          this.procesarTickBus(bus);
-        }
+        this.busesEnMapa.forEach(bus => this.procesarTickBus(bus));
         this.cdr.detectChanges();
       });
     }, 1800);
   }
 
   private procesarTickBus(bus: BusEnMapa): void {
-    // ── Si está haciendo parada, descontar tick y no avanzar ─────────────────
     const ticksPendientes = this.ticksDetenido.get(bus.busId) ?? 0;
     if (ticksPendientes > 0) {
       this.ticksDetenido.set(bus.busId, ticksPendientes - 1);
@@ -1000,67 +1095,46 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
       return;
     }
 
-    // ── Avanzar al siguiente waypoint ────────────────────────────────────────
     bus.indiceActual++;
-
-    if (bus.indiceActual >= bus.rutaWaypoints.length) {
-      bus.indiceActual = 0; // loop: vuelve al origen
-    }
+    if (bus.indiceActual >= bus.rutaWaypoints.length) bus.indiceActual = 0;
 
     const posActual = bus.rutaWaypoints[bus.indiceActual];
 
-    // ── Detectar si llegó a un paradero ──────────────────────────────────────
-    const estaEnParadero = this.detectarParadero(posActual, bus.paraderoLatLngs);
-    if (estaEnParadero) {
+    if (this.detectarParadero(posActual, bus.paraderoLatLngs)) {
       this.ticksDetenido.set(bus.busId, this.TICKS_PARADA_PARADERO);
       this.actualizarEstadoBus(bus.busId, 'En paradero', '#f59e0b', 'yellow');
     } else {
       this.actualizarEstadoBus(bus.busId, 'En movimiento', '#22c55e', 'green');
     }
 
-    // ── Mover marcador y actualizar polyline recorrida ───────────────────────
     bus.marker.setLatLng(posActual);
-
     if (bus.polylineRecorrida) {
-      bus.polylineRecorrida.setLatLngs(
-        bus.rutaWaypoints.slice(0, bus.indiceActual + 1)
-      );
+      bus.polylineRecorrida.setLatLngs(bus.rutaWaypoints.slice(0, bus.indiceActual + 1));
     }
 
-    // ── Actualizar ETA si este bus está siendo seguido ───────────────────────
     if (this.busSiguiendo?.busId === bus.busId) {
       this.actualizarEtaDinamico(bus);
       this.recentrarMapaSiBusEscapa(posActual);
     }
   }
 
-  // Retorna true si posActual está dentro del radio de algún paradero de la línea
-  private detectarParadero(
-    pos: [number, number],
-    paraderoLatLngs: [number, number][]
-  ): boolean {
-    return paraderoLatLngs.some(paradero => {
-      const distancia = this.calcularDistancia(
+  private detectarParadero(pos: [number, number], paraderoLatLngs: [number, number][]): boolean {
+    return paraderoLatLngs.some(paradero =>
+      this.calcularDistancia(
         { lat: pos[0],      lng: pos[1] },
         { lat: paradero[0], lng: paradero[1] }
-      );
-      return distancia <= this.RADIO_PARADERO_M;
-    });
+      ) <= this.RADIO_PARADERO_M
+    );
   }
 
   private recentrarMapaSiBusEscapa(posActual: [number, number]): void {
     if (!this.mapaRef || !this.ubicacionActual) return;
     if (this.mapaRef.getBounds().contains(posActual)) return;
 
-    const L      = (window as any).L;
-    const bounds = L.latLngBounds([
-      posActual,
-      [this.ubicacionActual.lat, this.ubicacionActual.lng],
-    ]);
+    const bounds = L.latLngBounds([posActual, [this.ubicacionActual.lat, this.ubicacionActual.lng]] as any);
     this.mapaRef.fitBounds(bounds, { padding: [70, 70], animate: true, maxZoom: 15 });
   }
 
-  // Sincroniza estado de la card con el estado real del bus en el mapa
   private actualizarEstadoBus(busId: number, estado: string, color: string, dot: string): void {
     const bus = this.todosBuses.find(b => b.id === busId);
     if (bus) {
@@ -1068,40 +1142,19 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
       bus.estadoColor = color;
       bus.estadoDot   = dot;
     }
-    // Actualizar label y color del marcador en el mapa
+
     const busEnMapa = this.busesEnMapa.find(b => b.busId === busId);
     if (busEnMapa) {
       busEnMapa.label = busEnMapa.label.replace(/·[^·]*$/, `· ${estado}`);
       busEnMapa.color = color;
-      // Refrescar el ícono del marcador con el nuevo color
-      const L = (window as any).L;
-      if (L && busEnMapa.marker) {
-        const lineaMatch = busEnMapa.label.match(/L(\d+)/);
-        const lineaText  = lineaMatch ? `L${lineaMatch[1]}` : '';
-        const iconSvgBus = `
-          <rect x="2" y="4" width="20" height="14" rx="3"/>
-          <path d="M5 20 L5 22M19 20 L19 22"/>
-          <rect x="4" y="8" width="4" height="4" rx="0.8" fill="white" stroke="none"/>
-          <rect x="16" y="8" width="4" height="4" rx="0.8" fill="white" stroke="none"/>`;
-        const nuevoIcono = L.divIcon({
-          className: '',
-          html: `
-            <div style="display:flex;flex-direction:column;align-items:center;filter:drop-shadow(0 2px 6px rgba(0,0,0,0.28));">
-              <div style="background:${color};border-radius:10px;padding:5px 9px;
-                          display:flex;align-items:center;gap:5px;border:2px solid rgba(255,255,255,0.7);">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"
-                     stroke-linecap="round" stroke-linejoin="round">${iconSvgBus}</svg>
-                <span style="font-size:11px;font-weight:800;color:#fff;font-family:'Inter',sans-serif;
-                             letter-spacing:0.04em;">${lineaText}</span>
-              </div>
-              <svg width="8" height="6" viewBox="0 0 8 6" fill="none" style="margin-top:-1px;display:block;">
-                <path d="M0 0 L4 6 L8 0 Z" fill="${color}"/>
-              </svg>
-            </div>`,
-          iconSize: [70, 36],
+
+      if (busEnMapa.marker) {
+        busEnMapa.marker.setIcon(L.divIcon({
+          className:  '',
+          html:       this.buildIconoBusHtml(busEnMapa.label, color),
+          iconSize:   [70, 36],
           iconAnchor: [35, 34]
-        });
-        busEnMapa.marker.setIcon(nuevoIcono);
+        }));
       }
     }
   }
@@ -1113,74 +1166,55 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // MOSTRAR / OCULTAR BUSES Y PARADEROS
-  // ─────────────────────────────────────────────────────────────────────────────
-  private ocultarBusEnMapa(bus: BusEnMapa): void {
+  // ── Visibilidad de capas (helper unificado) ───────────────────────────────────
+  private toggleCapasBus(bus: BusEnMapa, accion: 'mostrar' | 'ocultar' | 'destruir'): void {
     const map = this.mapaRef;
     if (!map) return;
-    if (bus.marker        && map.hasLayer(bus.marker))          bus.marker.remove();
-    if (bus.polylineRecorrido && map.hasLayer(bus.polylineRecorrido)) bus.polylineRecorrido.remove();
-    if (bus.polylineRecorrida && map.hasLayer(bus.polylineRecorrida)) bus.polylineRecorrida.remove();
+
+    const capas = [bus.marker, bus.polylineRecorrido, bus.polylineRecorrida].filter(Boolean);
+
+    for (const capa of capas) {
+      if (accion === 'mostrar')  { if (!map.hasLayer(capa)) capa.addTo(map); }
+      if (accion === 'ocultar')  { if (map.hasLayer(capa))  capa.remove(); }
+      if (accion === 'destruir') { capa.remove(); }
+    }
   }
 
-  private mostrarBusEnMapa(bus: BusEnMapa): void {
-    const map = this.mapaRef;
-    if (!map) return;
-    if (bus.marker        && !map.hasLayer(bus.marker))          bus.marker.addTo(map);
-    if (bus.polylineRecorrido && !map.hasLayer(bus.polylineRecorrido)) bus.polylineRecorrido.addTo(map);
-    if (bus.polylineRecorrida && !map.hasLayer(bus.polylineRecorrida)) bus.polylineRecorrida.addTo(map);
-  }
-
-  private destruirBusEnMapa(bus: BusEnMapa): void {
-    const map = this.mapaRef;
-    if (!map) return;
-    if (bus.marker)           { bus.marker.remove(); }
-    if (bus.polylineRecorrido){ bus.polylineRecorrido.remove(); }
-    if (bus.polylineRecorrida){ bus.polylineRecorrida.remove(); }
-  }
+  private ocultarBusEnMapa(bus: BusEnMapa): void  { this.toggleCapasBus(bus, 'ocultar');  }
+  private mostrarBusEnMapa(bus: BusEnMapa): void   { this.toggleCapasBus(bus, 'mostrar');  }
+  private destruirBusEnMapa(bus: BusEnMapa): void  { this.toggleCapasBus(bus, 'destruir'); }
 
   private ocultarParaderos(): void {
     const map = this.mapaRef;
-    if (!map) return;
-    for (const m of this.marcadoresParaderos) {
-      if (map.hasLayer(m)) m.remove();
-    }
-    if (this.polylinePeatonal && map.hasLayer(this.polylinePeatonal)) {
-      this.polylinePeatonal.remove();
-    }
+    if (!map || !this.clusterParaderos) return;
+    if (map.hasLayer(this.clusterParaderos)) map.removeLayer(this.clusterParaderos);
+    if (this.polylinePeatonal && map.hasLayer(this.polylinePeatonal)) this.polylinePeatonal.remove();
   }
 
   private mostrarParaderos(): void {
     const map = this.mapaRef;
-    if (!map) return;
-    for (const m of this.marcadoresParaderos) {
-      if (!map.hasLayer(m)) m.addTo(map);
-    }
-    if (this.polylinePeatonal && !map.hasLayer(this.polylinePeatonal)) {
-      this.polylinePeatonal.addTo(map);
+    if (!map || !this.clusterParaderos) return;
+    if (!map.hasLayer(this.clusterParaderos)) map.addLayer(this.clusterParaderos);
+    if (this.polylinePeatonal && !map.hasLayer(this.polylinePeatonal)) this.polylinePeatonal.addTo(map);
+  }
+
+  private filtrarParaderosEnMapa(idsVisibles: Set<number>): void {
+    if (!this.clusterParaderos) return;
+    this.clusterParaderos.clearLayers();
+    for (const { paraderoId, marker } of this.marcadoresParaderos) {
+      if (idsVisibles.has(paraderoId)) {
+        this.clusterParaderos.addLayer(marker);
+      }
     }
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // RECORRIDO COMPLETO — al seguir un bus
-  // Destaca la polyline del recorrido completo con mayor peso/opacidad
-  // y hace zoom para ver toda la ruta
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── Recorrido completo (seguir bus) ───────────────────────────────────────────
   private mostrarRecorridoCompleto(bus: BusEnMapa): void {
     if (!bus.polylineRecorrido) return;
-    // Destacar la polyline de la ruta completa
-    bus.polylineRecorrido.setStyle({
-      weight:    4,
-      opacity:   0.35,
-      dashArray: '8,6',
-    });
+    bus.polylineRecorrido.setStyle({ weight: 4, opacity: 0.35, dashArray: '8,6' });
   }
 
-  // ─────────────────────────────────────────────────────────────────────────────
-  // ETA DINÁMICO
-  // Calcula los minutos restantes basado en waypoints que faltan y velocidad media
-  // ─────────────────────────────────────────────────────────────────────────────
+  // ── ETA dinámico ─────────────────────────────────────────────────────────────
   private actualizarEtaDinamico(bus: BusEnMapa): void {
     const waypointsRestantes = bus.rutaWaypoints.length - bus.indiceActual - 1;
     if (waypointsRestantes <= 0) {
@@ -1189,7 +1223,6 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
       return;
     }
 
-    // Calcular distancia restante entre waypoints consecutivos
     let distanciaRestante = 0;
     for (let i = bus.indiceActual; i < bus.rutaWaypoints.length - 1; i++) {
       const a = { lat: bus.rutaWaypoints[i][0],   lng: bus.rutaWaypoints[i][1] };
@@ -1197,17 +1230,16 @@ Responde mencionando el paradero destino y pídele que active el GPS si aún no 
       distanciaRestante += this.calcularDistancia(a, b);
     }
 
-    const velocidadMs = 25 / 3.6; // 25 km/h en m/s (velocidad urbana Lima)
-    const segundosRestantes = distanciaRestante / velocidadMs;
-    this.etaDinamicoMinutos = Math.max(1, Math.round(segundosRestantes / 60));
+    const velocidadMs       = 25 / 3.6;
+    this.etaDinamicoMinutos = Math.max(1, Math.round(distanciaRestante / velocidadMs / 60));
 
-    // Actualizar stepper según progreso
     const progreso = bus.indiceActual / bus.rutaWaypoints.length;
     if (progreso < 0.1)       this.pasoViaje = 'acercando';
     else if (progreso < 0.95) this.pasoViaje = 'abordo';
     else                      this.pasoViaje = 'fin';
   }
 
+  // ── Utils públicos ────────────────────────────────────────────────────────────
   contarParaderosPorLinea(linea: string): number {
     return this.paraderos.filter(p => p.lineas.includes(linea)).length;
   }

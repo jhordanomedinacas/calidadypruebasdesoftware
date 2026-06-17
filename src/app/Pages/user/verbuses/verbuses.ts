@@ -4,194 +4,163 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
 import { AuthService } from '../../../services/auth';
-
-interface Paradero {
-  nombre: string;
-  km: number;
-}
-
-interface ProximoBus {
-  minutos: number;
-  capacidad: number;
-  placa: string;
-}
-
-interface Linea {
-  id: string;
-  nombre: string;
-  ruta: string;
-  estado: 'En servicio' | 'Limitado' | 'Fuera de servicio';
-  paraderos: number;
-  recorrido: string;
-  duracion: string;
-  tipoBus: string;
-  pasajeros: number;
-  listaParaderos: Paradero[];
-}
+import {
+  VerbusesService,
+  LineaResponse,
+  ParaderoResponse,
+  BusResponse,
+} from '../../../services/verbuses';
 
 @Component({
   selector: 'app-verbuses',
   standalone: true,
   imports: [CommonModule, FormsModule, NavbarComponent],
   templateUrl: './verbuses.html',
-  styleUrl: './verbuses.css'
+  styleUrl: './verbuses.css',
 })
 export class VerBusesComponent implements OnInit {
 
-  busquedaOrigen = '';
-  busquedaDestino = '';
+  // ── Estado UI ────────────────────────────────────────────────────────────────
+  busqueda       = '';
   tabActivo: 'ida' | 'vuelta' = 'ida';
 
-  lineaSeleccionada: Linea | null = null;
+  // ── Datos del backend ────────────────────────────────────────────────────────
+  lineas:          LineaResponse[]    = [];
+  lineasFiltradas: LineaResponse[]    = [];
+  paraderos:       ParaderoResponse[] = [];
+  buses:           BusResponse[]      = [];
 
-  proximosBuses: ProximoBus[] = [
-    { minutos: 3,  capacidad: 42, placa: 'ABC-123' },
-    { minutos: 11, capacidad: 75, placa: 'DEF-456' },
-    { minutos: 19, capacidad: 20, placa: 'GHI-789' },
-  ];
+  lineaSeleccionada: LineaResponse | null = null;
 
-  lineas: Linea[] = [
-    {
-      id: '201',
-      nombre: 'Línea 201',
-      ruta: 'Chorrillos - San Juan de Lurigancho',
-      estado: 'En servicio',
-      paraderos: 28,
-      recorrido: '34 KM',
-      duracion: '65 min',
-      tipoBus: 'Articulado',
-      pasajeros: 160,
-      listaParaderos: [
-        { nombre: 'Chorrillos (Terminal)', km: 0 },
-        { nombre: 'Av. Huaylas', km: 1.2 },
-        { nombre: 'Av. San Martin', km: 2.5 },
-        { nombre: 'Av. Barranco Centro', km: 4.1 },
-        { nombre: 'Miraflores – Óvalo Gutiérrez', km: 6.3 },
-        { nombre: 'Av. Arequipa', km: 8.0 },
-        { nombre: 'Lince – Av. Petit Thouars', km: 9.8 },
-        { nombre: 'Av. Javier Prado', km: 11.4 },
-        { nombre: 'San Isidro – Camino Real', km: 13.0 },
-        { nombre: 'Av. Canaval y Moreyra', km: 14.5 },
-        { nombre: 'Av. Pershing', km: 16.1 },
-        { nombre: 'Av. Tomás Marsano', km: 17.8 },
-        { nombre: 'La Victoria – Av. México', km: 19.2 },
-        { nombre: 'El Agustino – Av. Riva Agüero', km: 23.1 },
-        { nombre: 'SJL – Av. Próceres', km: 26.4 },
-        { nombre: 'SJL – Canto Grande (Terminal)', km: 29.0 },
-      ]
-    },
-    {
-      id: '202',
-      nombre: 'Línea 202',
-      ruta: 'Chorrillos - San Juan de Lurigancho',
-      estado: 'En servicio',
-      paraderos: 24,
-      recorrido: '30 KM',
-      duracion: '55 min',
-      tipoBus: 'Padrón',
-      pasajeros: 80,
-      listaParaderos: [
-        { nombre: 'Chorrillos (Terminal)', km: 0 },
-        { nombre: 'Av. Huaylas', km: 1.2 },
-        { nombre: 'Av. San Martin', km: 2.5 },
-        { nombre: 'Av. Barranco Centro', km: 4.1 },
-        { nombre: 'Miraflores – Óvalo Gutiérrez', km: 6.3 },
-        { nombre: 'Av. Arequipa', km: 8.0 },
-        { nombre: 'Lince – Av. Petit Thouars', km: 9.8 },
-        { nombre: 'Av. Javier Prado', km: 11.4 },
-        { nombre: 'San Isidro – Camino Real', km: 13.0 },
-        { nombre: 'Av. Pershing', km: 16.1 },
-        { nombre: 'La Victoria – Av. México', km: 19.2 },
-        { nombre: 'El Agustino – Av. Riva Agüero', km: 23.1 },
-      ]
-    },
-    {
-      id: '203',
-      nombre: 'Línea 203',
-      ruta: 'Chorrillos - San Juan de Lurigancho',
-      estado: 'Limitado',
-      paraderos: 20,
-      recorrido: '26 KM',
-      duracion: '50 min',
-      tipoBus: 'Articulado',
-      pasajeros: 160,
-      listaParaderos: [
-        { nombre: 'Chorrillos (Terminal)', km: 0 },
-        { nombre: 'Av. Huaylas', km: 1.2 },
-        { nombre: 'Av. San Martin', km: 2.5 },
-        { nombre: 'Av. Barranco Centro', km: 4.1 },
-        { nombre: 'Miraflores – Óvalo Gutiérrez', km: 6.3 },
-        { nombre: 'Av. Arequipa', km: 8.0 },
-        { nombre: 'Av. Javier Prado', km: 11.4 },
-        { nombre: 'El Agustino – Av. Riva Agüero', km: 23.1 },
-      ]
-    },
-    {
-      id: '204',
-      nombre: 'Línea 204',
-      ruta: 'Chorrillos - San Juan de Lurigancho',
-      estado: 'En servicio',
-      paraderos: 22,
-      recorrido: '28 KM',
-      duracion: '58 min',
-      tipoBus: 'Padrón',
-      pasajeros: 80,
-      listaParaderos: [
-        { nombre: 'Chorrillos (Terminal)', km: 0 },
-        { nombre: 'Av. Huaylas', km: 1.2 },
-        { nombre: 'Av. San Martin', km: 2.5 },
-        { nombre: 'Av. Barranco Centro', km: 4.1 },
-        { nombre: 'Miraflores – Óvalo Gutiérrez', km: 6.3 },
-        { nombre: 'Lince – Av. Petit Thouars', km: 9.8 },
-        { nombre: 'Av. Javier Prado', km: 11.4 },
-        { nombre: 'San Isidro – Camino Real', km: 13.0 },
-        { nombre: 'La Victoria – Av. México', km: 19.2 },
-        { nombre: 'El Agustino – Av. Riva Agüero', km: 23.1 },
-      ]
-    }
-  ];
+  // ── Loading / error flags ────────────────────────────────────────────────────
+  cargandoLineas    = false;
+  cargandoParaderos = false;
+  cargandoBuses     = false;
+  errorLineas       = '';
+  errorParaderos    = '';
+  errorBuses        = '';
 
-  lineasFiltradas: Linea[] = [];
+  constructor(
+    private router:   Router,
+    private auth:     AuthService,
+    private verbuses: VerbusesService,
+  ) {}
+
+  // ── Ciclo de vida ────────────────────────────────────────────────────────────
 
   ngOnInit(): void {
-    this.lineasFiltradas = [...this.lineas];
-    this.lineaSeleccionada = this.lineas[0];
+    this.cargarLineas();
   }
+
+  // ── Carga de datos ───────────────────────────────────────────────────────────
+
+  cargarLineas(): void {
+    this.cargandoLineas = true;
+    this.errorLineas    = '';
+    this.verbuses.obtenerLineas().subscribe({
+      next: (data) => {
+        this.lineas          = data;
+        this.lineasFiltradas = [...data];
+        this.cargandoLineas  = false;
+        if (data.length > 0) {
+          this.seleccionarLinea(data[0]);
+        }
+      },
+      error: (err) => {
+        this.errorLineas    = err?.error?.message ?? 'Error al cargar las líneas.';
+        this.cargandoLineas = false;
+      },
+    });
+  }
+
+  seleccionarLinea(linea: LineaResponse): void {
+    this.lineaSeleccionada = linea;
+    this.tabActivo         = 'ida';
+    this.paraderos         = [];
+    this.buses             = [];
+    this.cargarParaderos(linea.idLinea, 'ida');
+    this.cargarBuses(linea.idLinea);
+  }
+
+  cargarParaderos(idLinea: number, direccion: 'ida' | 'vuelta'): void {
+    this.cargandoParaderos = true;
+    this.errorParaderos    = '';
+    this.verbuses.obtenerParaderos(idLinea, direccion).subscribe({
+      next: (data) => {
+        this.paraderos         = data.sort((a, b) => a.orden - b.orden);
+        this.cargandoParaderos = false;
+      },
+      error: (err) => {
+        this.errorParaderos    = err?.error?.message ?? 'Error al cargar paraderos.';
+        this.cargandoParaderos = false;
+      },
+    });
+  }
+
+  cargarBuses(idLinea: number): void {
+    this.cargandoBuses = true;
+    this.errorBuses    = '';
+    this.verbuses.obtenerBuses(idLinea).subscribe({
+      next: (data) => {
+        this.buses         = data;
+        this.cargandoBuses = false;
+      },
+      error: (err) => {
+        this.buses         = [];
+        this.cargandoBuses = false;
+        if (err?.status !== 404) {
+          this.errorBuses = err?.error?.message ?? 'Error al cargar buses.';
+        }
+      },
+    });
+  }
+
+  // ── Cambio de tab Ida / Vuelta ───────────────────────────────────────────────
+
+  cambiarTab(tab: 'ida' | 'vuelta'): void {
+    if (this.tabActivo === tab || !this.lineaSeleccionada) return;
+    this.tabActivo = tab;
+    this.cargarParaderos(this.lineaSeleccionada.idLinea, tab);
+  }
+
+  // ── Filtrado de líneas ───────────────────────────────────────────────────────
 
   filtrarLineas(): void {
-    const termino = this.busquedaOrigen.toLowerCase().trim();
-    if (!termino) {
-      this.lineasFiltradas = [...this.lineas];
-      return;
-    }
-    this.lineasFiltradas = this.lineas.filter(l =>
-      l.nombre.toLowerCase().includes(termino) ||
-      l.ruta.toLowerCase().includes(termino)
-    );
+    const t = this.busqueda.toLowerCase().trim();
+    this.lineasFiltradas = t
+      ? this.lineas.filter(
+          (l) =>
+            l.nombreLinea.toLowerCase().includes(t) ||
+            l.empresa.toLowerCase().includes(t),
+        )
+      : [...this.lineas];
   }
 
-  seleccionarLinea(linea: Linea): void {
-    this.lineaSeleccionada = linea;
-    this.tabActivo = 'ida';
+  // ── Helpers de paraderos en 2 columnas ──────────────────────────────────────
+
+  getParaderosColumna(col: 0 | 1): ParaderoResponse[] {
+    const mitad = Math.ceil(this.paraderos.length / 2);
+    return col === 0 ? this.paraderos.slice(0, mitad) : this.paraderos.slice(mitad);
   }
 
-  /**
-   * Divide los paraderos en dos columnas iguales.
-   * columna 0 = izquierda, columna 1 = derecha
-   */
-  getParaderosColumna(col: 0 | 1): Paradero[] {
-    if (!this.lineaSeleccionada) return [];
-    const lista = this.tabActivo === 'vuelta'
-      ? [...this.lineaSeleccionada.listaParaderos].reverse()
-      : this.lineaSeleccionada.listaParaderos;
-    const mitad = Math.ceil(lista.length / 2);
-    return col === 0 ? lista.slice(0, mitad) : lista.slice(mitad);
+  // ── Helpers para el panel derecho ────────────────────────────────────────────
+
+  /** Capacidad del primer bus activo; fallback 80 (Padrón). */
+  getCapacidadTotal(): number {
+    return this.buses.length > 0 ? this.buses[0].capacidad : 80;
   }
+
+  /** Porcentaje de ocupación sobre 80 pasajeros (Padrón). */
+  getCapacidadPct(capacidad: number): number {
+    return Math.min(Math.round((capacidad / 80) * 100), 100);
+  }
+
+  // ── Navegación ───────────────────────────────────────────────────────────────
 
   irInicio(): void {
     this.router.navigate(['/inicio']);
   }
-  constructor(private router: Router, private auth: AuthService) {}
+
   onLogout(): void {
     this.auth.cerrarSesion();
     this.router.navigate(['/login']);

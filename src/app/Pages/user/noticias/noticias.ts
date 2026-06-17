@@ -7,6 +7,7 @@ import { debounceTime } from 'rxjs/operators';
 import { NavbarComponent } from '../../../components/navbar/navbar';
 import { AuthService } from '../../../services/auth';
 import { NoticiaUsuarioService, CategoriaNoticia, NoticiaItem } from '../../../services/noticia-usuario';
+import { TraficoService, ZonaTraficoApi } from '../../../services/trafico';
 import { formatFechaCorta } from '../../../services/utils/fecha';
 
 // ── Modelos del template ───────────────────────────────────────────────────────
@@ -23,7 +24,7 @@ export interface Noticia {
   destacada: boolean;
 }
 
-export type NivelTrafico = 'PESADO' | 'MODERADO' | 'FLUIDO';
+export type NivelTrafico = 'PESADO' | 'MODERADO' | 'FLUIDO' | 'SIN_DATOS';
 
 export interface Alerta {
   id:          number;
@@ -89,7 +90,7 @@ export class NoticiasComponent implements OnInit, OnDestroy {
   totalPaginas     = 1;
   paginasVisibles: (number | '...')[] = [];
 
-  // ── Tráfico (datos fijos) ──────────────────────────────────────────────────
+  // ── Tráfico (fallback mientras carga el backend / si falla la llamada) ─────
   zonasTrafico: ZonaTrafico[] = [
     { avenida: 'Av. Arequipa',  tramo: 'Miraflores - Centro',   nivel: 'PESADO'   },
     { avenida: 'Av. Brasil',    tramo: 'Breña - Magdalena',     nivel: 'MODERADO' },
@@ -109,12 +110,17 @@ export class NoticiasComponent implements OnInit, OnDestroy {
     { id: 4, titulo: 'Demora en ruta 401 por lluvia intensa',       descripcion: 'Las unidades de la ruta 401 registran demoras de 15 minutos debido a lluvia intensa en el distrito de San Juan de Lurigancho.',                   hace: 'Hace 2 h',    lineas: ['401']       },
   ];
 
-  ultimaActualizacion = 'Actualizado hace 5 min';
+  ultimaActualizacion = 'Actualizando...';
+
+  // Refresca el tráfico cada 2 min (igual al TTL del caché del backend ML)
+  private readonly TRAFICO_POLL_MS = 2 * 60 * 1000;
+  private traficoIntervalId?: ReturnType<typeof setInterval>;
 
   constructor(
     private router: Router,
     private auth: AuthService,
-    private noticiaService: NoticiaUsuarioService
+    private noticiaService: NoticiaUsuarioService,
+    private traficoService: TraficoService
   ) {}
 
   ngOnInit(): void {
@@ -125,10 +131,14 @@ export class NoticiasComponent implements OnInit, OnDestroy {
     });
 
     this.cargarNoticias();
+
+    this.cargarTrafico();
+    this.traficoIntervalId = setInterval(() => this.cargarTrafico(), this.TRAFICO_POLL_MS);
   }
 
   ngOnDestroy(): void {
     this.busquedaSubject.complete();
+    if (this.traficoIntervalId) clearInterval(this.traficoIntervalId);
   }
 
   // ── Navegación ─────────────────────────────────────────────────────────────
@@ -201,6 +211,33 @@ export class NoticiasComponent implements OnInit, OnDestroy {
     };
   }
 
+  // ── Carga del tráfico desde el backend ML (FastAPI / TomTom) ───────────────
+  private cargarTrafico(): void {
+    this.traficoService.obtenerEstado().subscribe({
+      next: (res) => {
+        this.zonasTrafico = res.zonas.map(z => this.mapZonaTrafico(z));
+        this.ultimaActualizacion = this.formatHaceTiempo(res.actualizado);
+      },
+      error: () => {
+        // Si falla, dejamos las zonas que ya estuvieran en pantalla (fallback inicial
+        // o el último estado bueno) en vez de romper la sección.
+        this.ultimaActualizacion = 'No se pudo actualizar';
+      }
+    });
+  }
+
+  private mapZonaTrafico(z: ZonaTraficoApi): ZonaTrafico {
+    return { avenida: z.avenida, tramo: z.tramo, nivel: z.nivel };
+  }
+
+  /** Convierte un timestamp unix (segundos) en "Actualizado hace X min" */
+  private formatHaceTiempo(timestampSeg: number): string {
+    const minutos = Math.max(0, Math.round((Date.now() / 1000 - timestampSeg) / 60));
+    if (minutos < 1) return 'Actualizado justo ahora';
+    if (minutos === 1) return 'Actualizado hace 1 min';
+    return `Actualizado hace ${minutos} min`;
+  }
+
   // ── Filtrado + distribución local ─────────────────────────────────────────
   private filtrarEnCliente(): void {
     let filtradas = this.todasNoticias;
@@ -266,13 +303,15 @@ export class NoticiasComponent implements OnInit, OnDestroy {
   nivelColor(nivel: NivelTrafico): string {
     return nivel === 'PESADO'   ? '#ef4444'
          : nivel === 'MODERADO' ? '#f59e0b'
-         :                        '#22c55e';
+         : nivel === 'FLUIDO'   ? '#22c55e'
+         :                        '#9ca3af';
   }
 
   nivelBg(nivel: NivelTrafico): string {
     return nivel === 'PESADO'   ? 'rgba(239,68,68,0.08)'
          : nivel === 'MODERADO' ? 'rgba(245,158,11,0.08)'
-         :                        'rgba(34,197,94,0.08)';
+         : nivel === 'FLUIDO'   ? 'rgba(34,197,94,0.08)'
+         :                        'rgba(156,163,175,0.08)';
   }
 
   // ── Badge color ────────────────────────────────────────────────────────────

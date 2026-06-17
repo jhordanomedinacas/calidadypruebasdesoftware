@@ -1062,6 +1062,7 @@
             </svg>
             <span style="font-size:15px;font-weight:700;color:#111827;font-family:'Inter',sans-serif;">Buses disponibles</span>
             <span class="sheet-count-badge">{{ busesFiltrados.length }}</span>
+            <span *ngIf="cargandoDatos" style="font-size:11px;color:#9ca3af;font-family:'Inter',sans-serif;">Cargando...</span>
           </div>
           <!-- Flecha toggle -->
           <svg id="sheet-arrow" width="18" height="18" fill="none" stroke="#9ca3af" stroke-width="2" viewBox="0 0 24 24"
@@ -1076,21 +1077,17 @@
       <div class="sheet-filters" id="sheet-expandable-content" [style.display]="sheetExpanded ? 'flex' : 'none'">
         <select class="filter-select-compact" [(ngModel)]="lineaSeleccionada" (change)="filtrarBuses()">
           <option value="">Todas las líneas</option>
-          <option value="204">L-204</option>
-          <option value="301">L-301</option>
-          <option value="412">L-412</option>
+          <option *ngFor="let l of lineas" [value]="l.nombreLinea">{{ l.nombreLinea }}</option>
         </select>
-        <select class="filter-select-compact" [(ngModel)]="origenSeleccionado">
+        <select class="filter-select-compact" [(ngModel)]="origenSeleccionado"
+                [disabled]="!lineaSeleccionada || paraderosDeLineaSeleccionada.length === 0">
           <option value="">Cualquier inicio</option>
-          <option value="barranco">Barranco</option>
-          <option value="miraflores">Miraflores</option>
-          <option value="surco">Surco</option>
+          <option *ngFor="let p of paraderosDeLineaSeleccionada" [value]="p.nombre">{{ p.nombre }}</option>
         </select>
-        <select class="filter-select-compact" [(ngModel)]="destinoSeleccionado">
+        <select class="filter-select-compact" [(ngModel)]="destinoSeleccionado"
+                [disabled]="!lineaSeleccionada || paraderosDeLineaSeleccionada.length === 0">
           <option value="">Cualquier destino</option>
-          <option value="comas">Comas</option>
-          <option value="independencia">Independencia</option>
-          <option value="sjl">S.J. Lurigancho</option>
+          <option *ngFor="let p of paraderosDeLineaSeleccionada" [value]="p.nombre">{{ p.nombre }}</option>
         </select>
         <button class="filter-search-btn" (click)="buscarBuses()">
           <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">

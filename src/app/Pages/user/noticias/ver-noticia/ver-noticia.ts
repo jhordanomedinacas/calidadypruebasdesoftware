@@ -1,4 +1,4 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, OnInit, ChangeDetectorRef } from '@angular/core';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -11,7 +11,7 @@ import {
   NoticiaRelacionada,
   Comentario
 } from '../../../../services/noticia-usuario';
-import { formatFechaCorta } from '../../../../services/utils/fecha';
+import { formatFechaCorta, formatFechaHora } from '../../../../services/utils/fecha';
 
 // ── Componente ─────────────────────────────────────────────────────────────────
 
@@ -69,6 +69,7 @@ export class VerNoticiaComponent implements OnInit {
     private route: ActivatedRoute,
     private auth: AuthService,
     private sanitizer: DomSanitizer,
+    private cdr: ChangeDetectorRef,
     private noticiaService: NoticiaUsuarioService
   ) {}
 
@@ -101,11 +102,10 @@ export class VerNoticiaComponent implements OnInit {
       next: (res) => {
         this.noticia         = res;
         this.fechaFormateada = formatFechaCorta(res.fecha);
-        // El contenido viene como HTML guardado por el editor — lo marcamos como seguro
-        this.contenidoHtml = this.sanitizer.bypassSecurityTrustHtml(res.contenidoHtml);
-        this.cargando = false;
+        this.contenidoHtml   = this.sanitizer.bypassSecurityTrustHtml(res.contenidoHtml);
+        this.cargando        = false;
+        this.cdr.markForCheck();
 
-        // Disparamos la vista y cargamos datos secundarios en paralelo
         this.noticiaService.registrarVista(id).subscribe({ error: () => {} });
         this.cargarRelacionadas(id, res.categoria);
         this.cargarComentarios(id);
@@ -113,14 +113,15 @@ export class VerNoticiaComponent implements OnInit {
       error: () => {
         this.errorCarga = 'No se pudo cargar la noticia. Intenta nuevamente.';
         this.cargando   = false;
+        this.cdr.markForCheck();
       }
     });
   }
 
   private cargarRelacionadas(id: number, categoria: string): void {
     this.noticiaService.obtenerRelacionadas(id, categoria, 4).subscribe({
-      next:  (res) => { this.relacionadas = res; },
-      error: () => { this.relacionadas = []; }
+      next:  (res) => { this.relacionadas = res; this.cdr.markForCheck(); },
+      error: () =>    { this.relacionadas = [];  this.cdr.markForCheck(); }
     });
   }
 
@@ -129,10 +130,15 @@ export class VerNoticiaComponent implements OnInit {
     this.noticiaService.listarComentarios(id).subscribe({
       next: (res) => {
         this.totalComentarios = res.total;
-        this.comentarios      = res.comentarios;
-        this.cargandoCom      = false;
+        // Formateamos la fecha de cada comentario a hora Perú (UTC-5)
+        this.comentarios = res.comentarios.map(c => ({
+          ...c,
+          fecha: formatFechaHora(c.fecha)
+        }));
+        this.cargandoCom = false;
+        this.cdr.markForCheck();
       },
-      error: () => { this.cargandoCom = false; }
+      error: () => { this.cargandoCom = false; this.cdr.markForCheck(); }
     });
   }
 
@@ -140,7 +146,7 @@ export class VerNoticiaComponent implements OnInit {
   publicarComentario(): void {
     if (!this.nuevoComentario.trim() || !this.noticiaId) return;
 
-    this.publicando     = true;
+    this.publicando      = true;
     this.errorComentario = '';
 
     this.noticiaService.crearComentario(this.noticiaId, this.nuevoComentario.trim()).subscribe({
@@ -152,6 +158,7 @@ export class VerNoticiaComponent implements OnInit {
       error: () => {
         this.publicando      = false;
         this.errorComentario = 'No se pudo publicar el comentario. Intenta nuevamente.';
+        this.cdr.markForCheck();
       }
     });
   }
@@ -165,8 +172,9 @@ export class VerNoticiaComponent implements OnInit {
         delete this.eliminando[idComentario];
         this.comentarios = this.comentarios.filter(c => c.id !== idComentario);
         this.totalComentarios = Math.max(0, this.totalComentarios - 1);
+        this.cdr.markForCheck();
       },
-      error: () => { delete this.eliminando[idComentario]; }
+      error: () => { delete this.eliminando[idComentario]; this.cdr.markForCheck(); }
     });
   }
 
@@ -195,10 +203,14 @@ export class VerNoticiaComponent implements OnInit {
     this.cargandoRespuestas[id] = true;
     this.noticiaService.listarRespuestas(id).subscribe({
       next: (res) => {
-        this.respuestasPorComentario[id] = res;
-        this.cargandoRespuestas[id]      = false;
+        this.respuestasPorComentario[id] = res.map(r => ({
+          ...r,
+          fecha: formatFechaHora(r.fecha)
+        }));
+        this.cargandoRespuestas[id] = false;
+        this.cdr.markForCheck();
       },
-      error: () => { this.cargandoRespuestas[id] = false; }
+      error: () => { this.cargandoRespuestas[id] = false; this.cdr.markForCheck(); }
     });
   }
 
