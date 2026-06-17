@@ -10,7 +10,7 @@ import { CanalAtencionComponent } from './Pages/user/canalatencion/canalatencion
 import { NoticiasComponent } from './Pages/user/noticias/noticias';
 import { PreguntasFrecuentesComponent } from './Pages/user/preguntasfrecuentes/preguntasfrecuentes';
 import { VerNoticiaComponent } from './Pages/user/noticias/ver-noticia/ver-noticia';
-import { authGuard, adminGuard, userGuard  } from './guards/auth-guard';
+import { authGuard, adminGuard, userGuard, recargasGuard } from './guards/auth-guard';
 import { ResetPasswordComponent } from './Pages/resetpassword/resetpassword';
 import { RutasFavoritasComponent } from './Pages/user/rutas-favoritas/rutas-favoritas';
 import { DashboardComponent } from './Pages/admin/dashboard/dashboard';
@@ -18,7 +18,8 @@ import { IniciAdminComponent } from './Pages/admin/inicio/inicio';
 import { GestionarUsuariosComponent } from './Pages/admin/gestionar-usuarios/gestionar-usuarios';
 import { GestionarLineasComponent } from './Pages/admin/gestionar-lineas/gestionar-lineas';
 import { DashboardUsuarioComponent } from './Pages/user/dashboard/dashboard';
-
+import { GestionarNoticiasComponent } from './Pages/admin/gestionar-noticias/gestionar-noticias';;
+import { CrearEditarNoticiaComponent } from './Pages/admin/gestionar-noticias/crear-editar-noticia/crear-editar-noticia';
 
 export const routes: Routes = [
 
@@ -34,7 +35,7 @@ export const routes: Routes = [
   { path: 'dashboardu',                component: DashboardUsuarioComponent,    canActivate: [authGuard, userGuard] },
   { path: 'user/verbuses',             component: VerBusesComponent,            canActivate: [authGuard, userGuard] },
   { path: 'user/ubicacion',            component: UbicacionComponent,           canActivate: [authGuard, userGuard] },
-  { path: 'user/recargas',             component: RecargasComponent,            canActivate: [authGuard, userGuard] },
+  { path: 'user/recargas',             component: RecargasComponent,            canActivate: [authGuard, userGuard, recargasGuard] },
   { path: 'user/canalatencion',        component: CanalAtencionComponent,       canActivate: [authGuard, userGuard] },
   { path: 'user/noticias',             component: NoticiasComponent,            canActivate: [authGuard, userGuard] },
   { path: 'user/faq',                  component: PreguntasFrecuentesComponent, canActivate: [authGuard, userGuard] },
@@ -46,4 +47,7 @@ export const routes: Routes = [
   { path: 'inicia',           component: IniciAdminComponent,        canActivate: [authGuard, adminGuard] },
   { path: 'gestion-usuarios', component: GestionarUsuariosComponent, canActivate: [authGuard, adminGuard] },
   { path: 'gestion-lineas',   component: GestionarLineasComponent,   canActivate: [authGuard, adminGuard] },
+  { path: 'gestion-noticias',             component: GestionarNoticiasComponent,   canActivate: [authGuard, adminGuard] },
+  { path: 'gestion-noticias/crear',      component: CrearEditarNoticiaComponent,  canActivate: [authGuard, adminGuard] },
+  { path: 'gestion-noticias/editar/:id', component: CrearEditarNoticiaComponent,  canActivate: [authGuard, adminGuard] },
 ];

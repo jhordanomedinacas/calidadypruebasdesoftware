@@ -32320,7 +32320,7 @@ class RGBELoader extends HDRLoader {
     super(manager);
   }
 }
-const CHATBOT_API_URL = "http://localhost:8000";
+const CHATBOT_API_URL = "https://jhordanmc-backendsolucioneswebml.hf.space";
 class HeadBot extends HTMLElement {
   connectedCallback() {
     const canvas = document.createElement("canvas");
@@ -32677,7 +32677,7 @@ window.initHeadBot = function () {
     } else {
       initChatbot();
     }
- 
+    
     function initChatbot() {
       const container = document.createElement("div");
       container.innerHTML = chatbotHTML;
@@ -32762,14 +32762,17 @@ window.initHeadBot = function () {
       // ── Text-to-Speech ───────────────────────────────────────────
       const ttsButton = document.getElementById('cgpvpTtsButton');
       let ttsEnabled = true;
-
+      let currentAudio = null;
       ttsButton.addEventListener('click', () => {
         ttsEnabled = !ttsEnabled;
         ttsButton.classList.toggle('tts-off', !ttsEnabled);
         ttsButton.title = ttsEnabled ? 'Silenciar voz' : 'Activar voz';
-        if (!ttsEnabled) window.speechSynthesis.cancel();
+        if (!ttsEnabled && currentAudio) {
+          currentAudio.pause();
+          currentAudio.currentTime = 0;
+        }
       });
-
+      
       function speak(text) {
         if (!ttsEnabled) return;
         // Limpiar markdown/emojis antes de enviar al backend
@@ -32787,12 +32790,17 @@ window.initHeadBot = function () {
         })
         .then(r => r.json())
         .then(({ audio }) => {
-          const audioEl = new Audio(`data:audio/wav;base64,${audio}`);
-          audioEl.play();
+          if (currentAudio) {
+            currentAudio.pause();
+            currentAudio.currentTime = 0;
+          }
+          currentAudio = new Audio(`data:audio/wav;base64,${audio}`);
+          window._headBotCurrentAudio = currentAudio;
+          currentAudio.play();
         })
         .catch(err => console.warn('[HeadBot TTS]', err));
       }
-
+      
       // Historial de conversación para contexto multi-turno
       const conversationHistory = [];
  
@@ -33035,6 +33043,11 @@ window.initHeadBot = function () {
 //  CLEANUP (llamar desde Angular al destruir el componente)
 // =====================================================================
 window.destroyHeadBot = function () {
+  // ← agrega esto al inicio
+  if (window._headBotCurrentAudio) {
+    window._headBotCurrentAudio.pause();
+    window._headBotCurrentAudio = null;
+  }
   if (window._headBotRafId) {
     cancelAnimationFrame(window._headBotRafId);
     window._headBotRafId = null;

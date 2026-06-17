@@ -1,0 +1,271 @@
+<style>
+  .noticia-card {
+    animation: cardIn 0.32s cubic-bezier(0.4, 0, 0.2, 1) both;
+  }
+  .noticia-card:nth-child(1) { animation-delay: 0ms; }
+  .noticia-card:nth-child(2) { animation-delay: 50ms; }
+  .noticia-card:nth-child(3) { animation-delay: 100ms; }
+  .noticia-card:nth-child(4) { animation-delay: 150ms; }
+  .noticia-card:nth-child(5) { animation-delay: 200ms; }
+  .noticia-card:nth-child(6) { animation-delay: 250ms; }
+  @keyframes cardIn {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .noticia-card:hover { box-shadow: 0 4px 20px rgba(35, 102, 206, 0.13); }
+  .noticia-card        { transition: box-shadow 0.18s ease; }
+  .noticia-card.destacada-card {
+    border: 1.5px solid #f59e0b;
+    box-shadow: 0 2px 10px rgba(245,158,11,0.13);
+  }
+  .noticia-card.destacada-card:hover {
+    box-shadow: 0 4px 20px rgba(245,158,11,0.22);
+  }
+  .tab-btn { transition: all 0.15s ease; }
+  .tab-btn:hover { background: rgba(35,102,206,0.08) !important; }
+  .btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 14px rgba(35,102,206,0.28); }
+  .btn-primary        { transition: all 0.18s ease; }
+  .ticker-wrap { overflow: hidden; white-space: nowrap; flex: 1; }
+  .ticker-content {
+    display: inline-block;
+    animation: ticker-scroll 30s linear infinite;
+  }
+  @keyframes ticker-scroll {
+    0%   { transform: translateX(100%); }
+    100% { transform: translateX(-100%); }
+  }
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.38);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    animation: fadeIn 0.15s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  .modal-box {
+    background: #fff;
+    border-radius: 18px;
+    padding: 32px 28px 24px 28px;
+    max-width: 380px;
+    width: 90%;
+    box-shadow: 0 8px 40px rgba(0,0,0,0.18);
+    animation: scaleIn 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+  @keyframes scaleIn { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .btn-danger:hover { opacity: 0.9; box-shadow: 0 4px 14px rgba(239,68,68,0.28); }
+  .btn-danger        { transition: all 0.18s ease; }
+  .btn-outline:hover { background: #f3f4f6 !important; }
+  .btn-outline        { transition: all 0.15s ease; }
+</style>
+
+<div class="min-h-screen" style="background-color:#f0f4fb; font-family:'Inter',sans-serif;">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div style="padding:18px 32px 0 32px;">
+    <span style="font-size:13px;color:#2366CE;font-weight:600;cursor:pointer;" (click)="irInicio()">Inicio</span>
+    <span style="font-size:13px;color:#9ca3af;margin:0 6px;">›</span>
+    <span style="font-size:13px;color:#9ca3af;">Noticias</span>
+  </div>
+
+  <!-- TICKER EN VIVO -->
+  <div style="margin:18px 32px 0 32px;background:#fff;border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:14px;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+    <span style="display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:#2366CE;white-space:nowrap;">
+      <span style="width:8px;height:8px;background:#22c55e;border-radius:50%;display:inline-block;"></span>
+      En vivo
+    </span>
+    <div class="ticker-wrap">
+      <span class="ticker-content" style="font-size:12px;color:#374151;">
+        <ng-container *ngFor="let item of tickerItems">
+          &nbsp;&nbsp;•&nbsp;&nbsp;{{ item }}
+        </ng-container>
+      </span>
+    </div>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div style="padding:24px 32px 48px 32px;">
+
+    <!-- Encabezado + botón agregar -->
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;gap:12px;flex-wrap:wrap;">
+      <!-- Buscador -->
+      <div style="position:relative;flex:1;min-width:220px;max-width:480px;">
+        <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#9ca3af;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+        </svg>
+        <input
+          type="text"
+          placeholder="Buscar noticia"
+          [(ngModel)]="busqueda"
+          (input)="onBusqueda()"
+          style="width:100%;padding:10px 12px 10px 36px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:13px;color:#374151;background:#fff;box-sizing:border-box;font-family:'Inter',sans-serif;box-shadow:0 1px 2px rgba(0,0,0,0.04);"
+        />
+      </div>
+      <!-- Botón agregar → navega a crear-editar en modo crear -->
+      <button class="btn-primary" (click)="irACrear()"
+        style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:#2366CE;color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">
+        Agregar Noticia
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Tabs categorías -->
+    <div style="display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;">
+      <button *ngFor="let cat of categorias" class="tab-btn"
+        (click)="seleccionarCategoria(cat)"
+        [style.background]="categoriaActiva===cat ? '#2366CE' : '#fff'"
+        [style.color]="categoriaActiva===cat ? '#fff' : '#374151'"
+        [style.border]="categoriaActiva===cat ? '1.5px solid #2366CE' : '1.5px solid #e5e7eb'"
+        style="padding:7px 18px;border-radius:20px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;">
+        {{ cat }}
+      </button>
+    </div>
+
+    <!-- Grid de noticias -->
+    <div *ngIf="noticiasPagina.length > 0"
+      style="display:grid;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));gap:18px;">
+
+      <div *ngFor="let n of noticiasPagina" class="noticia-card"
+        [class.destacada-card]="n.destacada"
+        style="background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.07);">
+
+        <!-- Imagen -->
+        <div style="width:100%;height:180px;overflow:hidden;position:relative;">
+          <img [src]="n.imagen" [alt]="n.titulo"
+            style="width:100%;height:100%;object-fit:cover;"
+            onerror="this.style.background='#e5e7eb'"/>
+          <!-- Badge destacada flotante sobre la imagen -->
+          <div *ngIf="n.destacada"
+            style="position:absolute;top:10px;left:10px;display:inline-flex;align-items:center;gap:4px;padding:4px 10px;background:rgba(245,158,11,0.92);border-radius:20px;font-size:11px;font-weight:700;color:#fff;backdrop-filter:blur(4px);">
+            <svg width="11" height="11" fill="#fff" viewBox="0 0 24 24">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+            Destacada
+          </div>
+        </div>
+
+        <!-- Contenido -->
+        <div style="padding:16px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+            <span [ngStyle]="badgeStyle(n.categoria)"
+              style="padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;">
+              {{ n.categoria }}
+            </span>
+            <span style="font-size:11px;color:#9ca3af;">{{ n.fecha }}</span>
+          </div>
+
+          <p style="font-size:14px;font-weight:700;color:#111827;margin:0 0 8px 0;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+            {{ n.titulo }}
+          </p>
+
+          <p style="font-size:12px;color:#6b7280;margin:0 0 14px 0;line-height:1.5;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">
+            {{ n.resumen }}
+          </p>
+
+          <!-- Footer: vistas + acciones -->
+          <div style="display:flex;align-items:center;justify-content:space-between;">
+            <span style="display:flex;align-items:center;gap:5px;font-size:11px;color:#9ca3af;">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                <circle cx="12" cy="12" r="3"/>
+              </svg>
+              {{ n.vistas | number }} vistas
+            </span>
+            <div style="display:flex;align-items:center;gap:12px;">
+              <button (click)="verNoticia(n.id)"
+                style="display:flex;align-items:center;gap:5px;font-size:12px;color:#2366CE;font-weight:600;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;">
+                Ver noticia
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                  <circle cx="12" cy="12" r="3"/>
+                </svg>
+              </button>
+              <!-- Editar → navega a crear-editar en modo editar -->
+              <button (click)="irAEditar(n.id)"
+                style="display:flex;align-items:center;gap:5px;font-size:12px;color:#2366CE;font-weight:600;background:none;border:none;cursor:pointer;font-family:'Inter',sans-serif;">
+                Editar
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Empty state -->
+    <div *ngIf="noticiasPagina.length === 0"
+      style="background:#fff;border-radius:16px;padding:48px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,0.06);">
+      <svg width="40" height="40" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24" style="margin-bottom:12px;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M19 20H5a2 2 0 01-2-2V6a2 2 0 012-2h10l6 6v8a2 2 0 01-2 2z"/>
+        <path stroke-linecap="round" stroke-linejoin="round" d="M17 20v-8H7v8M7 4v4h8"/>
+      </svg>
+      <p style="color:#9ca3af;font-size:14px;margin:0;">No se encontraron noticias</p>
+    </div>
+
+    <!-- Paginación -->
+    <div *ngIf="totalPaginas > 1"
+      style="display:flex;justify-content:center;gap:8px;margin-top:28px;align-items:center;flex-wrap:wrap;">
+      <button (click)="paginaAnterior()" [disabled]="paginaActual===1"
+        style="width:36px;height:36px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#374151;"
+        [style.opacity]="paginaActual===1 ? '0.4' : '1'">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <ng-container *ngFor="let p of paginasVisibles">
+        <button (click)="irAPagina(p)"
+          [style.background]="p===paginaActual ? '#2366CE' : '#fff'"
+          [style.color]="p===paginaActual ? '#fff' : '#374151'"
+          [style.border]="p===paginaActual ? '1.5px solid #2366CE' : '1.5px solid #e5e7eb'"
+          [style.cursor]="p==='...' ? 'default' : 'pointer'"
+          style="width:36px;height:36px;border-radius:10px;font-size:13px;font-weight:600;font-family:'Inter',sans-serif;">
+          {{ p }}
+        </button>
+      </ng-container>
+
+      <button (click)="paginaSiguiente()" [disabled]="paginaActual===totalPaginas"
+        style="width:36px;height:36px;border-radius:10px;border:1.5px solid #e5e7eb;background:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#374151;"
+        [style.opacity]="paginaActual===totalPaginas ? '0.4' : '1'">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+  </div><!-- /contenido principal -->
+
+
+  <!-- MODAL ELIMINAR NOTICIA -->
+  <div *ngIf="modalEliminarNoticia" class="modal-overlay" (click)="cancelarEliminar()">
+    <div class="modal-box" (click)="$event.stopPropagation()">
+      <div style="text-align:center;margin-bottom:20px;">
+        <div style="width:52px;height:52px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 14px auto;">
+          <svg width="24" height="24" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3 6h18M8 6V4h8v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/>
+          </svg>
+        </div>
+        <h3 style="font-size:17px;font-weight:700;color:#111827;margin:0 0 8px 0;">¿Eliminar noticia?</h3>
+        <p style="font-size:13px;color:#6b7280;margin:0;">Esta acción no se puede deshacer. La noticia será eliminada permanentemente.</p>
+      </div>
+      <div style="display:flex;gap:12px;">
+        <button (click)="cancelarEliminar()" class="btn-outline"
+          style="flex:1;padding:11px;border:1.5px solid #e5e7eb;border-radius:12px;background:#fff;font-size:13px;font-weight:700;color:#374151;cursor:pointer;font-family:'Inter',sans-serif;">
+          Cancelar
+        </button>
+        <button (click)="ejecutarEliminar()" class="btn-danger"
+          style="flex:1;padding:11px;background:#ef4444;color:#fff;border:none;border-radius:12px;font-size:13px;font-weight:700;cursor:pointer;font-family:'Inter',sans-serif;">
+          Eliminar
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

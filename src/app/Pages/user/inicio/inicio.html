@@ -445,7 +445,13 @@
             </p>
           </div>
           <p class="font-bold text-white" style="font-size: 1.4rem;">
-            <span class="text-sm font-medium mr-1" style="opacity:.7;">PEN</span>15.00
+            <ng-container *ngIf="tarjetaActivaObj; else sinSaldo">
+              <span class="text-sm font-medium mr-1" style="opacity:.7;">PEN</span>
+              {{ tarjetaActivaObj.saldo | number:'1.2-2' }}
+            </ng-container>
+            <ng-template #sinSaldo>
+              <span style="font-size: 0.95rem; opacity: 0.6;">Sin tarjeta</span>
+            </ng-template>
           </p>
         </div>
 
@@ -457,13 +463,13 @@
             </svg>
             Agregar
           </button>
-          <button class="btn-gestion editar" style="flex:1; justify-content:center;" (click)="abrirModalEditar()">
+          <button class="btn-gestion editar" style="flex:1; justify-content:center;" [disabled]="tarjetas.length === 0" (click)="abrirModalEditar()">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M16.862 4.487l1.687-1.688a1.875 1.875 0 112.652 2.652L10.582 16.07a4.5 4.5 0 01-1.897 1.13L6 18l.8-2.685a4.5 4.5 0 011.13-1.897l8.932-8.931zm0 0L19.5 7.125"/>
             </svg>
             Editar
           </button>
-          <button class="btn-gestion eliminar" style="flex:1; justify-content:center;" (click)="abrirModalEliminar()">
+          <button class="btn-gestion eliminar" style="flex:1; justify-content:center;" [disabled]="tarjetas.length === 0" (click)="abrirModalEliminar()">
             <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"/>
             </svg>
@@ -512,7 +518,7 @@
                                font-family:'Inter',sans-serif; margin: 0 0 5px 0; letter-spacing: 0.02em;">
                       {{ t.alias }}
                     </p>
-                    <button (click)="irA('user/recargas')"
+                    <button (click)="irARecargar(t.idTarjetaUsuario)"
                             class="w-full text-xs font-semibold py-2 rounded-xl transition-all hover:opacity-90 text-center"
                             style="background:#fff; color:#2366CE; font-family:'Inter',sans-serif;">
                       + Recargar saldo
@@ -717,7 +723,7 @@
       </button>
 
       <!-- Recargar saldo -->
-      <button (click)="irA('user/recargas')" class="service-card">
+      <button (click)="irARecargar()" class="service-card">
         <svg class="border-trace" aria-hidden="true"><rect class="trace-rect" x="1" y="1" width="calc(100% - 2px)" height="calc(100% - 2px)" rx="15"/></svg>
         <div class="card-icon-wrap w-10 h-10 rounded-xl flex items-center justify-center"
              style="background-color: rgba(35,102,206,0.08); transition: background-color 300ms ease;">
@@ -806,6 +812,34 @@
         </svg>
         El código se encuentra en el reverso de tu tarjeta física o en el correo de activación.
       </div>
+      <!-- Error agregar -->
+      <div *ngIf="errorAgregar"
+           style="display:flex; align-items:flex-start; gap:10px;
+                  background:#fff5f5; border:1.5px solid #fecaca;
+                  border-radius:12px; padding:12px 14px;">
+        <svg width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2"
+             viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+        <p style="font-size:12px; color:#b91c1c; margin:0; line-height:1.5; font-family:'Inter',sans-serif;">
+          {{ errorAgregar }}
+        </p>
+      </div>
+
+      <!-- Éxito agregar -->
+      <div *ngIf="exitoAgregar"
+           style="display:flex; align-items:flex-start; gap:10px;
+                  background:#f0fdf4; border:1.5px solid #bbf7d0;
+                  border-radius:12px; padding:12px 14px;">
+        <svg width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2"
+             viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p style="font-size:12px; color:#15803d; margin:0; line-height:1.5; font-family:'Inter',sans-serif;">
+          {{ exitoAgregar }}
+        </p>
+      </div>
 
     </div>
 
@@ -814,6 +848,49 @@
       <button class="btn-modal-confirm azul"
               [disabled]="!agregarValido()"
               (click)="confirmarAgregar()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
+        </svg>
+        Agregar tarjeta
+      </button>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     MODAL "SIN TARJETAS" — aviso al intentar recargar
+     sin tener una tarjeta vinculada
+══════════════════════════════════════════════════════ -->
+<div class="modal-overlay" *ngIf="modalSinTarjetasAbierto" (click)="cerrarOverlay($event, 'sinTarjetas')">
+  <div class="modal-panel sm">
+
+    <div class="modal-header">
+      <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="modal-logo" />
+      <div style="flex: 1; min-width: 0;">
+        <p class="modal-titulo">No tienes tarjetas</p>
+        <p class="modal-subtitulo">Necesitas una tarjeta para recargar saldo</p>
+      </div>
+      <button class="modal-btn-cerrar" (click)="cerrarModalSinTarjetas()">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="modal-body">
+      <div class="modal-info-box">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink: 0; margin-top: 1px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-9-3.75h.008v.008H12V8.25z"/>
+        </svg>
+        Aún no tienes tarjetas vinculadas a tu cuenta. Recuerda que debes agregar una antes de poder hacer una recarga.
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" (click)="cerrarModalSinTarjetas()">Cerrar</button>
+      <button class="btn-modal-confirm azul" (click)="irAAgregarDesdeSinTarjetas()">
         <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15"/>
         </svg>
@@ -876,11 +953,55 @@
         <input
           class="form-input"
           type="text"
-          placeholder="Ej: CA-2024-XXXXXX"
           [(ngModel)]="editCodigo"
-          maxlength="20"
-          style="font-family: 'Courier New', monospace; letter-spacing: 0.08em;"
+          readonly
+          style="font-family: 'Courier New', monospace; letter-spacing: 0.08em;
+         background: #f1f5f9; color: #9ca3af; cursor: not-allowed;"
         />
+      </div>
+      <!-- Error message -->
+      <div *ngIf="errorEliminar"
+          style="display:flex; align-items:flex-start; gap:10px;
+                  background:#fff5f5; border:1.5px solid #fecaca;
+                  border-radius:12px; padding:12px 14px;">
+        <svg width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2"
+            viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+        <p style="font-size:12px; color:#b91c1c; margin:0; line-height:1.5; font-family:'Inter',sans-serif;">
+          {{ errorEliminar }}
+        </p>
+      </div>
+
+
+      <!-- Error editar -->
+      <div *ngIf="errorEditar"
+           style="display:flex; align-items:flex-start; gap:10px;
+                  background:#fff5f5; border:1.5px solid #fecaca;
+                  border-radius:12px; padding:12px 14px;">
+        <svg width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2"
+             viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+          <path stroke-linecap="round" stroke-linejoin="round"
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+        </svg>
+        <p style="font-size:12px; color:#b91c1c; margin:0; line-height:1.5; font-family:'Inter',sans-serif;">
+          {{ errorEditar }}
+        </p>
+      </div>
+
+      <!-- Éxito editar -->
+      <div *ngIf="exitoEditar"
+           style="display:flex; align-items:flex-start; gap:10px;
+                  background:#f0fdf4; border:1.5px solid #bbf7d0;
+                  border-radius:12px; padding:12px 14px;">
+        <svg width="16" height="16" fill="none" stroke="#16a34a" stroke-width="2"
+             viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <p style="font-size:12px; color:#15803d; margin:0; line-height:1.5; font-family:'Inter',sans-serif;">
+          {{ exitoEditar }}
+        </p>
       </div>
 
     </div>
@@ -947,8 +1068,8 @@
         </div>
         <div style="flex: 1; min-width: 0;">
           <p style="font-size: 13px; font-weight: 700; color: #374151; margin: 0;">Tarjeta Corredor Azul</p>
-          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">Saldo disponible: S/ 15.00</p>
-          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">CA-2024-XXXXXX</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">Saldo disponible: S/ {{ tarjetaActivaObj?.saldo | number:'1.2-2' }}</p>
+          <p style="font-size: 11px; color: #9ca3af; margin: 2px 0 0 0;">{{ tarjetaActivaObj?.codigo }}</p>
         </div>
       </div>
 

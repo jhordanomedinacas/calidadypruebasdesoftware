@@ -1,6 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_URL } from './api/api';
 
 // ============================================
 // INTERFACES
@@ -48,7 +49,7 @@ export interface TokenResponse {
 @Injectable({ providedIn: 'root' })
 export class AuthService {
 
-  private readonly API = 'http://localhost:8080/api/v1';
+  private readonly API = `${API_URL}/api/v1`;
 
   constructor(private http: HttpClient) {}
 

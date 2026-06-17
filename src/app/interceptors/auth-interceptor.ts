@@ -14,7 +14,7 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
   return next(reqConToken).pipe(
     catchError(err => {
-      if (err.status === 401) {
+      if (err.status === 401 && !auth.estaAutenticado()) {
         auth.cerrarSesion();
         router.navigate(['/login']);
       }

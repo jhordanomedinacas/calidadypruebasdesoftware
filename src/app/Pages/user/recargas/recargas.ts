@@ -1,10 +1,16 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, OnInit, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { trigger, transition, style, animate } from '@angular/animations';
 import { NavbarComponent } from '../../../components/navbar/navbar';
 import { AuthService } from '../../../services/auth';
+import {
+  RecargaService,
+  TarjetaRecargaResponse,
+  MetodoPagoResponse,
+  HistorialRecargaResponse
+} from '../../../services/recarga';
 
 const fadeSlideIn = trigger('fadeSlideIn', [
   transition(':enter', [
@@ -28,10 +34,16 @@ export interface Recarga {
   styleUrl: './recargas.css',
   animations: [fadeSlideIn]
 })
-export class RecargasComponent implements OnDestroy {
+export class RecargasComponent implements OnInit, OnDestroy {
+
+  // ── Tarjetas del usuario ────────────────────────────────────────
+  tarjetas: TarjetaRecargaResponse[] = [];
+  tarjetaSeleccionada: TarjetaRecargaResponse | null = null;
+
+  // ── Métodos de pago (desde backend) ─────────────────────────────
+  metodosPago: MetodoPagoResponse[] = [];
 
   // ── Saldo y montos ─────────────────────────────────────────────
-  saldoActual: number = 15.00;
   montosRapidos: number[] = [5, 10, 15, 20];
   montoSeleccionado: number | null = null;
   montoPersonalizado: number | null = null;
@@ -73,14 +85,73 @@ export class RecargasComponent implements OnDestroy {
   cipVencimiento: string = '';
 
   // ── Historial ──────────────────────────────────────────────────
-  ultimasRecargas: Recarga[] = [
-    { metodo: 'Yape',         fecha: 'Hoy, 08:14 am',    monto: 10 },
-    { metodo: 'Plin',         fecha: 'Ayer, 07:50 am',   monto: 15 },
-    { metodo: 'PagoEfectivo', fecha: '02 May, 09:03 am', monto: 20 },
-    { metodo: 'Yape',         fecha: '03 May, 08:14 am', monto: 10 },
-  ];
+  ultimasRecargas: Recarga[] = [];
+  cargandoHistorial: boolean = false;
 
-  constructor(private router: Router, private auth: AuthService) {}
+  // ── Carga inicial ──────────────────────────────────────────────
+  cargando: boolean = true;
+  errorCarga: string = '';
+
+  constructor(
+    private router: Router,
+    private auth: AuthService,
+    private recargaSvc: RecargaService,
+    private cdr: ChangeDetectorRef
+  ) {}
+
+  ngOnInit(): void {
+    // idTarjetaUsuario recibido desde Inicio (al elegir "Recargar saldo" sobre una tarjeta)
+    const idDesdeInicio: number | undefined = (history.state as any)?.['idTarjetaUsuario'];
+
+    this.cargando = true;
+
+    this.recargaSvc.obtenerTarjetas().subscribe({
+      next: (tarjetas) => {
+        this.tarjetas = tarjetas;
+
+        // Selecciona la tarjeta indicada desde Inicio, o la primera disponible
+        this.tarjetaSeleccionada =
+          tarjetas.find(t => t.idTarjetaUsuario === idDesdeInicio) ?? tarjetas[0] ?? null;
+
+        this._cargarHistorial();
+        this._verificarCarga();
+      },
+      error: () => {
+        this.errorCarga = 'No se pudieron cargar tus tarjetas.';
+        this._verificarCarga();
+      }
+    });
+
+    this.recargaSvc.obtenerMetodosPago().subscribe({
+      next: (metodos) => {
+        this.metodosPago = metodos;
+        this._verificarCarga();
+      },
+      error: () => {
+        this.errorCarga = 'No se pudieron cargar los métodos de pago.';
+        this._verificarCarga();
+      }
+    });
+  }
+
+  private _verificarCarga(): void {
+    this.cargando = false;
+    this.cdr.detectChanges();
+  }
+
+  // ── Saldo de la tarjeta seleccionada ────────────────────────────
+  get saldoActual(): number {
+    return this.tarjetaSeleccionada?.saldo ?? 0;
+  }
+
+  // ── Selección de tarjeta ─────────────────────────────────────────
+  seleccionarTarjeta(idTarjetaUsuario: number): void {
+    const t = this.tarjetas.find(x => x.idTarjetaUsuario === Number(idTarjetaUsuario));
+    if (!t) return;
+    this.tarjetaSeleccionada = t;
+    this._cargarHistorial();
+    this.cdr.detectChanges();
+  }
 
   ngOnDestroy(): void {
     this._limpiarTimer();
@@ -178,39 +249,138 @@ export class RecargasComponent implements OnDestroy {
     // No cierra el modal, vuelve al formulario
   }
 
-  // ── Procesar pago (simulación con timeout) ────────────────────
+  // ── Procesar pago ──────────────────────────────────────────────
   procesarPago(): void {
     this._limpiarTimer();
     this.modalProcesando = true;
 
-    // Simular latencia del gateway (1.8 - 2.5 segundos)
+    // Simular latencia del gateway de pago (1.8 - 2.5 segundos)
     const delay = 1800 + Math.random() * 700;
 
     setTimeout(() => {
-      this.modalProcesando = false;
-
-      // Simular rechazo si el número empieza con 1 (para demo)
+      // Simular rechazo si la tarjeta empieza con 1 (para demo del widget Culqi)
       const primeraDigito = this.numeroTarjeta.replace(/\s/g, '')[0];
       if (this.metodoPago === 'tarjeta' && primeraDigito === '1') {
+        this.modalProcesando = false;
         this.modalError = true;
         this.mensajeError = 'Fondos insuficientes. Verifica el saldo de tu tarjeta.';
+        this.cdr.detectChanges();
         return;
       }
 
-      // Éxito
-      const monto = this.montoActual;
-      const metodoLabel = this._getMetodoLabel(this.metodoPago!);
-      this.saldoActual += monto;
-      this.referenciaExito = this._generarReferencia();
-      this.ultimasRecargas.unshift({
-        metodo: metodoLabel,
-        fecha: 'Hoy, ' + this._horaActual(),
-        monto
-      });
-
-      this.modalExito = true;
-      this._limpiarFormulario();
+      this._registrarRecargaBackend();
     }, delay);
+  }
+
+  // ── Registro real de la recarga en el backend ──────────────────
+  private _registrarRecargaBackend(): void {
+    const idTarjetaUsuario = this.tarjetaSeleccionada?.idTarjetaUsuario;
+    const idMetodoPago = this._getIdMetodoPago(this.metodoPago);
+    const monto = this.montoActual;
+
+    if (!idTarjetaUsuario || !idMetodoPago) {
+      this.modalProcesando = false;
+      this.modalError = true;
+      this.mensajeError = 'No se pudo identificar la tarjeta o el método de pago.';
+      this.cdr.detectChanges();
+      return;
+    }
+
+    this.recargaSvc.registrarRecarga({
+      idTarjetaUsuario,
+      idMetodoPago,
+      monto,
+      canal: 'web'
+    }).subscribe({
+      next: (resp) => {
+        this.modalProcesando = false;
+
+        // Actualiza saldo local de la tarjeta seleccionada
+        if (this.tarjetaSeleccionada) {
+          this.tarjetaSeleccionada.saldo = resp.saldoNuevo;
+        }
+
+        this.referenciaExito = 'TXN-' + resp.idRecarga;
+        this.modalExito = true;
+        this._cargarHistorial();
+        this._limpiarFormulario();
+        this.cdr.detectChanges();
+      },
+      error: (err) => {
+        this.modalProcesando = false;
+        this.modalError = true;
+        this.mensajeError = err?.error?.message || err?.error?.mensaje
+          || 'No se pudo registrar la recarga. Intenta de nuevo.';
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  // ── Mapea el método de pago seleccionado en UI → idMetodoPago ──
+  private _getIdMetodoPago(metodo: string | null): number | null {
+    if (!metodo) return null;
+
+    const claves: Record<string, string[]> = {
+      yape:         ['yape'],
+      plin:         ['plin'],
+      pagoefectivo: ['pagoefectivo', 'pago efectivo'],
+      tarjeta:      ['tarjeta', 'credito', 'crédito', 'debito', 'débito']
+    };
+
+    const posibles = claves[metodo] ?? [];
+    const encontrado = this.metodosPago.find(mp =>
+      posibles.some(clave => mp.nombre.toLowerCase().includes(clave))
+    );
+    return encontrado?.idMetodoPago ?? null;
+  }
+
+  // ── Carga el historial de recargas de la tarjeta seleccionada ──
+  private _cargarHistorial(): void {
+    if (!this.tarjetaSeleccionada) {
+      this.ultimasRecargas = [];
+      return;
+    }
+
+    this.cargandoHistorial = true;
+    this.recargaSvc.obtenerHistorial(this.tarjetaSeleccionada.idTarjetaUsuario).subscribe({
+      next: (historial) => {
+        this.ultimasRecargas = historial.map(h => this._mapearHistorial(h));
+        this.cargandoHistorial = false;
+        this.cdr.detectChanges();
+      },
+      error: () => {
+        this.ultimasRecargas = [];
+        this.cargandoHistorial = false;
+        this.cdr.detectChanges();
+      }
+    });
+  }
+
+  private _mapearHistorial(h: HistorialRecargaResponse): Recarga {
+    return {
+      metodo: h.metodoPago,
+      fecha:  this._formatearFecha(h.fechaRecarga),
+      monto:  h.monto
+    };
+  }
+
+  private _formatearFecha(fechaIso: string): string {
+    const fecha = new Date(fechaIso);
+    if (isNaN(fecha.getTime())) return fechaIso;
+
+    const hoy = new Date();
+    const ayer = new Date();
+    ayer.setDate(hoy.getDate() - 1);
+
+    const hora = fecha.toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    const esMismoDia = (a: Date, b: Date) =>
+      a.getDate() === b.getDate() && a.getMonth() === b.getMonth() && a.getFullYear() === b.getFullYear();
+
+    if (esMismoDia(fecha, hoy))  return 'Hoy, ' + hora;
+    if (esMismoDia(fecha, ayer)) return 'Ayer, ' + hora;
+
+    return fecha.toLocaleDateString('es-PE', { day: '2-digit', month: 'short', year: 'numeric' }) + ', ' + hora;
   }
 
   // ── Formateo de tarjeta ────────────────────────────────────────
@@ -271,27 +441,6 @@ export class RecargasComponent implements OnDestroy {
   }
 
   // ── Helpers privados ───────────────────────────────────────────
-  private _generarReferencia(): string {
-    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-    return 'TXN-' + Array.from({ length: 8 }, () =>
-      chars[Math.floor(Math.random() * chars.length)]
-    ).join('');
-  }
-
-  private _horaActual(): string {
-    return new Date().toLocaleTimeString('es-PE', { hour: '2-digit', minute: '2-digit', hour12: true });
-  }
-
-  private _getMetodoLabel(metodo: string): string {
-    const labels: Record<string, string> = {
-      yape:         'Yape',
-      plin:         'Plin',
-      pagoefectivo: 'PagoEfectivo',
-      tarjeta:      'Tarjeta de crédito'
-    };
-    return labels[metodo] ?? metodo;
-  }
-
   private _limpiarCamposTarjeta(): void {
     this.tipoTarjeta = null;
     this.tipoTarjetaDetectado = null;
@@ -332,7 +481,11 @@ export class RecargasComponent implements OnDestroy {
 
   get recargasFiltradas(): Recarga[] {
     return this.ultimasRecargas.filter(r => {
-      const porMetodo = !this.historialFiltro || r.metodo === this.historialFiltro;
+      const metodoLower = r.metodo.toLowerCase();
+      const porMetodo = !this.historialFiltro ||
+        (this.historialFiltro === 'pagoefectivo'
+          ? (metodoLower.includes('pagoefectivo') || metodoLower.includes('pago efectivo'))
+          : metodoLower.includes(this.historialFiltro));
       const busq = this.historialBusqueda.toLowerCase().trim();
       const porBusqueda = !busq ||
         r.metodo.toLowerCase().includes(busq) ||
@@ -350,14 +503,23 @@ export class RecargasComponent implements OnDestroy {
     return this.totalRecargasFiltradas / this.recargasFiltradas.length;
   }
 
+  getMetodoIcono(metodo: string): string | null {
+    const m = (metodo || '').toLowerCase();
+    if (m.includes('yape'))         return 'Yape-Logo.png';
+    if (m.includes('plin'))         return 'Plin-Logo.png';
+    if (m.includes('pagoefectivo') || m.includes('pago efectivo'))
+                                     return 'Pagoefectivo-Logo.png';
+    if (m.includes('tarjeta'))      return 'Tarjetacredito-Logo.png';
+    return null;
+  }
+
   getClaseMetodo(metodo: string): string {
-    const clases: Record<string, string> = {
-      'Yape':              'historial-modal__icon icon--yape',
-      'Plin':              'historial-modal__icon icon--plin',
-      'PagoEfectivo':      'historial-modal__icon icon--pagoefectivo',
-      'Tarjeta de crédito':'historial-modal__icon icon--tarjeta',
-    };
-    return clases[metodo] ?? 'historial-modal__icon icon--tarjeta';
+    const m = (metodo || '').toLowerCase();
+    if (m.includes('yape'))         return 'historial-modal__icon icon--yape';
+    if (m.includes('plin'))         return 'historial-modal__icon icon--plin';
+    if (m.includes('pagoefectivo') || m.includes('pago efectivo'))
+                                     return 'historial-modal__icon icon--pagoefectivo';
+    return 'historial-modal__icon icon--tarjeta';
   }
 
   // ── Navegación ─────────────────────────────────────────────────

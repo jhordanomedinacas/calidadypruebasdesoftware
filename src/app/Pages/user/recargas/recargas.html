@@ -10,8 +10,25 @@
     <span class="breadcrumb__actual">Recargar saldo</span>
   </div>
 
+  <!-- LOADING -->
+  <div *ngIf="cargando" style="display:flex; justify-content:center; align-items:center; min-height: 50vh;">
+    <svg width="40" height="40" viewBox="0 0 60 60" style="animation: spinAnim 1s linear infinite;">
+      <circle cx="30" cy="30" r="24" fill="none" stroke="#e5e7eb" stroke-width="4"/>
+      <circle cx="30" cy="30" r="24" fill="none" stroke="#2366CE" stroke-width="4"
+        stroke-dasharray="100 50" stroke-linecap="round"/>
+    </svg>
+  </div>
+
   <!-- LAYOUT PRINCIPAL -->
-  <div class="layout-principal">
+  <div class="layout-principal" *ngIf="!cargando">
+
+    <!-- Error de carga -->
+    <div *ngIf="errorCarga" class="recarga-card" style="display:flex; align-items:flex-start; gap:10px; background:#fff5f5; border:1.5px solid #fecaca;">
+      <svg width="16" height="16" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24" style="flex-shrink:0; margin-top:1px;">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+      </svg>
+      <p style="font-size:13px; color:#b91c1c; margin:0; font-family:'Inter',sans-serif;">{{ errorCarga }}</p>
+    </div>
 
     <!-- ENCABEZADO -->
     <div class="layout-header">
@@ -59,10 +76,26 @@
                     object-fit: cover; display: block; border-radius: 16px;" />
         <div style="position: absolute; inset: 0; border-radius: 16px;
                     background: linear-gradient(135deg, rgba(15,35,100,0.72) 0%, rgba(20,60,160,0.55) 100%);"></div>
-        <div style="position: relative; z-index: 1; padding: 32px 28px; height: 100%; display: flex; flex-direction: column; justify-content: center;">
+        <div style="position: relative; z-index: 1; padding: 32px 28px; height: 100%; display: flex; flex-direction: column; justify-content: center; gap: 10px;">
           <p class="saldo-card__label">SALDO ACTUAL</p>
           <p class="saldo-card__valor">
             <span class="saldo-card__prefix">s/</span>{{ saldoActual | number:'1.2-2' }}
+          </p>
+
+          <!-- Selector de tarjeta (solo si hay más de una) -->
+          <div *ngIf="tarjetas.length > 1" style="margin-top: 8px;">
+            <select class="saldo-card__select"
+                    [ngModel]="tarjetaSeleccionada?.idTarjetaUsuario"
+                    (ngModelChange)="seleccionarTarjeta($event)">
+              <option *ngFor="let t of tarjetas" [value]="t.idTarjetaUsuario">
+                {{ t.alias }} · {{ t.codigoTarjeta }}
+              </option>
+            </select>
+          </div>
+
+          <!-- Alias si solo hay una tarjeta -->
+          <p *ngIf="tarjetas.length === 1" class="saldo-card__alias">
+            {{ tarjetaSeleccionada?.alias }} · {{ tarjetaSeleccionada?.codigoTarjeta }}
           </p>
         </div>
       </div>
@@ -688,6 +721,17 @@
   .saldo-card__label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.65); font-family: 'Inter', sans-serif; margin: 0 0 10px 0; }
   .saldo-card__valor { font-size: 36px; font-weight: 800; color: #fff; font-family: 'Inter', sans-serif; line-height: 1; margin: 0; display: flex; align-items: baseline; gap: 4px; }
   .saldo-card__prefix { font-size: 16px; font-weight: 600; opacity: 0.8; }
+  .saldo-card__alias {
+    font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8);
+    font-family: 'Inter', sans-serif; margin: 0; letter-spacing: 0.03em;
+  }
+  .saldo-card__select {
+    width: 100%; padding: 9px 12px; border-radius: 10px;
+    background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.25);
+    color: #fff; font-size: 12px; font-weight: 600;
+    font-family: 'Inter', sans-serif; cursor: pointer; outline: none;
+  }
+  .saldo-card__select option { color: #111827; }
 
   .historial-lista { display: flex; flex-direction: column; }
   .historial-item { display: flex; justify-content: space-between; align-items: center; padding: 12px 0; border-bottom: 1px solid #f1f5f9; font-family: 'Inter', sans-serif; }
@@ -1010,14 +1054,14 @@
       <div class="historial-chips">
         <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === null"
           (click)="historialFiltro = null">Todos</button>
-        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'Yape'"
-          (click)="historialFiltro = 'Yape'">Yape</button>
-        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'Plin'"
-          (click)="historialFiltro = 'Plin'">Plin</button>
-        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'PagoEfectivo'"
-          (click)="historialFiltro = 'PagoEfectivo'">PagoEfectivo</button>
-        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'Tarjeta de crédito'"
-          (click)="historialFiltro = 'Tarjeta de crédito'">Tarjeta</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'yape'"
+          (click)="historialFiltro = 'yape'">Yape</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'plin'"
+          (click)="historialFiltro = 'plin'">Plin</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'pagoefectivo'"
+          (click)="historialFiltro = 'pagoefectivo'">PagoEfectivo</button>
+        <button class="historial-chip" [class.historial-chip--activo]="historialFiltro === 'tarjeta'"
+          (click)="historialFiltro = 'tarjeta'">Tarjeta</button>
       </div>
     </div>
 
@@ -1052,11 +1096,8 @@
       <div *ngFor="let r of recargasFiltradas; let i = index"
            class="historial-modal__item">
         <!-- Ícono método -->
-        <div class="historial-modal__icon">
-          <img *ngIf="r.metodo === 'Yape'"              src="Yape-Logo.png"           alt="Yape"          class="historial-modal__icon-img" />
-          <img *ngIf="r.metodo === 'Plin'"              src="Plin-Logo.png"           alt="Plin"          class="historial-modal__icon-img" />
-          <img *ngIf="r.metodo === 'PagoEfectivo'"      src="Pagoefectivo-Logo.png"   alt="PagoEfectivo"  class="historial-modal__icon-img" />
-          <img *ngIf="r.metodo === 'Tarjeta de crédito'" src="Tarjetacredito-Logo.png" alt="Tarjeta"       class="historial-modal__icon-img" />
+        <div [class]="getClaseMetodo(r.metodo)">
+          <img *ngIf="getMetodoIcono(r.metodo)" [src]="getMetodoIcono(r.metodo)" [alt]="r.metodo" class="historial-modal__icon-img" />
         </div>
 
         <!-- Info -->
