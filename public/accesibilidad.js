@@ -133,8 +133,8 @@
   .ca-op-item.lv-4,.ca-op-item.lv-5,.ca-op-item.lv-6{margin-left:34px}
   .ca-op-item.lv-4 .ca-op-badge,.ca-op-item.lv-5 .ca-op-badge,.ca-op-item.lv-6 .ca-op-badge{background:#e5e7eb;color:#6b7280;font-size:9px}
   .ca-op-item.hidden-filter{display:none}
-  #caAccOutlineOverlay{position:fixed;inset:0;z-index:10069;display:none}
-  #caAccOutlineOverlay.open{display:block}
+  #caAccOutlineOverlay{position:fixed;inset:0;z-index:10069;display:none;pointer-events:none}
+  #caAccOutlineOverlay.open{display:block;pointer-events:auto}
 
   /* Cursor ring */
   #caAccCursorRing{position:fixed;top:0;left:0;width:44px;height:44px;border:3px solid #2366CE;border-radius:999px;pointer-events:none;transform:translate(-200px,-200px);opacity:0;transition:opacity .2s;z-index:10080}

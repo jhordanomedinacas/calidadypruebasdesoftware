@@ -1,0 +1,916 @@
+<style>
+  /* ══════════════════════════════════════════════
+     TOKENS — idénticos a otras páginas admin
+  ══════════════════════════════════════════════ */
+  .gc-root {
+    --bg:        #f0f4fb;
+    --bg-card:   #ffffff;
+    --border:    #e5e7eb;
+    --blue-dark: #1a3a8f;
+    --blue:      #2366CE;
+    --blue-soft: rgba(35,102,206,0.10);
+    --red:       #ef4444;
+    --text-1:    #111827;
+    --text-2:    #6b7280;
+    --text-3:    #9ca3af;
+    --font:      'Inter', sans-serif;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.07);
+    --r-lg:      16px;
+    --r-md:      12px;
+  }
+  .gc-root {
+    width: 100%;
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text-1);
+    box-sizing: border-box;
+  }
+
+  /* ── Cards programadas: colores de fondo ── */
+  .gc-card-texto-rosa  { background: #FFF0F0; }
+  .gc-card-texto-lila  { background: #F5F0FF; }
+  .gc-card-texto-verde { background: #F0FFF4; }
+
+  /* ── Card base ── */
+  .gc-card {
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    display: flex;
+    flex-direction: column;
+    animation: gcCardIn 0.3s cubic-bezier(0.4,0,0.2,1) both;
+    transition: box-shadow 0.18s;
+  }
+  .gc-card:hover { box-shadow: 0 4px 20px rgba(35,102,206,0.13); }
+  @keyframes gcCardIn {
+    from { opacity:0; transform:translateY(12px); }
+    to   { opacity:1; transform:translateY(0); }
+  }
+  .gc-card:nth-child(1) { animation-delay: 0ms; }
+  .gc-card:nth-child(2) { animation-delay: 50ms; }
+  .gc-card:nth-child(3) { animation-delay: 100ms; }
+
+  /* ── Botón cancelar publicación ── */
+  .gc-btn-cancelar {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 9px 0;
+    background: var(--red);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: opacity 0.15s, box-shadow 0.15s;
+  }
+  .gc-btn-cancelar:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(239,68,68,0.28); }
+
+  /* ── Botón agregar ── */
+  .gc-btn-agregar {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 20px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    transition: opacity 0.15s, box-shadow 0.15s;
+    white-space: nowrap;
+  }
+  .gc-btn-agregar:hover { opacity: 0.9; box-shadow: 0 4px 14px rgba(35,102,206,0.28); }
+
+  /* ── Sección título (Comunicados de Texto / Imagen / etc.) ── */
+  .gc-seccion-titulo {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-1);
+    margin: 0 0 14px 0;
+  }
+
+  /* ── Grid de cards: siempre 3 columnas iguales ── */
+  .gc-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 18px;
+  }
+  @media (max-width: 900px) {
+    .gc-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 600px) {
+    .gc-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ── Tabla historial ── */
+  .gc-tabla {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  .gc-tabla thead th {
+    background: var(--blue);
+    color: #fff;
+    padding: 10px 14px;
+    text-align: left;
+    font-weight: 600;
+    font-size: 13px;
+  }
+  .gc-tabla thead th:first-child { border-radius: 12px 0 0 0; }
+  .gc-tabla thead th:last-child  { border-radius: 0 12px 0 0; }
+  .gc-tabla tbody tr { border-bottom: 1px solid var(--border); }
+  .gc-tabla tbody tr:last-child { border-bottom: none; }
+  .gc-tabla tbody td { padding: 10px 14px; color: var(--text-1); vertical-align: middle; }
+  .gc-tabla tbody tr:hover { background: #f8faff; }
+
+  /* ── Badges sí/no en tabla ── */
+  .gc-badge-si  { color: #22c55e; font-weight: 600; font-size: 12px; }
+  .gc-badge-no  { color: var(--red); font-weight: 600; font-size: 12px; }
+
+  /* ── Filtro dropdown tipo ── */
+  .gc-dropdown-wrap { position: relative; }
+  .gc-dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 14px;
+    background: var(--blue);
+    color: #fff;
+    border: none;
+    border-radius: var(--r-md);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    font-family: var(--font);
+    white-space: nowrap;
+  }
+  .gc-dropdown-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 6px);
+    background: #fff;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.12);
+    min-width: 180px;
+    z-index: 100;
+    overflow: hidden;
+    animation: gcFadeIn 0.15s ease;
+  }
+  @keyframes gcFadeIn { from { opacity:0; transform:translateY(-6px); } to { opacity:1; transform:translateY(0); } }
+  .gc-dropdown-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-1);
+    cursor: pointer;
+    transition: background 0.12s;
+  }
+  .gc-dropdown-item:hover { background: var(--blue-soft); color: var(--blue); }
+  .gc-dropdown-item.activo { background: var(--blue-soft); color: var(--blue); font-weight: 600; }
+
+  /* ── Paginación ── */
+  .gc-pagina-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s;
+    color: var(--text-1);
+  }
+  .gc-pagina-btn.activa { background: var(--blue); color: #fff; border-color: var(--blue); }
+  .gc-pagina-btn:disabled { opacity: 0.4; cursor: default; }
+
+  /* ── Modales ── */
+  .gc-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10,20,60,0.75);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    z-index: 9999;
+    animation: gcFadeIn 0.2s ease;
+  }
+  .gc-modal-box {
+    background: #fff;
+    border-radius: 20px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    overflow: hidden;
+    font-family: 'Inter', sans-serif;
+    animation: gcScaleIn 0.32s cubic-bezier(0.4,0,0.2,1);
+  }
+  .gc-modal-box-lg { max-width: 520px; }
+  @keyframes gcScaleIn {
+    from { opacity:0; transform: translateY(24px) scale(0.97); }
+    to   { opacity:1; transform: translateY(0)    scale(1);    }
+  }
+  .gc-modal-header {
+    background: #fff;
+    padding: 20px 24px;
+    border-bottom: 1.5px solid #e5e7eb;
+    display: flex; align-items: center; gap: 14px;
+  }
+  .gc-modal-logo { height: 36px; object-fit: contain; flex-shrink: 0; }
+  .gc-modal-titulo { font-size:16px; font-weight:800; color:#0f1f6e; margin:0 0 2px 0; font-family:'Inter',sans-serif; }
+  .gc-modal-sub   { font-size:12px; color:#6b7280; margin:0; font-family:'Inter',sans-serif; }
+  .gc-modal-close {
+    width:34px; height:34px; border-radius:50%; flex-shrink:0;
+    border:none; background:#f1f5f9; color:#374151;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    transition:background 0.18s; margin-left:auto;
+  }
+  .gc-modal-close:hover { background:#e5e7eb; }
+  .gc-modal-body   { padding: 24px 24px 8px; }
+  .gc-modal-footer { padding: 16px 24px 24px; display:flex; gap:10px; }
+  .gc-btn-outline {
+    flex: 1; padding: 11px;
+    border: 1.5px solid var(--border); border-radius: var(--r-md);
+    background: #fff; font-size: 13px; font-weight: 700;
+    color: var(--text-1); cursor: pointer; font-family: var(--font);
+    transition: background 0.15s;
+  }
+  .gc-btn-outline:hover { background: #f3f4f6; }
+  .gc-btn-danger {
+    flex: 1; padding: 11px;
+    background: var(--red); color: #fff;
+    border: none; border-radius: var(--r-md);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: var(--font);
+    transition: opacity 0.15s, box-shadow 0.15s;
+  }
+  .gc-btn-danger:hover { opacity:0.9; box-shadow:0 4px 14px rgba(239,68,68,0.28); }
+
+  /* ── Input de búsqueda ── */
+  .gc-input {
+    width: 100%;
+    padding: 10px 12px 10px 36px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 13px;
+    color: var(--text-1);
+    background: #fff;
+    box-sizing: border-box;
+    font-family: var(--font);
+    box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    transition: border-color 0.15s;
+  }
+  .gc-input:focus { outline: none; border-color: var(--blue); }
+
+  /* ── Input fecha ── */
+  .gc-input-fecha {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-md);
+    font-size: 13px;
+    color: var(--text-1);
+    background: #fff;
+    font-family: var(--font);
+    cursor: pointer;
+    transition: border-color 0.15s;
+  }
+  .gc-input-fecha:focus { outline: none; border-color: var(--blue); }
+
+  /* ── Sección CORREDOR AZUL label ── */
+  .gc-label-corredor {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  /* ── Botón Editar (en cards programadas) ── */
+  .gc-btn-editar {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    flex: 1; padding: 8px 0;
+    background: var(--blue); color: #fff;
+    border: none; border-radius: var(--r-md);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: var(--font);
+    transition: opacity 0.15s, box-shadow 0.15s;
+  }
+  .gc-btn-editar:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(35,102,206,0.28); }
+
+  /* ── Botón Reprogramar (en cards programadas) ── */
+  .gc-btn-reprogramar {
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    flex: 1; padding: 8px 0;
+    background: #f59e0b; color: #fff;
+    border: none; border-radius: var(--r-md);
+    font-size: 12px; font-weight: 600;
+    cursor: pointer; font-family: var(--font);
+    transition: opacity 0.15s, box-shadow 0.15s;
+  }
+  .gc-btn-reprogramar:hover { opacity: 0.88; box-shadow: 0 4px 14px rgba(245,158,11,0.3); }
+
+  /* ── Botón primario azul (Confirmar en modal Reprogramar) ── */
+  .gc-btn-primary {
+    flex: 1; padding: 11px;
+    background: var(--blue); color: #fff;
+    border: none; border-radius: var(--r-md);
+    font-size: 13px; font-weight: 700;
+    cursor: pointer; font-family: var(--font);
+    transition: opacity 0.15s, box-shadow 0.15s;
+  }
+  .gc-btn-primary:hover { opacity: 0.9; box-shadow: 0 4px 14px rgba(35,102,206,0.28); }
+  .gc-btn-primary:disabled { opacity: 0.5; cursor: default; box-shadow: none; }
+</style>
+
+<div class="gc-root">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div style="padding:18px 32px 0 32px;">
+    <span style="font-size:13px;color:#2366CE;font-weight:600;cursor:pointer;" (click)="irInicio()">Inicio</span>
+    <span style="font-size:13px;color:#9ca3af;margin:0 6px;">›</span>
+    <span style="font-size:13px;color:#9ca3af;">Gestión de comunicados</span>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div style="padding:24px 32px 56px 32px;">
+
+    <!-- Encabezado -->
+    <div style="margin-bottom:20px;">
+      <p class="gc-label-corredor">CORREDOR AZUL</p>
+      <h2 style="font-size:24px;font-weight:700;color:#111827;font-family:'Inter',sans-serif;margin:0;">Gestionar comunicados</h2>
+    </div>
+
+    <!-- Buscador + Agregar -->
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:28px;">
+      <div style="position:relative;flex:1;">
+        <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:16px;height:16px;color:#9ca3af;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+        </svg>
+        <input type="text" placeholder="Buscar comunicado" class="gc-input"
+          [(ngModel)]="busqueda" />
+      </div>
+      <button class="gc-btn-agregar" (click)="abrirModalCrear()">
+        Agregar Comunicado
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 5v14M5 12h14"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         COMUNICADOS DE TEXTO
+    ══════════════════════════════════════ -->
+    <h2 class="gc-seccion-titulo">Comunicados de Texto</h2>
+    <div class="gc-grid" style="margin-bottom:32px;">
+      <ng-container *ngIf="comunicadosTextoFiltrados.length > 0; else sinTexto">
+        <div *ngFor="let c of comunicadosTextoFiltrados; let i = index" class="gc-card"
+          [style.background]="colorCardTexto(i) === 'rosa' ? '#FFF0F0' : colorCardTexto(i) === 'lila' ? '#F5F0FF' : '#F0FFF4'"
+          style="padding:20px 18px 16px 18px;">
+          <p style="font-size:15px;font-weight:700;color:#111827;margin:0 0 10px 0;line-height:1.4;">{{ c.titulo }}</p>
+          <p style="font-size:12px;color:#374151;line-height:1.55;flex:1;margin:0 0 14px 0;
+            display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;">
+            {{ c.descripcion }}
+          </p>
+          <p style="font-size:12px;color:#2366CE;font-weight:500;margin:0 0 12px 0;">{{ c.publicacionLabel }}</p>
+          <div style="display:flex;gap:7px;margin-bottom:8px;">
+            <button class="gc-btn-editar" (click)="abrirModalEditar(c)">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+              </svg>
+              Editar
+            </button>
+            <button class="gc-btn-reprogramar" (click)="abrirModalReprogramar(c)">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+              </svg>
+              Reprogramar
+            </button>
+          </div>
+          <button class="gc-btn-cancelar" (click)="confirmarCancelar(c)">
+            Cancelar Publicación
+            <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M15 9l-6 6M9 9l6 6"/>
+            </svg>
+          </button>
+        </div>
+      </ng-container>
+      <ng-template #sinTexto>
+        <p style="color:#9ca3af;font-size:13px;grid-column:1/-1;">Sin comunicados de texto programados.</p>
+      </ng-template>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         COMUNICADOS DE IMAGEN
+    ══════════════════════════════════════ -->
+    <h2 class="gc-seccion-titulo">Comunicados de Imagen</h2>
+    <div class="gc-grid" style="margin-bottom:32px;">
+      <ng-container *ngIf="comunicadosImagenFiltrados.length > 0; else sinImagen">
+        <div *ngFor="let c of comunicadosImagenFiltrados" class="gc-card"
+          style="background:#fff;padding-bottom:16px;">
+          <!-- Imagen -->
+          <div style="width:100%;aspect-ratio:16/9;overflow:hidden;">
+            <img src="publicidad.jpeg" [alt]="'Comunicado imagen ' + c.id"
+              style="width:100%;height:100%;object-fit:cover;"
+              onerror="this.style.background='#e5e7eb'" />
+          </div>
+          <div style="padding:0 16px;">
+            <p style="font-size:12px;color:#2366CE;font-weight:500;margin:12px 0 10px 0;">{{ c.publicacionLabel }}</p>
+            <div style="display:flex;gap:7px;margin-bottom:8px;">
+              <button class="gc-btn-editar" (click)="abrirModalEditar(c)">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Editar
+              </button>
+              <button class="gc-btn-reprogramar" (click)="abrirModalReprogramar(c)">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+                </svg>
+                Reprogramar
+              </button>
+            </div>
+            <button class="gc-btn-cancelar" (click)="confirmarCancelar(c)">
+              Cancelar Publicación
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M15 9l-6 6M9 9l6 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #sinImagen>
+        <p style="color:#9ca3af;font-size:13px;grid-column:1/-1;">Sin comunicados de imagen programados.</p>
+      </ng-template>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         COMUNICADOS DE IMAGEN Y TEXTO
+    ══════════════════════════════════════ -->
+    <h2 class="gc-seccion-titulo">Comunicados de Imagen y texto</h2>
+    <div class="gc-grid" style="margin-bottom:40px;">
+      <ng-container *ngIf="comunicadosImagenTextoFiltrados.length > 0; else sinImagenTexto">
+        <div *ngFor="let c of comunicadosImagenTextoFiltrados" class="gc-card"
+          style="background:#fff;padding-bottom:16px;">
+          <!-- Texto superior -->
+          <div style="padding:16px 18px 12px 18px;">
+            <p style="font-size:14px;font-weight:700;color:#111827;margin:0 0 8px 0;line-height:1.4;">{{ c.titulo }}</p>
+            <p style="font-size:12px;color:#374151;line-height:1.5;margin:0;
+              display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;">
+              {{ c.descripcion }}
+            </p>
+          </div>
+          <!-- Imagen -->
+          <div style="width:100%;aspect-ratio:16/9;overflow:hidden;">
+            <img src="publicidad.jpeg" [alt]="'Comunicado ' + c.id"
+              style="width:100%;height:100%;object-fit:cover;"
+              onerror="this.style.background='#e5e7eb'" />
+          </div>
+          <div style="padding:0 16px;">
+            <p style="font-size:12px;color:#2366CE;font-weight:500;margin:12px 0 10px 0;">{{ c.publicacionLabel }}</p>
+            <div style="display:flex;gap:7px;margin-bottom:8px;">
+              <button class="gc-btn-editar" (click)="abrirModalEditar(c)">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+                Editar
+              </button>
+              <button class="gc-btn-reprogramar" (click)="abrirModalReprogramar(c)">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+                </svg>
+                Reprogramar
+              </button>
+            </div>
+            <button class="gc-btn-cancelar" (click)="confirmarCancelar(c)">
+              Cancelar Publicación
+              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <circle cx="12" cy="12" r="10"/><path stroke-linecap="round" d="M15 9l-6 6M9 9l6 6"/>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </ng-container>
+      <ng-template #sinImagenTexto>
+        <p style="color:#9ca3af;font-size:13px;grid-column:1/-1;">Sin comunicados de imagen y texto programados.</p>
+      </ng-template>
+    </div>
+
+    <!-- ═══════════════════════════════════
+         HISTORIAL DE COMUNICADOS
+    ══════════════════════════════════════ -->
+    <h2 class="gc-seccion-titulo">Historial de comunicados</h2>
+
+    <!-- Filtros del historial -->
+    <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:16px;">
+      <!-- Búsqueda historial -->
+      <div style="position:relative;flex:1;min-width:200px;max-width:360px;">
+        <svg style="position:absolute;left:12px;top:50%;transform:translateY(-50%);width:15px;height:15px;color:#9ca3af;"
+          fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+        </svg>
+        <input type="text" placeholder="Buscar tu comunicado" class="gc-input"
+          [(ngModel)]="busquedaHistorial" (input)="onBusquedaHistorial()" />
+      </div>
+
+      <!-- Desde -->
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:13px;color:#374151;font-weight:500;">Desde</span>
+        <input type="date" class="gc-input-fecha" [(ngModel)]="desde" (change)="onFechaCambio()" />
+      </div>
+
+      <!-- Hasta -->
+      <div style="display:flex;align-items:center;gap:6px;">
+        <span style="font-size:13px;color:#374151;font-weight:500;">Hasta</span>
+        <input type="date" class="gc-input-fecha" [(ngModel)]="hasta" (change)="onFechaCambio()" />
+      </div>
+
+      <!-- Dropdown tipo -->
+      <div class="gc-dropdown-wrap">
+        <button class="gc-dropdown-btn" (click)="toggleDropdownTipo()">
+          {{ etiquetaFiltroTipo() }}
+          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+        <div class="gc-dropdown-menu" *ngIf="dropdownTipoAbierto">
+          <div *ngFor="let op of opcionesTipo" class="gc-dropdown-item"
+            [class.activo]="filtroTipo === op"
+            (click)="seleccionarTipoFiltro(op)">
+            {{ op === 'Todos' ? 'Todos' : tipoLabel[op] }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tabla historial -->
+    <div style="background:#fff;border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);margin-bottom:20px;">
+      <table class="gc-tabla">
+        <thead>
+          <tr>
+            <th>Tipo de comunicado</th>
+            <th>Título</th>
+            <th>Descripción</th>
+            <th>Imagen</th>
+            <th>Fecha publicación</th>
+            <th style="text-align:center;">Acción</th>
+          </tr>
+        </thead>
+        <tbody>
+          <ng-container *ngIf="historialPagina.length > 0; else sinHistorial">
+            <tr *ngFor="let h of historialPagina">
+              <td>{{ tipoLabel[h.tipo] }}</td>
+              <td>
+                <span *ngIf="h.titulo" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:180px;">
+                  {{ h.titulo }}
+                </span>
+                <span *ngIf="!h.titulo" class="gc-badge-no">No tiene</span>
+              </td>
+              <td>
+                <span *ngIf="h.descripcion" style="display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;max-width:200px;">
+                  {{ h.descripcion | slice:0:50 }}...
+                </span>
+                <span *ngIf="!h.descripcion" class="gc-badge-no">No tiene</span>
+              </td>
+              <td>
+                <span [class]="h.tieneImagen ? 'gc-badge-si' : 'gc-badge-no'">
+                  {{ h.tieneImagen ? 'Si contiene' : 'No contiene' }}
+                </span>
+              </td>
+              <td style="white-space:nowrap;color:#6b7280;">{{ h.fechaPublicacion }}</td>
+              <td style="text-align:center;">
+                <div style="display:flex;align-items:center;justify-content:center;gap:4px;">
+                  <button (click)="verDetalle(h)"
+                    style="background:none;border:none;cursor:pointer;color:#2366CE;display:flex;align-items:center;justify-content:center;padding:4px;"
+                    title="Ver detalle">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+                      <circle cx="12" cy="12" r="3"/>
+                    </svg>
+                  </button>
+                  <button (click)="reutilizarComunicado(h)"
+                    style="background:none;border:none;cursor:pointer;color:#059669;display:flex;align-items:center;justify-content:center;padding:4px;"
+                    title="Reutilizar comunicado">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2"/>
+                      <rect x="8" y="10" width="12" height="12" rx="2" ry="2"/>
+                    </svg>
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </ng-container>
+          <ng-template #sinHistorial>
+            <tr>
+              <td colspan="6" style="text-align:center;padding:32px;color:#9ca3af;">No se encontraron comunicados.</td>
+            </tr>
+          </ng-template>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Paginación historial -->
+    <div *ngIf="totalPaginas > 1"
+      style="display:flex;justify-content:center;align-items:center;gap:8px;flex-wrap:wrap;">
+      <button class="gc-pagina-btn" (click)="paginaAnterior()" [disabled]="paginaActual===1">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+        </svg>
+      </button>
+
+      <ng-container *ngFor="let p of paginasVisibles">
+        <button class="gc-pagina-btn" [class.activa]="p === paginaActual"
+          [style.cursor]="p==='...' ? 'default':'pointer'"
+          (click)="irAPagina(p)">
+          {{ p }}
+        </button>
+      </ng-container>
+
+      <button class="gc-pagina-btn" (click)="paginaSiguiente()" [disabled]="paginaActual===totalPaginas">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+        </svg>
+      </button>
+    </div>
+
+  </div><!-- /contenido principal -->
+
+
+  <!-- ════════════════════════════════════════════
+       MODAL CANCELAR PUBLICACIÓN
+  ═════════════════════════════════════════════ -->
+  <div *ngIf="modalCancelarAbierto" class="gc-modal-overlay"
+    (click)="cerrarModalCancelarSiOverlay($event)">
+    <div class="gc-modal-box" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="gc-modal-header">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="gc-modal-logo" />
+        <div style="flex:1;">
+          <p class="gc-modal-titulo">Cancelar publicación</p>
+          <p class="gc-modal-sub">Corredor Azul</p>
+        </div>
+        <button class="gc-modal-close" (click)="cerrarModalCancelar()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Body -->
+      <div class="gc-modal-body" style="text-align:center;">
+        <div style="width:54px;height:54px;background:#fee2e2;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;">
+          <svg width="26" height="26" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path stroke-linecap="round" d="M15 9l-6 6M9 9l6 6"/>
+          </svg>
+        </div>
+        <h3 style="font-size:16px;font-weight:800;color:#111827;margin:0 0 8px 0;">¿Cancelar publicación?</h3>
+        <p style="font-size:13px;color:#6b7280;margin:0;line-height:1.5;">
+          El comunicado
+          <strong *ngIf="comunicadoACancelar?.titulo">"{{ comunicadoACancelar?.titulo }}"</strong>
+          <span *ngIf="!comunicadoACancelar?.titulo">seleccionado</span>
+          no se publicará. Esta acción no se puede deshacer.
+        </p>
+      </div>
+      <!-- Footer -->
+      <div class="gc-modal-footer">
+        <button class="gc-btn-outline" (click)="cerrarModalCancelar()" [disabled]="cancelando">Volver</button>
+        <button class="gc-btn-danger" (click)="ejecutarCancelar()" [disabled]="cancelando">
+          {{ cancelando ? 'Cancelando...' : 'Cancelar publicación' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════
+       MODAL VER DETALLE (historial)
+  ═════════════════════════════════════════════ -->
+  <div *ngIf="modalVerAbierto" class="gc-modal-overlay"
+    (click)="cerrarModalVerSiOverlay($event)">
+    <div class="gc-modal-box gc-modal-box-lg" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="gc-modal-header">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="gc-modal-logo" />
+        <div style="flex:1;">
+          <p class="gc-modal-titulo">Detalle del comunicado</p>
+          <p class="gc-modal-sub">Corredor Azul</p>
+        </div>
+        <button class="gc-modal-close" (click)="cerrarModalVer()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <ng-container *ngIf="comunicadoVer">
+        <div class="gc-modal-body">
+          <!-- Tipo -->
+          <div style="margin-bottom:12px;">
+            <span style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Tipo</span>
+            <p style="margin:4px 0 0 0;font-size:13px;color:#374151;font-weight:600;">{{ tipoLabel[comunicadoVer.tipo] }}</p>
+          </div>
+          <!-- Fecha -->
+          <div style="margin-bottom:12px;">
+            <span style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Fecha de publicación</span>
+            <p style="margin:4px 0 0 0;font-size:13px;color:#374151;">{{ comunicadoVer.fechaPublicacion }}</p>
+          </div>
+          <!-- Título -->
+          <div style="margin-bottom:12px;" *ngIf="comunicadoVer.titulo">
+            <span style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Título</span>
+            <p style="margin:4px 0 0 0;font-size:13px;color:#111827;font-weight:600;line-height:1.4;">{{ comunicadoVer.titulo }}</p>
+          </div>
+          <!-- Descripción -->
+          <div style="margin-bottom:12px;" *ngIf="comunicadoVer.descripcion">
+            <span style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Descripción</span>
+            <p style="margin:4px 0 0 0;font-size:13px;color:#374151;line-height:1.55;">{{ comunicadoVer.descripcion }}</p>
+          </div>
+          <!-- Imagen -->
+          <div *ngIf="comunicadoVer.tieneImagen" style="margin-bottom:4px;">
+            <span style="font-size:11px;font-weight:700;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;">Imagen</span>
+            <div style="margin-top:8px;border-radius:10px;overflow:hidden;max-height:220px;">
+              <img src="publicidad.jpeg" alt="Imagen del comunicado"
+                style="width:100%;height:100%;object-fit:cover;"
+                onerror="this.style.background='#e5e7eb'" />
+            </div>
+          </div>
+        </div>
+        <!-- Footer -->
+        <div class="gc-modal-footer">
+          <button class="gc-btn-outline" (click)="cerrarModalVer()" style="flex:1;">Cerrar</button>
+        </div>
+      </ng-container>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════
+       MODAL AGREGAR / EDITAR COMUNICADO
+  ═════════════════════════════════════════════ -->
+  <div *ngIf="modalFormAbierto" class="gc-modal-overlay"
+    (click)="cerrarModalFormSiOverlay($event)">
+    <div class="gc-modal-box gc-modal-box-lg" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="gc-modal-header">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="gc-modal-logo" />
+        <div style="flex:1;">
+          <p class="gc-modal-titulo">{{ modoFormulario === 'crear' ? 'Nuevo comunicado' : 'Editar comunicado' }}</p>
+          <p class="gc-modal-sub">Corredor Azul</p>
+        </div>
+        <button class="gc-modal-close" (click)="cerrarModalForm()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Body -->
+      <div class="gc-modal-body" style="padding-bottom:16px;max-height:60vh;overflow-y:auto;">
+
+        <!-- Tipo -->
+        <div style="margin-bottom:16px;">
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Tipo de comunicado</label>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button *ngFor="let t of tiposComunicado" (click)="formComunicado.tipo = t"
+              [style.background]="formComunicado.tipo === t ? 'var(--blue)' : '#f1f5f9'"
+              [style.color]="formComunicado.tipo === t ? '#fff' : '#374151'"
+              style="padding:7px 14px;border:none;border-radius:10px;font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:all 0.15s;">
+              {{ tipoLabel[t] }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Título (solo si no es solo-imagen) -->
+        <div style="margin-bottom:16px;" *ngIf="formComunicado.tipo !== 'imagen'">
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Título</label>
+          <input type="text" [(ngModel)]="formComunicado.titulo"
+            placeholder="Ingresa el título del comunicado"
+            class="gc-input" style="padding-left:12px;" />
+        </div>
+
+        <!-- Descripción (solo si no es solo-imagen) -->
+        <div style="margin-bottom:16px;" *ngIf="formComunicado.tipo !== 'imagen'">
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Descripción</label>
+          <textarea [(ngModel)]="formComunicado.descripcion"
+            placeholder="Ingresa la descripción del comunicado" rows="3"
+            style="width:100%;padding:10px 12px;border:1.5px solid #e5e7eb;border-radius:12px;font-size:13px;
+              color:#111827;background:#fff;box-sizing:border-box;font-family:'Inter',sans-serif;
+              resize:vertical;box-shadow:0 1px 2px rgba(0,0,0,0.04);outline:none;transition:border-color 0.15s;">
+          </textarea>
+        </div>
+
+        <!-- Imagen (solo si lleva imagen) -->
+        <div style="margin-bottom:16px;" *ngIf="formComunicado.tipo !== 'texto'">
+          <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Imagen</label>
+          <div style="border:2px dashed #d1d5db;border-radius:12px;padding:22px;text-align:center;cursor:pointer;transition:border-color 0.15s;"
+            (mouseenter)="$any($event.currentTarget).style.borderColor='#2366CE'"
+            (mouseleave)="$any($event.currentTarget).style.borderColor='#d1d5db'">
+            <svg width="28" height="28" fill="none" stroke="#9ca3af" stroke-width="1.5" viewBox="0 0 24 24" style="display:block;margin:0 auto 8px auto;">
+              <path stroke-linecap="round" stroke-linejoin="round"
+                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 16M14 8h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+            </svg>
+            <p style="font-size:13px;color:#9ca3af;margin:0;">Haz clic para subir una imagen</p>
+            <p style="font-size:11px;color:#d1d5db;margin:4px 0 0 0;">PNG, JPG hasta 5 MB</p>
+          </div>
+        </div>
+
+        <!-- Fecha y Hora -->
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;">
+            <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Fecha de publicación</label>
+            <input type="date" class="gc-input-fecha" [(ngModel)]="formComunicado.fecha"
+              style="width:100%;box-sizing:border-box;" />
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Hora</label>
+            <input type="time" class="gc-input-fecha" [(ngModel)]="formComunicado.hora"
+              style="width:100%;box-sizing:border-box;" />
+          </div>
+        </div>
+
+      </div>
+      <!-- Footer -->
+      <div class="gc-modal-footer">
+        <button class="gc-btn-outline" (click)="cerrarModalForm()" [disabled]="guardando">Cancelar</button>
+        <button class="gc-btn-primary" (click)="guardarComunicado()"
+          [disabled]="guardando || !formValido()">
+          {{ guardando ? 'Guardando...' : (modoFormulario === 'crear' ? 'Agregar' : 'Guardar cambios') }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ════════════════════════════════════════════
+       MODAL REPROGRAMAR PUBLICACIÓN
+  ═════════════════════════════════════════════ -->
+  <div *ngIf="modalReprogramarAbierto" class="gc-modal-overlay"
+    (click)="cerrarModalReprogramarSiOverlay($event)">
+    <div class="gc-modal-box" (click)="$event.stopPropagation()">
+      <!-- Header -->
+      <div class="gc-modal-header">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="gc-modal-logo" />
+        <div style="flex:1;">
+          <p class="gc-modal-titulo">Reprogramar publicación</p>
+          <p class="gc-modal-sub">Corredor Azul</p>
+        </div>
+        <button class="gc-modal-close" (click)="cerrarModalReprogramar()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M18 6L6 18M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+      <!-- Body -->
+      <div class="gc-modal-body">
+        <div style="width:54px;height:54px;background:#fef3c7;border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px auto;">
+          <svg width="26" height="26" fill="none" stroke="#f59e0b" stroke-width="2" viewBox="0 0 24 24">
+            <circle cx="12" cy="12" r="10"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/>
+          </svg>
+        </div>
+        <h3 style="font-size:15px;font-weight:800;color:#111827;margin:0 0 6px 0;text-align:center;">Nueva fecha de publicación</h3>
+        <p style="font-size:13px;color:#6b7280;margin:0 0 20px 0;text-align:center;line-height:1.5;">
+          Selecciona cuándo se publicará
+          <strong *ngIf="comunicadoAReprogramar?.titulo">"{{ comunicadoAReprogramar?.titulo }}"</strong>
+          <span *ngIf="!comunicadoAReprogramar?.titulo">este comunicado</span>.
+        </p>
+        <div style="display:flex;gap:12px;">
+          <div style="flex:1;">
+            <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Fecha</label>
+            <input type="date" class="gc-input-fecha" [(ngModel)]="nuevaFecha"
+              style="width:100%;box-sizing:border-box;" />
+          </div>
+          <div style="flex:1;">
+            <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Hora</label>
+            <input type="time" class="gc-input-fecha" [(ngModel)]="nuevaHora"
+              style="width:100%;box-sizing:border-box;" />
+          </div>
+        </div>
+      </div>
+      <!-- Footer -->
+      <div class="gc-modal-footer">
+        <button class="gc-btn-outline" (click)="cerrarModalReprogramar()" [disabled]="reprogramando">Cancelar</button>
+        <button class="gc-btn-primary" (click)="ejecutarReprogramar()" [disabled]="reprogramando || !nuevaFecha || !nuevaHora">
+          {{ reprogramando ? 'Guardando...' : 'Confirmar' }}
+        </button>
+      </div>
+    </div>
+  </div>
+
+</div>

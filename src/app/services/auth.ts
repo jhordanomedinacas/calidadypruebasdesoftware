@@ -103,15 +103,15 @@ export class AuthService {
   // ── Sesión ────────────────────────────────
 
   guardarToken(token: string): void {
-    localStorage.setItem('auth_token', token);
+    sessionStorage.setItem('auth_token', token);
   }
 
   obtenerToken(): string | null {
-    return localStorage.getItem('auth_token');
+    return sessionStorage.getItem('auth_token');
   }
 
   cerrarSesion(): void {
-    localStorage.removeItem('auth_token');
+    sessionStorage.removeItem('auth_token');
   }
 
   private decodificarToken(token: string): any | null {

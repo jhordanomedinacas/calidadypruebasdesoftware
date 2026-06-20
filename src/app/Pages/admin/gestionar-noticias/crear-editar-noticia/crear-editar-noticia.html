@@ -165,6 +165,12 @@
   <!-- CONTENIDO PRINCIPAL -->
   <div style="padding:28px 32px 100px 32px;">
 
+    <!-- Encabezado -->
+    <div style="margin-bottom:24px;">
+      <p style="font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:#2366CE;font-family:'Inter',sans-serif;margin:0 0 4px 0;">CORREDOR AZUL</p>
+      <h2 style="font-size:24px;font-weight:700;color:#111827;font-family:'Inter',sans-serif;margin:0;">{{ modoEditar ? 'Editar noticia' : 'Nueva noticia' }}</h2>
+    </div>
+
     <!-- Error al cargar la noticia (modo editar) -->
     <div *ngIf="errorCarga" style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:12px 16px;margin-bottom:20px;">
       <p style="font-size:13px;color:#dc2626;margin:0;">{{ errorCarga }}</p>

@@ -1,17 +1,17 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
-import { GestionarLineas } from './gestionar-lineas';
+import { GestionarComunicados } from './gestionar-comunicados';
 
-describe('GestionarLineas', () => {
-  let component: GestionarLineas;
-  let fixture: ComponentFixture<GestionarLineas>;
+describe('GestionarComunicados', () => {
+  let component: GestionarComunicados;
+  let fixture: ComponentFixture<GestionarComunicados>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [GestionarLineas],
+      imports: [GestionarComunicados],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(GestionarLineas);
+    fixture = TestBed.createComponent(GestionarComunicados);
     component = fixture.componentInstance;
     await fixture.whenStable();
   });

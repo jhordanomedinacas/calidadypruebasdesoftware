@@ -23,6 +23,18 @@ export class App {
       filter(e => e instanceof NavigationEnd)
     ).subscribe((e: any) => {
       this.mostrarBot = !RUTAS_SIN_BOT.includes(e.urlAfterRedirects);
+
+      // Cerrar paneles del widget de accesibilidad al navegar
+      // El #caAccOutlineOverlay es un div transparente con z-index:10069 que
+      // bloquea todos los clicks cuando queda abierto tras la navegación.
+      const outlineOverlay = document.getElementById('caAccOutlineOverlay');
+      const outlinePanel   = document.getElementById('caAccOutlinePanel');
+      const panelOverlay   = document.getElementById('caAccPanelOverlay');
+      const panel          = document.getElementById('caAccPanel');
+      outlineOverlay?.classList.remove('open');
+      outlinePanel?.classList.remove('open');
+      panelOverlay?.classList.remove('open');
+      panel?.classList.remove('open');
     });
   }
 }

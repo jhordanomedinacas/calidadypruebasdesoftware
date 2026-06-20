@@ -166,6 +166,7 @@ export class RecargasComponent implements OnInit, OnDestroy {
   seleccionarMonto(monto: number): void {
     this.montoSeleccionado = monto;
     this.montoPersonalizado = null;
+    this.cdr.detectChanges();
   }
 
   onMontoPersonalizado(event: Event): void {
@@ -185,6 +186,7 @@ export class RecargasComponent implements OnInit, OnDestroy {
     if (metodo !== 'tarjeta') {
       this._limpiarCamposTarjeta();
     }
+    this.cdr.detectChanges();
   }
 
   // ── Validación del formulario principal ────────────────────────
@@ -220,6 +222,8 @@ export class RecargasComponent implements OnInit, OnDestroy {
     if (this.metodoPago === 'pagoefectivo') {
       this._generarCIP();
     }
+
+    this.cdr.detectChanges();
   }
 
   // ── Cerrar modal al hacer click en overlay ────────────────────
@@ -234,11 +238,11 @@ export class RecargasComponent implements OnInit, OnDestroy {
   cerrarModal(): void {
     this.modalAbierto = false;
     this._limpiarTimer();
-    // Resetear estados de procesamiento
     this.modalProcesando = false;
     this.modalExito = false;
     this.modalError = false;
     this.mensajeError = '';
+    this.cdr.detectChanges();
   }
 
   volverFormulario(): void {
@@ -246,7 +250,7 @@ export class RecargasComponent implements OnInit, OnDestroy {
     this.modalExito = false;
     this.modalError = false;
     this.mensajeError = '';
-    // No cierra el modal, vuelve al formulario
+    this.cdr.detectChanges();
   }
 
   // ── Procesar pago ──────────────────────────────────────────────
@@ -467,10 +471,12 @@ export class RecargasComponent implements OnInit, OnDestroy {
     this.historialAbierto = true;
     this.historialFiltro = null;
     this.historialBusqueda = '';
+    this.cdr.detectChanges();
   }
 
   cerrarHistorial(): void {
     this.historialAbierto = false;
+    this.cdr.detectChanges();
   }
 
   cerrarHistorialSiOverlay(event: MouseEvent): void {

@@ -21,6 +21,8 @@ import { DashboardUsuarioComponent } from './Pages/user/dashboard/dashboard';
 import { GestionarNoticiasComponent } from './Pages/admin/gestionar-noticias/gestionar-noticias';;
 import { CrearEditarNoticiaComponent } from './Pages/admin/gestionar-noticias/crear-editar-noticia/crear-editar-noticia';
 import { AuditoriasComponent } from './Pages/admin/auditorias/auditorias';
+import { GestionarComunicadosComponent } from './Pages/admin/gestionar-comunicados/gestionar-comunicados';
+import { GestionarTicketsComponent } from './Pages/admin/gestionar-tickets/gestionar-tickets';
 
 export const routes: Routes = [
 
@@ -52,4 +54,6 @@ export const routes: Routes = [
   { path: 'gestion-noticias/crear',      component: CrearEditarNoticiaComponent,  canActivate: [authGuard, adminGuard] },
   { path: 'gestion-noticias/editar/:id', component: CrearEditarNoticiaComponent,  canActivate: [authGuard, adminGuard] },
   { path: 'auditorias', component: AuditoriasComponent,  canActivate: [authGuard, adminGuard] },
+  { path: 'gestion-comunicados', component: GestionarComunicadosComponent,  canActivate: [authGuard, adminGuard] },
+  { path: 'gestion-tickets', component: GestionarTicketsComponent,  canActivate: [authGuard, adminGuard] },
 ];

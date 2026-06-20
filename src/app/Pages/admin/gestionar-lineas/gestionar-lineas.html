@@ -38,6 +38,13 @@
     font-weight: 700 !important;
   }
 
+  .paradero-node[draggable="true"] {
+    cursor: grab;
+  }
+  .paradero-node[draggable="true"]:active {
+    cursor: grabbing;
+  }
+
   .horario-card:hover {
     border-color: #2366CE !important;
     transition: all 0.18s ease;
@@ -51,9 +58,17 @@
   .ruta-card { transition: all 0.2s ease; }
 
   /* Scrollbar timeline */
-  .timeline-scroll::-webkit-scrollbar { height: 4px; }
-  .timeline-scroll::-webkit-scrollbar-track { background: #f0f4fb; border-radius: 4px; }
-  .timeline-scroll::-webkit-scrollbar-thumb { background: #2366CE; border-radius: 4px; }
+  .timeline-scroll::-webkit-scrollbar { height: 6px; }
+  .timeline-scroll::-webkit-scrollbar-track { background: #e8eef8; border-radius: 6px; }
+  .timeline-scroll::-webkit-scrollbar-thumb { background: #2366CE; border-radius: 6px; }
+  .timeline-scroll::-webkit-scrollbar-thumb:hover { background: #1a3a8f; }
+  .timeline-scroll { scrollbar-width: thin; scrollbar-color: #2366CE #e8eef8; }
+
+  /* Paradero seleccionado highlight */
+  .paradero-selected-box {
+    background: #2366CE !important;
+    border-radius: 8px;
+  }
 </style>
 
 <div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
@@ -115,15 +130,15 @@
             *ngFor="let linea of lineasFiltradas"
             (click)="seleccionarLinea(linea)"
             style="display: flex; align-items: center; gap: 12px; padding: 14px 16px; border-radius: 14px; cursor: pointer; border: 1.5px solid transparent;"
-            [style.background]="lineaSeleccionada?.id === linea.id ? 'linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%)' : '#fff'"
-            [style.border-color]="lineaSeleccionada?.id === linea.id ? 'transparent' : '#e5e7eb'"
-            [style.box-shadow]="lineaSeleccionada?.id === linea.id ? '0 4px 16px rgba(35,102,206,0.25)' : '0 1px 3px rgba(0,0,0,0.05)'"
+            [style.background]="lineaSeleccionada?.idLinea === linea.idLinea ? 'linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%)' : '#fff'"
+            [style.border-color]="lineaSeleccionada?.idLinea === linea.idLinea ? 'transparent' : '#e5e7eb'"
+            [style.box-shadow]="lineaSeleccionada?.idLinea === linea.idLinea ? '0 4px 16px rgba(35,102,206,0.25)' : '0 1px 3px rgba(0,0,0,0.05)'"
           >
             <!-- Icono bus -->
             <div style="width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; display: flex; align-items: center; justify-content: center;"
-                 [style.background]="lineaSeleccionada?.id === linea.id ? 'rgba(255,255,255,0.15)' : 'rgba(35,102,206,0.08)'">
+                 [style.background]="lineaSeleccionada?.idLinea === linea.idLinea ? 'rgba(255,255,255,0.15)' : 'rgba(35,102,206,0.08)'">
               <svg style="width: 20px; height: 20px;" fill="none"
-                   [attr.stroke]="lineaSeleccionada?.id === linea.id ? '#fff' : '#2366CE'"
+                   [attr.stroke]="lineaSeleccionada?.idLinea === linea.idLinea ? '#fff' : '#2366CE'"
                    stroke-width="1.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 18.75a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 01-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 00-3.213-9.193 2.056 2.056 0 00-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 00-10.026 0 1.106 1.106 0 00-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12"/>
               </svg>
@@ -131,12 +146,12 @@
 
             <div style="flex: 1; min-width: 0;">
               <p style="font-size: 15px; font-weight: 700; margin: 0;"
-                 [style.color]="lineaSeleccionada?.id === linea.id ? '#fff' : '#111827'">
+                 [style.color]="lineaSeleccionada?.idLinea === linea.idLinea ? '#fff' : '#111827'">
                 {{ linea.nombre }}
               </p>
               <p style="font-size: 12px; margin: 3px 0 0 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;"
-                 [style.color]="lineaSeleccionada?.id === linea.id ? 'rgba(255,255,255,0.7)' : '#6b7280'">
-                {{ linea.ruta }}
+                 [style.color]="lineaSeleccionada?.idLinea === linea.idLinea ? 'rgba(255,255,255,0.7)' : '#6b7280'">
+                {{ linea.origen }} → {{ linea.destino }}
               </p>
             </div>
           </div>
@@ -147,14 +162,14 @@
       <!-- ===================== PANEL CENTRAL ===================== -->
       <div style="flex: 1; min-width: 0;" *ngIf="lineaSeleccionada">
 
-        <!-- ── CARD: Nombre de línea ── -->
-        <div style="background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); border-radius: 20px; padding: 28px 32px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(35,102,206,0.3);">
+        <!-- ── CARD AZUL: Nombre de línea + Eliminar ── -->
+        <div style="background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); border-radius: 20px; padding: 28px 32px; margin-bottom: 0; box-shadow: 0 8px 24px rgba(35,102,206,0.3); border-bottom-left-radius: 0; border-bottom-right-radius: 0;">
 
           <!-- Fila superior: título + eliminar -->
           <div style="display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 20px;">
-            <h3 style="font-size: 22px; font-weight: 700; color: #fff; margin: 0;">Nombre de línea</h3>
+            <h3 style="font-size: 32px; font-weight: 700; color: #fff; margin: 0;">Nombre de línea</h3>
             <div style="text-align: right;">
-              <p style="font-size: 12px; color: rgba(255,255,255,0.7); margin: 0 0 6px 0;">Eliminar linea<br>definitivamente</p>
+              <p style="font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.85); margin: 0 0 8px 0; text-align: center;">Eliminar linea<br>definitivamente</p>
               <button
                 (click)="eliminarLinea()"
                 style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #ef4444; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(239,68,68,0.35);">
@@ -174,64 +189,65 @@
             style="width: 100%; padding: 12px 16px; border-radius: 12px; border: none; font-size: 14px; font-family: 'Inter', sans-serif; color: #374151; background: #fff; outline: none; box-sizing: border-box; box-shadow: 0 2px 8px rgba(0,0,0,0.1);"
           />
 
-          <!-- ── Tipo de ruta + Timeline ── -->
-          <div style="background: rgba(255,255,255,0.08); border-radius: 16px; padding: 20px; margin-top: 20px;">
+        </div><!-- fin card azul nombre -->
 
-            <!-- Fila: tipo de ruta + agregar paradero -->
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
-              <div style="display: flex; align-items: center; gap: 12px;">
-                <span style="font-size: 14px; font-weight: 600; color: rgba(255,255,255,0.9);">Tipo de ruta:</span>
+        <!-- ── CARD BLANCO: Tipo de ruta + Timeline + Horarios + Botones ── -->
+        <div style="background: #fff; border-radius: 0 0 20px 20px; padding: 24px 32px 28px 32px; margin-bottom: 20px; box-shadow: 0 8px 24px rgba(35,102,206,0.12);">
 
-                <!-- Select Ida/Vuelta -->
-                <div style="position: relative;">
-                  <select
-                    [(ngModel)]="tipoRuta"
-                    style="appearance: none; padding: 7px 28px 7px 14px; border-radius: 10px; border: 1.5px solid #e5e7eb; background: #fff; font-size: 13px; font-weight: 600; color: #2366CE; font-family: 'Inter', sans-serif; cursor: pointer; outline: none;">
-                    <option value="ida">Ida</option>
-                    <option value="vuelta">Vuelta</option>
-                  </select>
-                  <svg style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 12px; height: 12px; color: #2366CE;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                  </svg>
-                </div>
+          <!-- Fila: tipo de ruta + agregar paradero -->
+          <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; flex-wrap: wrap; gap: 12px;">
+            <div style="display: flex; align-items: center; gap: 12px;">
+              <span style="font-size: 14px; font-weight: 600; color: #374151;">Tipo de ruta:</span>
 
-                <!-- Select Hora punta -->
-                <div style="position: relative;">
-                  <select
-                    [(ngModel)]="horaTipo"
-                    style="appearance: none; padding: 7px 28px 7px 14px; border-radius: 10px; border: 1.5px solid #f59e0b; background: rgba(245,158,11,0.08); font-size: 13px; font-weight: 600; color: #b45309; font-family: 'Inter', sans-serif; cursor: pointer; outline: none;">
-                    <option value="hora_punta">Hora punta</option>
-                    <option value="normal">Normal</option>
-                    <option value="nocturno">Nocturno</option>
-                  </select>
-                  <svg style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 12px; height: 12px; color: #b45309;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
-                  </svg>
-                </div>
+              <!-- Select Ida/Vuelta -->
+              <div style="position: relative;">
+                <select
+                  [(ngModel)]="tipoRuta"
+                  (ngModelChange)="cambiarTipoRuta($event)"
+                  style="appearance: none; padding: 7px 28px 7px 14px; border-radius: 10px; border: 1.5px solid #e5e7eb; background: #fff; font-size: 13px; font-weight: 600; color: #2366CE; font-family: 'Inter', sans-serif; cursor: pointer; outline: none;">
+                  <option value="ida">Ida</option>
+                  <option value="vuelta">Vuelta</option>
+                </select>
+                <svg style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); pointer-events: none; width: 12px; height: 12px; color: #2366CE;" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/>
+                </svg>
               </div>
 
-              <!-- Botón agregar paradero -->
-              <button
-                (click)="agregarParadero()"
-                style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #2366CE; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(35,102,206,0.35);">
-                Agregar paradero
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
-                </svg>
-              </button>
+
             </div>
 
-            <!-- Timeline de paraderos -->
-            <div class="timeline-scroll" style="overflow-x: auto; padding-bottom: 8px;">
-              <div style="display: flex; align-items: flex-start; gap: 0; min-width: max-content; padding: 8px 4px 0 4px;">
+            <!-- Botón agregar paradero -->
+            <button
+              (click)="agregarParadero()"
+              style="display: flex; align-items: center; gap: 6px; padding: 9px 18px; background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(35,102,206,0.3);">
+              Agregar paradero
+              <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+              </svg>
+            </button>
+          </div>
 
-                <ng-container *ngFor="let paradero of lineaSeleccionada.listaParaderos; let i = index; let last = last">
-                  <!-- Nodo -->
-                  <div class="paradero-node" style="display: flex; flex-direction: column; align-items: center; position: relative; min-width: 80px;">
+          <!-- Timeline de paraderos sobre fondo blanco -->
+          <div class="timeline-scroll" style="overflow-x: auto; padding-bottom: 10px; margin-bottom: 28px;">
+            <div style="display: flex; align-items: flex-start; gap: 0; min-width: max-content; padding: 4px 4px 4px 4px;">
 
-                    <!-- Acciones (eliminar/editar) -->
-                    <div style="display: flex; gap: 4px; margin-bottom: 6px; opacity: 0; transition: opacity 0.15s;"
-                         [style.opacity]="paraderoSeleccionadoIdx === i ? '1' : ''">
+              <ng-container *ngFor="let paradero of paraderos; let i = index; let last = last">
+                <div
+                  class="paradero-node"
+                  draggable="true"
+                  (dragstart)="onDragStart(i)"
+                  (dragover)="onDragOver($event, i)"
+                  (drop)="onDrop(i)"
+                  (dragend)="onDragEnd()"
+                  style="display: flex; flex-direction: column; align-items: center; position: relative; min-width: 90px; cursor: grab; transition: opacity 0.2s;"
+                  [style.opacity]="dragIdx === i ? '0.4' : '1'"
+                  [style.outline]="dragOverIdx === i && dragIdx !== i ? '2px dashed #2366CE' : 'none'"
+                  [style.border-radius]="'10px'"
+                >
+
+                  <!-- Acciones (eliminar/editar) visibles en seleccionado -->
+                  <div style="display: flex; gap: 4px; margin-bottom: 6px; min-height: 24px; justify-content: center;">
+                    <ng-container *ngIf="paraderoSeleccionadoIdx === i">
                       <button (click)="eliminarParadero(i)" style="width: 22px; height: 22px; border-radius: 6px; background: #fef2f2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                         <svg width="11" height="11" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24">
                           <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M4 7h16"/>
@@ -242,44 +258,57 @@
                           <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 0110 16.414V17h.586a2 2 0 001.414-.586L17 11.828"/>
                         </svg>
                       </button>
-                    </div>
+                    </ng-container>
+                  </div>
 
-                    <!-- Punto + línea -->
-                    <div style="display: flex; align-items: center; width: 100%; position: relative;">
-                      <!-- Círculo -->
-                      <div (click)="seleccionarParadero(i)"
-                           style="width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; cursor: pointer; position: relative; z-index: 1; margin: 0 auto;"
-                           [style.background]="paraderoSeleccionadoIdx === i ? '#fff' : 'rgba(255,255,255,0.6)'"
-                           [style.box-shadow]="paraderoSeleccionadoIdx === i ? '0 0 0 3px #2366CE, 0 0 0 5px rgba(35,102,206,0.2)' : 'none'">
-                      </div>
-                      <!-- Línea conectora (excepto el último) -->
-                      <div *ngIf="!last" style="position: absolute; left: calc(50% + 7px); top: 50%; transform: translateY(-50%); height: 2px; background: rgba(255,255,255,0.5); width: calc(100% - 14px);">
-                      </div>
-                    </div>
+                  <!-- BLOQUE DEL PARADERO: fondo azul si está seleccionado, normal si no -->
+                  <div
+                    (click)="seleccionarParadero(i)"
+                    style="display: flex; flex-direction: column; align-items: center; border-radius: 10px; padding: 8px 6px 6px 6px; width: 84px; transition: background 0.18s, box-shadow 0.18s;"
+                    [style.background]="paraderoSeleccionadoIdx === i ? '#2366CE' : 'transparent'"
+                    [style.box-shadow]="paraderoSeleccionadoIdx === i ? '0 4px 14px rgba(35,102,206,0.35)' : 'none'"
+                  >
+                    <!-- Punto -->
+                    <div
+                      style="width: 14px; height: 14px; border-radius: 50%; flex-shrink: 0; margin-bottom: 6px; transition: background 0.18s, box-shadow 0.18s;"
+                      [style.background]="paraderoSeleccionadoIdx === i ? '#fff' : '#93c5fd'"
+                      [style.box-shadow]="paraderoSeleccionadoIdx === i ? '0 0 0 3px rgba(255,255,255,0.3)' : 'none'"
+                    ></div>
 
                     <!-- Nombre paradero -->
-                    <p class="paradero-label"
-                       style="font-size: 10px; font-weight: 500; color: rgba(255,255,255,0.85); margin: 6px 0 2px 0; text-align: center; max-width: 72px; word-break: break-word; line-height: 1.3;"
-                       [style.font-weight]="paraderoSeleccionadoIdx === i ? '700' : '500'"
-                       [style.color]="paraderoSeleccionadoIdx === i ? '#fff' : 'rgba(255,255,255,0.75)'">
+                    <p
+                      class="paradero-label"
+                      style="font-size: 10px; font-weight: 600; margin: 0 0 2px 0; text-align: center; word-break: break-word; line-height: 1.3; transition: color 0.18s;"
+                      [style.color]="paraderoSeleccionadoIdx === i ? '#fff' : '#374151'"
+                      [style.font-weight]="paraderoSeleccionadoIdx === i ? '700' : '500'"
+                    >
                       {{ paradero.nombre }}
                     </p>
-                    <!-- KM -->
-                    <span style="font-size: 9px; font-weight: 600; color: rgba(255,255,255,0.55);">{{ paradero.km }} km</span>
-                  </div>
-                </ng-container>
 
-              </div>
+                    <!-- KM -->
+                    <span
+                      style="font-size: 9px; font-weight: 600; margin-top: 2px; transition: color 0.18s;"
+                      [style.color]="paraderoSeleccionadoIdx === i ? 'rgba(255,255,255,0.75)' : '#9ca3af'"
+                    >{{ paradero.km }} km</span>
+                  </div>
+
+                  <!-- Línea conectora (excepto el último) — fuera del bloque clickeable -->
+                  <div *ngIf="!last" style="position: absolute; left: calc(50% + 7px); top: 54px; height: 2px; background: #93c5fd; width: calc(100% - 14px); z-index: 0;">
+                  </div>
+
+                </div>
+              </ng-container>
+
             </div>
-          </div><!-- fin tipo ruta -->
+          </div>
 
           <!-- ── Horarios ── -->
-          <div style="margin-top: 20px;">
-            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 12px;">
-              <span style="font-size: 15px; font-weight: 700; color: #fff;">Horarios:</span>
+          <div>
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px;">
+              <span style="font-size: 15px; font-weight: 700; color: #111827;">Horarios:</span>
               <button
                 (click)="asignarHorario()"
-                style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #2366CE; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(35,102,206,0.35);">
+                style="display: flex; align-items: center; gap: 6px; padding: 9px 18px; background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(35,102,206,0.3);">
                 Asignar horarios
                 <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
@@ -288,22 +317,22 @@
             </div>
 
             <!-- Lista de horarios -->
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 24px;">
               <div
                 class="horario-card"
-                *ngFor="let horario of lineaSeleccionada.horarios; let hi = index"
-                style="background: #fff; border-radius: 12px; padding: 12px 16px; min-width: 180px; border: 1.5px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; gap: 12px;">
+                *ngFor="let horario of horarios; let hi = index"
+                style="background: #fff; border-radius: 12px; padding: 14px 18px; min-width: 190px; border: 1.5px solid #e5e7eb; display: flex; align-items: center; justify-content: space-between; gap: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">
                 <div>
-                  <p style="font-size: 13px; font-weight: 700; color: #2366CE; margin: 0;">{{ horario.dias }}</p>
-                  <p style="font-size: 12px; color: #6b7280; margin: 3px 0 0 0;">{{ horario.hora }}</p>
+                  <p style="font-size: 13px; font-weight: 700; color: #2366CE; margin: 0;">{{ getDiasLabelHorario(horario) }}</p>
+                  <p style="font-size: 12px; color: #6b7280; margin: 3px 0 0 0;">{{ formatHora12(horario.horaInicio) }} – {{ formatHora12(horario.horaFin) }}</p>
                 </div>
                 <div style="display: flex; gap: 6px;">
-                  <button (click)="eliminarHorario(hi)" style="width: 28px; height: 28px; border-radius: 8px; background: #fef2f2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                  <button (click)="eliminarHorario(hi)" style="width: 30px; height: 30px; border-radius: 8px; background: #fef2f2; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <svg width="13" height="13" fill="none" stroke="#ef4444" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M4 7h16"/>
                     </svg>
                   </button>
-                  <button (click)="editarHorario(hi)" style="width: 28px; height: 28px; border-radius: 8px; background: rgba(35,102,206,0.08); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
+                  <button (click)="editarHorario(hi)" style="width: 30px; height: 30px; border-radius: 8px; background: rgba(35,102,206,0.08); border: none; cursor: pointer; display: flex; align-items: center; justify-content: center;">
                     <svg width="13" height="13" fill="none" stroke="#2366CE" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 0110 16.414V17h.586a2 2 0 001.414-.586L17 11.828"/>
                     </svg>
@@ -311,97 +340,48 @@
                 </div>
               </div>
             </div>
+
+            <!-- ── Botones Eliminar Ruta / Cancelar / Guardar Ruta ── -->
+            <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; flex-wrap: wrap;">
+              <button
+                (click)="eliminarRuta()"
+                style="display: flex; align-items: center; gap: 6px; padding: 10px 22px; background: #ef4444; color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(239,68,68,0.3);">
+                Eliminar Ruta
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M4 7h16"/>
+                </svg>
+              </button>
+              <button
+                (click)="cancelarRuta()"
+                style="padding: 10px 22px; background: #fff; color: #374151; border: 1.5px solid #d1d5db; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
+                Cancelar
+              </button>
+              <button
+                (click)="guardarRuta()"
+                style="display: flex; align-items: center; gap: 6px; padding: 10px 22px; background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(35,102,206,0.3);">
+                Guardar Ruta
+                <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+                </svg>
+              </button>
+            </div>
+
           </div><!-- fin horarios -->
 
-          <!-- ── Botones Eliminar/Cancelar/Guardar Ruta ── -->
-          <div style="display: flex; align-items: center; justify-content: flex-end; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
-            <button
-              (click)="eliminarRuta()"
-              style="display: flex; align-items: center; gap: 6px; padding: 10px 20px; background: #ef4444; color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(239,68,68,0.3);">
-              Eliminar Ruta
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M4 7h16"/>
-              </svg>
-            </button>
-            <button
-              (click)="cancelarRuta()"
-              style="padding: 10px 20px; background: #fff; color: #374151; border: 1.5px solid #d1d5db; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
-              Cancelar
-            </button>
-            <button
-              (click)="guardarRuta()"
-              style="display: flex; align-items: center; gap: 6px; padding: 10px 20px; background: #2366CE; color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(35,102,206,0.3);">
-              Guardar Ruta
-              <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
-              </svg>
-            </button>
-          </div>
+        </div><!-- fin card blanco -->
 
-        </div><!-- fin card nombre/ruta -->
 
-        <!-- ── CARDS DE RUTAS GUARDADAS ── -->
-        <div style="display: flex; flex-direction: column; gap: 16px; margin-bottom: 24px;">
-          <div
-            class="ruta-card"
-            *ngFor="let ruta of lineaSeleccionada.rutas; let ri = index"
-            style="background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); border-radius: 16px; padding: 20px 24px; box-shadow: 0 4px 16px rgba(35,102,206,0.2);">
-
-            <!-- Título + badges -->
-            <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; margin-bottom: 12px;">
-              <h4 style="font-size: 16px; font-weight: 700; color: #fff; margin: 0;">{{ ruta.titulo }}</h4>
-              <div style="display: flex; gap: 6px;">
-                <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: #fff; color: #2366CE;">{{ ruta.tipo }}</span>
-                <span style="font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 20px; background: rgba(245,158,11,0.9); color: #fff;">{{ ruta.horaTipo }}</span>
-              </div>
-            </div>
-
-            <!-- Horarios -->
-            <div style="display: flex; flex-wrap: wrap; gap: 20px; margin-bottom: 14px;">
-              <div *ngFor="let h of ruta.horarios">
-                <p style="font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.8); margin: 0;">{{ h.dias }}</p>
-                <p style="font-size: 12px; color: rgba(255,255,255,0.6); margin: 2px 0 0 0;">{{ h.hora }}</p>
-              </div>
-            </div>
-
-            <!-- Acciones -->
-            <div style="display: flex; justify-content: flex-end; gap: 8px;">
-              <button
-                (click)="duplicarRuta(ri)"
-                style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #22c55e; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
-                Duplicar
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
-                </svg>
-              </button>
-              <button
-                (click)="editarRuta(ri)"
-                style="display: flex; align-items: center; gap: 6px; padding: 8px 16px; background: #ef4444; color: #fff; border: none; border-radius: 10px; font-size: 13px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
-                Editar
-                <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.232 5.232l3.536 3.536M9 13l6.586-6.586a2 2 0 112.828 2.828L11.828 15.828A2 2 0 0110 16.414V17h.586a2 2 0 001.414-.586L17 11.828"/>
-                </svg>
-              </button>
-            </div>
-
-          </div>
-        </div><!-- fin rutas guardadas -->
 
         <!-- ── BOTONES FINALES ── -->
         <div style="display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding-top: 4px;">
           <button
             (click)="cancelarLinea()"
-            style="padding: 12px 28px; background: #ef4444; color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 2px 8px rgba(239,68,68,0.3);">
-            Cancelar
-          </button>
-          <button
-            (click)="cancelarLinea()"
-            style="padding: 12px 28px; background: #fff; color: #374151; border: 1.5px solid #d1d5db; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
+            style="padding: 12px 32px; background: #fff; color: #374151; border: 1.5px solid #d1d5db; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
             Cancelar
           </button>
           <button
             (click)="guardarLinea()"
-            style="display: flex; align-items: center; gap: 8px; padding: 12px 28px; background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 4px 12px rgba(35,102,206,0.3);">
+            style="display: flex; align-items: center; gap: 8px; padding: 12px 32px; background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer; box-shadow: 0 4px 12px rgba(35,102,206,0.3);">
             Guardar Linea
             <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
@@ -419,5 +399,140 @@
     </div>
 
   </div><!-- fin contenido principal -->
+
+  <!-- ── MODAL ASIGNAR / EDITAR HORARIO ─────────────────────────── -->
+  <div class="modal-overlay" *ngIf="mostrarModalHorario" (click)="cerrarModalHorario()">
+    <div class="horario-modal" (click)="$event.stopPropagation()">
+
+      <!-- Header — mismo patrón que logout-modal__header del navbar -->
+      <div class="logout-modal__header">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+        <div style="flex: 1; min-width: 0;">
+          <p class="logout-modal__titulo">{{ modalHorario.editandoId !== null ? 'Editar horario' : 'Asignar horario' }}</p>
+          <p class="logout-modal__sub">Corredor Azul</p>
+        </div>
+        <button class="logout-modal__close" (click)="cerrarModalHorario()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="horario-modal__body">
+
+        <!-- Días de operación -->
+        <div class="reporte-modal__field">
+          <label class="reporte-modal__label">Días de operación (máx. 7)</label>
+          <div class="horario-dias__grid">
+            <button
+              type="button"
+              *ngFor="let d of diasSemana"
+              class="horario-dia__btn"
+              [class.horario-dia__btn--activo]="modalHorario[d.key]"
+              (click)="toggleDia(d.key)">
+              <span class="horario-dia__letra">{{ d.letra }}</span>
+              <span class="horario-dia__marca">
+                <svg *ngIf="modalHorario[d.key]" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+                <svg *ngIf="!modalHorario[d.key]" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#cbd5e1" stroke-width="3">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </span>
+            </button>
+          </div>
+          <p class="horario-dias__resumen" *ngIf="getDiasLabel()">Seleccionado: {{ getDiasLabel() }}</p>
+        </div>
+
+        <!-- Rango de horario -->
+        <div class="reporte-modal__field">
+          <label class="reporte-modal__label">Horario de servicio</label>
+          <div class="horario-rango__grid">
+            <div class="horario-rango__campo">
+              <span class="horario-rango__label">Desde</span>
+              <input type="time" [(ngModel)]="modalHorario.horaInicio" class="horario-rango__input" />
+            </div>
+            <span class="horario-rango__guion">—</span>
+            <div class="horario-rango__campo">
+              <span class="horario-rango__label">Hasta</span>
+              <input type="time" [(ngModel)]="modalHorario.horaFin" class="horario-rango__input" />
+            </div>
+          </div>
+          <p class="horario-rango__error" *ngIf="modalHorario.horaInicio && modalHorario.horaFin && modalHorario.horaInicio >= modalHorario.horaFin">
+            La hora de inicio debe ser menor a la hora fin.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="logout-modal__footer">
+        <button class="logout-modal__btn-cancelar" (click)="cerrarModalHorario()">
+          Cancelar
+        </button>
+        <button class="horario-modal__btn-guardar" [disabled]="!puedeGuardarHorario()" (click)="guardarHorarioModal()">
+          {{ modalHorario.editandoId !== null ? 'Guardar cambios' : 'Agregar horario' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ── MODAL AGREGAR / EDITAR PARADERO (mapa) ─────────────────────── -->
+  <div class="modal-overlay" *ngIf="mapaModalAbierto" (click)="cerrarModalParadero()">
+    <div class="paradero-modal" (click)="$event.stopPropagation()">
+
+      <!-- Header — mismo patrón que logout-modal__header -->
+      <div class="logout-modal__header">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="logout-modal__logo" />
+        <div style="flex: 1; min-width: 0;">
+          <p class="logout-modal__titulo">{{ mapaModalEditIdx !== null ? 'Editar paradero' : 'Agregar paradero' }}</p>
+          <p class="logout-modal__sub">Corredor Azul</p>
+        </div>
+        <button class="logout-modal__close" (click)="cerrarModalParadero()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Body -->
+      <div class="paradero-modal__body">
+
+        <div class="reporte-modal__field">
+          <label class="reporte-modal__label">Nombre del paradero</label>
+          <input
+            type="text"
+            class="paradero-modal__input"
+            placeholder="Ej. Av. Javier Prado"
+            [(ngModel)]="mapaModalNombre" />
+        </div>
+
+        <div class="reporte-modal__field">
+          <label class="reporte-modal__label">Ubicación (haz click en el mapa para colocar el pin)</label>
+          <div id="mapa-paradero-modal" class="paradero-modal__mapa"></div>
+          <p class="paradero-modal__coords" *ngIf="mapaModalLat != null && mapaModalLng != null">
+            Lat: {{ mapaModalLat | number:'1.5-5' }} · Lng: {{ mapaModalLng | number:'1.5-5' }}
+          </p>
+          <p class="paradero-modal__coords paradero-modal__coords--vacio" *ngIf="mapaModalLat == null || mapaModalLng == null">
+            Aún no has seleccionado una ubicación.
+          </p>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="logout-modal__footer">
+        <button class="logout-modal__btn-cancelar" (click)="cerrarModalParadero()">
+          Cancelar
+        </button>
+        <button class="horario-modal__btn-guardar" [disabled]="!puedeGuardarParadero()" (click)="guardarParaderoModal()">
+          {{ mapaModalEditIdx !== null ? 'Guardar cambios' : 'Agregar paradero' }}
+        </button>
+      </div>
+
+    </div>
+  </div>
 
 </div>

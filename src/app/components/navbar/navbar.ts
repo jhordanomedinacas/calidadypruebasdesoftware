@@ -4,6 +4,7 @@ import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { AuthService } from '../../services/auth';
 import { PerfilService, PerfilResponse, EditarPerfilRequest, CambiarContrasenaRequest } from '../../services/perfil';
+import { TicketService } from '../../services/ticket';
 
 interface Notificacion {
   id: number;
@@ -41,9 +42,10 @@ export class NavbarComponent implements OnInit {
   private _apellidos = '';
 
   constructor(
-    private auth:   AuthService,
-    private perfil: PerfilService,
-    private cdr:    ChangeDetectorRef
+    private auth:    AuthService,
+    private perfil:  PerfilService,
+    private tickets: TicketService,
+    private cdr:     ChangeDetectorRef
   ) {
     const datos       = this.auth.obtenerDatosUsuario();
     const nombres     = datos?.nombres ?? '';
@@ -183,14 +185,34 @@ export class NavbarComponent implements OnInit {
 
   enviarReporte(): void {
     if (!this.reporteTipo || !this.reporteDescripcion.trim()) return;
-    console.log('Reporte enviado', {
-      tipo:        this.reporteTipo,
-      linea:       'corredor_azul',
-      descripcion: this.reporteDescripcion,
-      imagen:      this.reporteImagen
-    });
-    this.cerrarModalReporte();
-    this.modalReporteExitoAbierto = true;
+
+    const enviar = (imagenBase64: string | null, imagenNombre: string | null) => {
+      this.tickets.crearTicket({
+        tipo:         this.reporteTipo,
+        descripcion:  this.reporteDescripcion.trim(),
+        imagenBase64,
+        imagenNombre
+      }).subscribe({
+        next: () => {
+          this.cerrarModalReporte();
+          this.modalReporteExitoAbierto = true;
+        },
+        error: (err) => {
+          alert(err?.error?.message ?? 'No se pudo enviar el reporte. Intenta nuevamente.');
+        }
+      });
+    };
+
+    if (this.reporteImagen) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const base64 = (reader.result as string).split(',')[1]; // quitar data:...;base64,
+        enviar(base64, this.reporteImagenNombre);
+      };
+      reader.readAsDataURL(this.reporteImagen);
+    } else {
+      enviar(null, null);
+    }
   }
 
   cerrarModalReporteExito(): void {

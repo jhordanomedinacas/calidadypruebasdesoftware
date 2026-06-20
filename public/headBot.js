@@ -32391,9 +32391,17 @@ class HeadBot extends HTMLElement {
     window.addEventListener("mousemove", _mouseMoveHandler);
     window._headBotMouseMoveHandler = _mouseMoveHandler;
  
+    // Usar la versión sin parchear de rAF para no bloquear el change detection de Angular.
+    // Zone.js expone el rAF original en Zone.__zone_symbol__requestAnimationFrame.
+    const _raf = (typeof Zone !== 'undefined' && Zone['__zone_symbol__requestAnimationFrame'])
+      || requestAnimationFrame.bind(window);
+    const _caf = (typeof Zone !== 'undefined' && Zone['__zone_symbol__cancelAnimationFrame'])
+      || cancelAnimationFrame.bind(window);
+    window._headBotCaf = _caf;
+
     let _rafId;
     const animate = () => {
-      _rafId = requestAnimationFrame(animate);
+      _rafId = _raf(animate);
       window._headBotRafId = _rafId;
       if (head) {
         const tY = Math.max(-1.2, Math.min(0.6,  mouseX * 1.5));
@@ -33049,7 +33057,8 @@ window.destroyHeadBot = function () {
     window._headBotCurrentAudio = null;
   }
   if (window._headBotRafId) {
-    cancelAnimationFrame(window._headBotRafId);
+    const _caf = window._headBotCaf || cancelAnimationFrame;
+    _caf(window._headBotRafId);
     window._headBotRafId = null;
   }
   if (window._headBotMouseMoveHandler) {

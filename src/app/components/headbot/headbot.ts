@@ -26,16 +26,20 @@ export class HeadbotComponent implements OnInit, OnDestroy {
       this.ngZone.run(() => this.router.navigate([ruta]));
     };
 
-    const existing = document.querySelector('script[data-headbot]');
-    if (existing) {
-      window.initHeadBot();
-      return;
-    }
-    const script = document.createElement('script');
-    script.src = 'headBot.js';
-    script.setAttribute('data-headbot', '');
-    script.onload = () => window.initHeadBot();
-    document.body.appendChild(script);
+    // Ejecutar initHeadBot fuera de la zona de Angular para que el loop
+    // requestAnimationFrame de Three.js no bloquee el change detection automático.
+    this.ngZone.runOutsideAngular(() => {
+      const existing = document.querySelector('script[data-headbot]');
+      if (existing) {
+        window.initHeadBot();
+        return;
+      }
+      const script = document.createElement('script');
+      script.src = 'headBot.js';
+      script.setAttribute('data-headbot', '');
+      script.addEventListener('load', () => window.initHeadBot());
+      document.body.appendChild(script);
+    });
   }
 
   ngOnDestroy(): void {

@@ -494,9 +494,23 @@
   <div class="dash-content" style="padding: 24px 32px 64px 32px;">
 
     <!-- ENCABEZADO -->
-    <div style="margin-bottom: 20px; animation: cardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;">
-      <p style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#2366CE; margin:0 0 4px 0;">Corredor Azul</p>
-      <h2 style="font-size:24px; font-weight:700; color:#111827; margin:0;">Dashboard — Resumen</h2>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:20px;animation:cardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;">
+      <div>
+        <p style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#2366CE; margin:0 0 4px 0;">Corredor Azul</p>
+        <h2 style="font-size:24px; font-weight:700; color:#111827; margin:0;">Dashboard — Resumen</h2>
+      </div>
+      <button (click)="irA('auditorias')"
+        style="display:flex;align-items:center;gap:8px;padding:10px 20px;background:var(--blue);color:#fff;
+          border:none;border-radius:12px;font-size:13px;font-weight:600;cursor:pointer;
+          font-family:'Inter',sans-serif;transition:opacity 0.15s,box-shadow 0.15s;white-space:nowrap;"
+        (mouseenter)="$any($event.currentTarget).style.opacity='0.88'"
+        (mouseleave)="$any($event.currentTarget).style.opacity='1'">
+        <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round"
+            d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/>
+        </svg>
+        Ir a Auditorías
+      </button>
     </div>
 
     <!-- ══ KPI CARDS ══ -->

@@ -1,0 +1,257 @@
+<div class="min-h-screen" style="background-color: #f0f4fb; font-family: 'Inter', sans-serif;">
+
+  <!-- NAVBAR -->
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- BREADCRUMB -->
+  <div style="padding: 18px 32px 0 32px;">
+    <span style="font-size: 13px; color: #2366CE; font-weight: 600; cursor: pointer;" (click)="irInicio()">Inicio</span>
+    <span style="font-size: 13px; color: #9ca3af; margin: 0 6px;">›</span>
+    <span style="font-size: 13px; color: #9ca3af;">Gestionar tickets</span>
+  </div>
+
+  <!-- CONTENIDO PRINCIPAL -->
+  <div style="padding: 24px 32px 48px 32px;">
+
+    <!-- ENCABEZADO -->
+    <div style="margin-bottom: 24px;">
+      <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: #2366CE; margin: 0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size: 24px; font-weight: 700; color: #111827; margin: 0;">Gestionar tickets</h2>
+    </div>
+
+    <!-- STATS -->
+    <div style="display: flex; gap: 14px; margin-bottom: 20px; flex-wrap: wrap;">
+      <div style="background: #fff; border-radius: 14px; padding: 16px 22px; border: 1.5px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 130px;">
+        <p style="font-size: 22px; font-weight: 800; color: #2366CE; margin: 0;">{{ kpiTotal }}</p>
+        <p style="font-size: 12px; color: #6b7280; margin: 2px 0 0 0;">Total tickets</p>
+      </div>
+      <div style="background: #fff; border-radius: 14px; padding: 16px 22px; border: 1.5px solid #fde68a; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 130px;">
+        <p style="font-size: 22px; font-weight: 800; color: #b45309; margin: 0;">{{ kpiPendientes }}</p>
+        <p style="font-size: 12px; color: #6b7280; margin: 2px 0 0 0;">Pendientes</p>
+      </div>
+      <div style="background: #fff; border-radius: 14px; padding: 16px 22px; border: 1.5px solid #bbf7d0; box-shadow: 0 1px 3px rgba(0,0,0,0.05); min-width: 130px;">
+        <p style="font-size: 22px; font-weight: 800; color: #15803d; margin: 0;">{{ kpiRespondidos }}</p>
+        <p style="font-size: 12px; color: #6b7280; margin: 2px 0 0 0;">Respondidos</p>
+      </div>
+    </div>
+
+    <!-- LAYOUT PRINCIPAL -->
+    <div style="display: flex; gap: 20px; align-items: flex-start;">
+
+      <!-- ═══════════ PANEL IZQUIERDO ═══════════ -->
+      <div style="width: 380px; flex-shrink: 0; display: flex; flex-direction: column; gap: 12px;">
+
+        <!-- Buscador -->
+        <div style="position: relative;">
+          <svg style="position: absolute; left: 12px; top: 50%; transform: translateY(-50%); width: 16px; height: 16px; color: #9ca3af;" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 115 11a6 6 0 0112 0z"/>
+          </svg>
+          <input
+            type="text"
+            placeholder="Buscar ticket"
+            [(ngModel)]="busqueda"
+            (input)="cargarTickets()"
+            style="width: 100%; padding: 10px 12px 10px 36px; border: 1.5px solid #e5e7eb; border-radius: 12px; font-size: 13px; color: #374151; background: #fff; outline: none; box-sizing: border-box; font-family: 'Inter', sans-serif; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"
+          />
+        </div>
+
+        <!-- Filtros -->
+        <div style="display: flex; gap: 8px;">
+          <button
+            (click)="filtroEstado = 'todos'; cargarTickets()"
+            [style.background]="filtroEstado === 'todos' ? 'linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%)' : '#fff'"
+            [style.color]="filtroEstado === 'todos' ? '#fff' : '#374151'"
+            [style.border]="filtroEstado === 'todos' ? 'none' : '1.5px solid #e5e7eb'"
+            style="flex: 1; padding: 8px 6px; border-radius: 10px; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
+            Todos
+          </button>
+          <button
+            (click)="filtroEstado = 'pendiente'; cargarTickets()"
+            [style.background]="filtroEstado === 'pendiente' ? 'linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%)' : '#fff'"
+            [style.color]="filtroEstado === 'pendiente' ? '#fff' : '#374151'"
+            [style.border]="filtroEstado === 'pendiente' ? 'none' : '1.5px solid #e5e7eb'"
+            style="flex: 1; padding: 8px 6px; border-radius: 10px; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
+            Pendientes
+          </button>
+          <button
+            (click)="filtroEstado = 'respondido'; cargarTickets()"
+            [style.background]="filtroEstado === 'respondido' ? 'linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%)' : '#fff'"
+            [style.color]="filtroEstado === 'respondido' ? '#fff' : '#374151'"
+            [style.border]="filtroEstado === 'respondido' ? 'none' : '1.5px solid #e5e7eb'"
+            style="flex: 1; padding: 8px 6px; border-radius: 10px; font-size: 12px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
+            Respondidos
+          </button>
+        </div>
+
+        <!-- Lista de tickets -->
+        <div class="tickets-lista" style="display: flex; flex-direction: column; gap: 8px; max-height: calc(100vh - 320px); overflow-y: auto;">
+
+          <div *ngIf="cargando" style="text-align: center; padding: 40px 0; color: #9ca3af; font-size: 13px;">
+            Cargando tickets...
+          </div>
+
+          <div *ngIf="!cargando && tickets.length === 0"
+               style="text-align: center; padding: 48px 20px; background: #fff; border-radius: 16px; border: 1.5px solid #e5e7eb;">
+            <p style="font-size: 13px; color: #9ca3af; margin: 0;">No hay tickets</p>
+          </div>
+
+          <div
+            *ngFor="let t of tickets"
+            (click)="seleccionarTicket(t)"
+            style="background: #fff; border-radius: 14px; padding: 14px 16px; cursor: pointer; border: 1.5px solid transparent; transition: all 0.18s;"
+            [style.border-color]="ticketSeleccionado?.idTicket === t.idTicket ? '#2366CE' : '#e5e7eb'"
+            [style.box-shadow]="ticketSeleccionado?.idTicket === t.idTicket ? '0 4px 16px rgba(35,102,206,0.15)' : '0 1px 3px rgba(0,0,0,0.05)'"
+          >
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 6px;">
+              <div style="flex: 1; min-width: 0;">
+                <p style="font-size: 14px; font-weight: 700; color: #111827; margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                  {{ labelTipo(t.tipo) }}
+                </p>
+                <p style="font-size: 12px; color: #6b7280; margin: 2px 0 0 0;">{{ t.nombreUsuario }}</p>
+              </div>
+              <div style="display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0;">
+                <span style="font-size: 11px; font-weight: 600; color: #2366CE;">{{ fechaCorta(t.fechaCreacion) }}</span>
+                <span
+                  style="font-size: 10px; font-weight: 700; padding: 2px 8px; border-radius: 20px;"
+                  [style.background]="t.estado === 'pendiente' ? 'rgba(245,158,11,0.12)' : 'rgba(34,197,94,0.12)'"
+                  [style.color]="t.estado === 'pendiente' ? '#b45309' : '#15803d'"
+                >
+                  {{ t.estado === 'pendiente' ? 'Pendiente' : 'Respondido' }}
+                </span>
+              </div>
+            </div>
+            <p style="font-size: 12px; color: #6b7280; margin: 0; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">
+              {{ t.descripcion }}
+            </p>
+            <div style="display: flex; justify-content: flex-end; margin-top: 8px;">
+              <button
+                (click)="eliminarTicket(t, $event)"
+                style="display: flex; align-items: center; gap: 4px; padding: 4px 10px; background: #fef2f2; color: #ef4444; border: none; border-radius: 8px; font-size: 11px; font-weight: 600; font-family: 'Inter', sans-serif; cursor: pointer;">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M4 7h16"/>
+                </svg>
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </div><!-- fin panel izq -->
+
+      <!-- ═══════════ PANEL DETALLE ═══════════ -->
+      <div style="flex: 1; min-width: 0;">
+
+        <!-- Sin selección -->
+        <div *ngIf="!ticketSeleccionado"
+             style="background: #fff; border-radius: 20px; border: 1.5px solid #e5e7eb; padding: 64px 32px; text-align: center; box-shadow: 0 1px 4px rgba(0,0,0,0.05);">
+          <p style="font-size: 15px; font-weight: 600; color: #374151; margin: 0 0 6px 0;">Selecciona un ticket</p>
+          <p style="font-size: 13px; color: #9ca3af; margin: 0;">Haz clic en un ticket de la lista para ver los detalles y responder.</p>
+        </div>
+
+        <!-- Detalle -->
+        <div *ngIf="ticketSeleccionado" class="ticket-detalle"
+             style="background: #fff; border-radius: 20px; border: 1.5px solid #e5e7eb; box-shadow: 0 4px 16px rgba(35,102,206,0.08); overflow: hidden; max-height: calc(100vh - 260px); overflow-y: auto;">
+
+          <!-- Header azul -->
+          <div style="background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); padding: 24px 28px;">
+            <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;">
+              <div>
+                <p style="font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; color: rgba(255,255,255,0.65); margin: 0 0 6px 0;">
+                  Ticket #{{ ticketSeleccionado.idTicket }}
+                </p>
+                <h3 style="font-size: 20px; font-weight: 700; color: #fff; margin: 0 0 4px 0;">
+                  {{ labelTipo(ticketSeleccionado.tipo) }}
+                </h3>
+                <p style="font-size: 13px; color: rgba(255,255,255,0.7); margin: 0;">
+                  {{ ticketSeleccionado.nombreUsuario }} · {{ ticketSeleccionado.correo }}
+                </p>
+              </div>
+              <span
+                style="font-size: 12px; font-weight: 700; padding: 5px 12px; border-radius: 20px; flex-shrink: 0; margin-top: 4px;"
+                [style.background]="ticketSeleccionado.estado === 'pendiente' ? 'rgba(245,158,11,0.25)' : 'rgba(34,197,94,0.25)'"
+                [style.color]="ticketSeleccionado.estado === 'pendiente' ? '#fde68a' : '#bbf7d0'"
+              >
+                {{ ticketSeleccionado.estado === 'pendiente' ? '● Pendiente' : '✓ Respondido' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Cuerpo -->
+          <div style="padding: 24px 28px; display: flex; flex-direction: column; gap: 20px;">
+
+            <!-- Descripción -->
+            <div>
+              <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; margin: 0 0 10px 0;">Descripción del reporte</p>
+              <div style="background: #f8fafc; border-radius: 12px; padding: 16px; border: 1px solid #e5e7eb;">
+                <p style="font-size: 14px; color: #374151; line-height: 1.65; margin: 0;">{{ ticketSeleccionado.descripcion }}</p>
+              </div>
+            </div>
+
+            <!-- Imagen adjunta -->
+            <div *ngIf="ticketSeleccionado.imagenUrl">
+              <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; margin: 0 0 10px 0;">Imagen adjunta</p>
+              <img
+                [src]="'data:image/jpeg;base64,' + ticketSeleccionado.imagenUrl"
+                alt="Imagen del reporte"
+                style="max-width: 100%; border-radius: 12px; border: 1.5px solid #e5e7eb; max-height: 280px; object-fit: cover;"
+              />
+            </div>
+
+            <!-- Meta info -->
+            <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+              <div style="flex: 1; min-width: 160px; background: #f8fafc; border-radius: 10px; padding: 12px 14px; border: 1px solid #e5e7eb;">
+                <p style="font-size: 11px; color: #9ca3af; margin: 0 0 4px 0;">Fecha de envío</p>
+                <p style="font-size: 13px; font-weight: 600; color: #111827; margin: 0;">{{ fechaCorta(ticketSeleccionado.fechaCreacion) }}</p>
+              </div>
+              <div *ngIf="ticketSeleccionado.fechaRespuesta" style="flex: 1; min-width: 160px; background: #f0fdf4; border-radius: 10px; padding: 12px 14px; border: 1px solid #bbf7d0;">
+                <p style="font-size: 11px; color: #9ca3af; margin: 0 0 4px 0;">Fecha de respuesta</p>
+                <p style="font-size: 13px; font-weight: 600; color: #15803d; margin: 0;">{{ fechaCorta(ticketSeleccionado.fechaRespuesta!) }}</p>
+              </div>
+            </div>
+
+            <!-- Respuesta ya enviada -->
+            <div *ngIf="ticketSeleccionado.estado === 'respondido' && ticketSeleccionado.respuesta">
+              <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #15803d; margin: 0 0 10px 0;">Respuesta enviada</p>
+              <div style="background: #f0fdf4; border-radius: 12px; padding: 16px; border: 1.5px solid #bbf7d0;">
+                <p style="font-size: 14px; color: #374151; line-height: 1.65; margin: 0;">{{ ticketSeleccionado.respuesta }}</p>
+              </div>
+            </div>
+
+            <!-- Textarea respuesta (solo si pendiente) -->
+            <div *ngIf="ticketSeleccionado.estado === 'pendiente'">
+              <p style="font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; color: #6b7280; margin: 0 0 10px 0;">Respuesta de ticket</p>
+              <textarea
+                [(ngModel)]="respuestaTexto"
+                placeholder="Ingresar respuesta"
+                style="width: 100%; min-height: 100px; border: 1.5px solid #e5e7eb; border-radius: 12px; padding: 12px 14px; font-size: 13px; font-family: 'Inter', sans-serif; color: #374151; background: #fff; resize: vertical; box-sizing: border-box; outline: none;"
+              ></textarea>
+              <div style="display: flex; justify-content: flex-end; margin-top: 10px;">
+                <button
+                  (click)="guardarRespuesta()"
+                  [disabled]="!respuestaTexto.trim() || guardandoRespuesta"
+                  [style.opacity]="!respuestaTexto.trim() || guardandoRespuesta ? '0.5' : '1'"
+                  [style.cursor]="!respuestaTexto.trim() || guardandoRespuesta ? 'not-allowed' : 'pointer'"
+                  style="display: flex; align-items: center; gap: 6px; padding: 10px 22px; background: linear-gradient(135deg, #1a3a8f 0%, #2366CE 100%); color: #fff; border: none; border-radius: 12px; font-size: 14px; font-weight: 600; font-family: 'Inter', sans-serif; box-shadow: 0 2px 8px rgba(35,102,206,0.3);">
+                  {{ guardandoRespuesta ? 'Enviando...' : 'Enviar' }}
+                  <svg width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5"/>
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+      </div><!-- fin panel detalle -->
+
+    </div><!-- fin layout -->
+
+    <!-- Footer -->
+    <div style="margin-top: 48px; text-align: center; font-size: 12px; color: #9ca3af; font-family: 'Inter', sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div><!-- fin contenido -->
+
+</div>
