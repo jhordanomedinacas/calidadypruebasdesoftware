@@ -1,0 +1,668 @@
+<style>
+  /* ══════════════════════════════════════════════
+     TOKENS — idénticos al dashboard admin
+  ══════════════════════════════════════════════ */
+  .au-root {
+    --bg:        #f0f4fb;
+    --bg-card:   #ffffff;
+    --border:    #e5e7eb;
+    --blue-dark: #1a3a8f;
+    --blue:      #2366CE;
+    --blue-soft: rgba(35,102,206,0.10);
+    --green:     #22c55e;
+    --amber:     #f59e0b;
+    --red:       #ef4444;
+    --purple:    #8b5cf6;
+    --text-1:    #111827;
+    --text-2:    #6b7280;
+    --text-3:    #9ca3af;
+    --font:      'Inter', sans-serif;
+    --shadow-sm: 0 1px 4px rgba(0,0,0,0.07);
+    --shadow-md: 0 4px 20px rgba(0,0,0,0.10);
+    --r-lg:      16px;
+    --r-md:      12px;
+    --r-sm:      8px;
+  }
+
+  .au-root {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: var(--font);
+    color: var(--text-1);
+  }
+
+  /* ── Panel base (igual que dashboard) ── */
+  .panel {
+    background: var(--bg-card);
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-lg);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    animation: cardIn 0.4s cubic-bezier(0.4,0,0.2,1) both;
+    transition: box-shadow 0.2s, border-color 0.2s;
+  }
+  .panel:hover {
+    box-shadow: 0 8px 24px rgba(35,102,206,0.10);
+    border-color: #bfdbfe;
+  }
+  .panel-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 20px 14px 20px;
+    border-bottom: 1px solid var(--border);
+  }
+  .panel-title      { font-size: 15px; font-weight: 700; color: var(--text-1); }
+  .panel-title-wrap { display: flex; align-items: center; gap: 10px; }
+  .panel-subtitle   { font-size: 12px; color: var(--text-3); font-weight: 400; }
+  .panel-badge {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-3); background: #f3f4f6;
+    padding: 3px 10px; border-radius: 20px;
+  }
+
+  /* ── Tabs (misma forma que dashboard breadcrumb pills) ── */
+  .au-tabs {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    animation: cardIn 0.38s cubic-bezier(0.4,0,0.2,1) both;
+    animation-delay: 40ms;
+  }
+  .au-tab {
+    padding: 6px 14px;
+    border-radius: 99px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+    font-family: var(--font);
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .au-tab:hover  { border-color: var(--blue); color: var(--blue); }
+  .au-tab.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+
+  /* ── Filtros ── */
+  .au-filtros {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 18px;
+    animation: cardIn 0.38s cubic-bezier(0.4,0,0.2,1) both;
+    animation-delay: 60ms;
+  }
+  .au-filtro-group        { display: flex; flex-direction: column; gap: 4px; flex: 1; min-width: 150px; }
+  .au-filtro-group label  {
+    font-size: 11px; font-weight: 600;
+    color: var(--text-2); text-transform: uppercase; letter-spacing: 0.5px;
+  }
+  .au-input {
+    padding: 9px 12px;
+    border: 1.5px solid var(--border);
+    border-radius: var(--r-sm);
+    font-size: 13px;
+    font-family: var(--font);
+    color: var(--text-1);
+    background: var(--bg-card);
+    outline: none;
+    transition: border-color 0.18s, box-shadow 0.18s;
+    box-shadow: var(--shadow-sm);
+  }
+  .au-input:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(35,102,206,0.12); }
+  .au-btn-limpiar {
+    align-self: flex-end;
+    padding: 9px 16px;
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    font-size: 13px; font-weight: 500;
+    color: var(--text-2);
+    cursor: pointer;
+    transition: all 0.18s;
+    white-space: nowrap;
+    font-family: var(--font);
+  }
+  .au-btn-limpiar:hover { border-color: var(--blue); color: var(--blue); }
+
+  /* ── Tabla ── */
+  .au-table-wrap { overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: #f8fafc; border-bottom: 2px solid var(--border); }
+  thead th {
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 11px; font-weight: 700;
+    color: var(--text-2);
+    text-transform: uppercase; letter-spacing: 0.5px;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid #f3f4f6; transition: background 0.14s; }
+  tbody tr:hover { background: #f8fafc; }
+  tbody td { padding: 13px 16px; vertical-align: middle; }
+
+  /* ── Badges operación (igual que chip-rol del dashboard) ── */
+  .badge {
+    display: inline-flex; align-items: center; gap: 4px;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 11px; font-weight: 700; letter-spacing: 0.3px;
+  }
+  .badge-insert { background: rgba(34,197,94,0.12);  color: #15803d; }
+  .badge-update { background: rgba(245,158,11,0.12); color: #b45309; }
+  .badge-delete { background: rgba(239,68,68,0.12);  color: #b91c1c; }
+
+  /* ── Iconos SVG ── */
+  .au-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    vertical-align: middle;
+  }
+  .au-icon svg { width: 14px; height: 14px; display: block; }
+  .au-tab .au-icon svg          { width: 13px; height: 13px; }
+
+  /* ── Celda tabla-afectada ── */
+  .au-tabla-cell { display: flex; align-items: center; gap: 8px; font-weight: 500; }
+
+  /* ── Celda usuario ── */
+  .au-usuario-cell  { display: flex; flex-direction: column; gap: 1px; }
+  .au-usuario-nombre { font-weight: 600; font-size: 13px; color: var(--text-1); }
+  .au-usuario-correo { font-size: 11px; color: var(--text-3); }
+
+  /* ── Acción ── */
+  .au-accion {
+    max-width: 260px; overflow: hidden;
+    text-overflow: ellipsis; white-space: nowrap;
+    color: var(--text-1);
+  }
+
+  /* ── Fecha ── */
+  .au-fecha { white-space: nowrap; color: var(--text-2); font-size: 12px; }
+
+  /* ── Btn detalle ── */
+  .au-btn-ver {
+    padding: 5px 12px;
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-size: 12px; font-weight: 500;
+    color: var(--blue); cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font);
+  }
+  .au-btn-ver:hover { background: var(--blue-soft); border-color: var(--blue); }
+
+  /* ── Skeletons ── */
+  .au-skel {
+    height: 13px;
+    background: linear-gradient(90deg,#f0f0f0 25%,#e0e0e0 50%,#f0f0f0 75%);
+    background-size: 200% 100%;
+    animation: auSkel 1.2s infinite;
+    border-radius: 4px;
+  }
+  @keyframes auSkel { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+  /* ── Vacío ── */
+  .au-empty {
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    padding: 56px 24px; gap: 10px; color: var(--text-3);
+  }
+  .au-empty svg { margin-bottom: 2px; }
+  .au-empty p    { font-size: 14px; margin: 0; }
+
+  /* ── Error (igual que alertas del dashboard) ── */
+  .au-error {
+    display: flex; align-items: center; gap: 10px;
+    padding: 13px 18px;
+    background: rgba(239,68,68,0.06);
+    border-left: 4px solid var(--red);
+    color: #b91c1c; font-size: 13px;
+    margin-bottom: 16px;
+    border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  }
+  .au-error svg { flex-shrink: 0; }
+
+  /* ── Paginación ── */
+  .au-pagination {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 14px 20px;
+    border-top: 1px solid var(--border);
+    background: #fafafa;
+    flex-wrap: wrap; gap: 8px;
+  }
+  .au-pag-info { font-size: 12px; color: var(--text-2); }
+  .au-pag-btns { display: flex; gap: 4px; align-items: center; }
+  .au-pag-btn {
+    min-width: 32px; height: 32px; padding: 0 8px;
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    font-size: 13px; font-weight: 500; font-family: var(--font);
+    color: var(--text-1); cursor: pointer;
+    transition: all 0.15s;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .au-pag-btn:hover:not(:disabled):not(.active) { border-color: var(--blue); color: var(--blue); }
+  .au-pag-btn.active  { background: var(--blue); border-color: var(--blue); color: #fff; }
+  .au-pag-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .au-pag-dots { font-size: 13px; color: var(--text-3); padding: 0 4px; }
+
+  /* ── Modal de detalle (mismo patrón que el modal de perfil del navbar) ── */
+  .au-modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(10, 20, 60, 0.75);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 1000; padding: 20px;
+    animation: auOverlayIn 0.2s ease;
+  }
+  @keyframes auOverlayIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes auModalSlideIn {
+    from { opacity: 0; transform: translateY(24px) scale(0.97); }
+    to   { opacity: 1; transform: translateY(0) scale(1); }
+  }
+  .au-modal {
+    background: var(--bg-card);
+    border-radius: 20px;
+    width: 100%; max-width: 440px;
+    max-height: 90vh; overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.28);
+    animation: auModalSlideIn 0.32s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  /* Header — logo + título, igual que logout-modal__header */
+  .au-modal-header {
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 14px;
+    padding: 20px 24px;
+    border-bottom: 1.5px solid var(--border);
+  }
+  .au-modal-logo { height: 36px; object-fit: contain; flex-shrink: 0; }
+  .au-modal-titulo {
+    font-size: 16px; font-weight: 800; color: var(--blue-dark);
+    margin: 0 0 2px 0;
+  }
+  .au-modal-sub { font-size: 12px; color: var(--text-2); margin: 0; }
+  .au-modal-close {
+    width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+    border: none; background: #f1f5f9;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--text-2); transition: background 0.15s;
+  }
+  .au-modal-close:hover { background: #e5e7eb; }
+
+  /* Hero — icono grande de la tabla + badge de operación, igual que perfil-modal__hero */
+  .au-modal-hero {
+    display: flex; flex-direction: column;
+    align-items: center; gap: 6px;
+    padding: 20px 24px 18px;
+    background: linear-gradient(160deg, #f0f6ff 0%, #fff 60%);
+    border-bottom: 1.5px solid var(--border);
+  }
+  .au-modal-hero-icon {
+    width: 40px; height: 40px; border-radius: 50%;
+    color: #fff;
+    display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 6px 16px rgba(35,102,206,0.28);
+  }
+  .au-modal-hero-icon.op-insert { background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); }
+  .au-modal-hero-icon.op-update { background: linear-gradient(135deg, #b45309 0%, #f59e0b 100%); }
+  .au-modal-hero-icon.op-delete { background: linear-gradient(135deg, #b91c1c 0%, #ef4444 100%); }
+  .au-modal-hero-icon svg { width: 18px; height: 18px; }
+  .au-modal-hero-tabla {
+    font-size: 16px; font-weight: 800; color: var(--blue-dark);
+    margin: 0; text-align: center;
+  }
+
+  /* Body — filas con icon-chip, igual que perfil-modal__row */
+  .au-modal-body { padding: 6px 0 4px; }
+  .au-modal-row {
+    display: flex; align-items: flex-start; gap: 14px;
+    padding: 13px 24px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  .au-modal-row:last-child { border-bottom: none; }
+  .au-modal-row-icon {
+    width: 36px; height: 36px; border-radius: 10px; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    margin-top: 1px;
+  }
+  .au-modal-row-icon svg { width: 16px; height: 16px; }
+  .au-modal-row-info { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+  .au-modal-label {
+    font-size: 11px; font-weight: 600; color: var(--text-3);
+    text-transform: uppercase; letter-spacing: 0.04em;
+  }
+  .au-modal-val   { font-size: 13px; font-weight: 600; color: var(--text-1); word-break: break-word; }
+  .au-modal-val.mono {
+    font-family: 'Courier New', monospace; font-size: 12px; font-weight: 400;
+    background: #f8fafc; border: 1px solid var(--border);
+    border-radius: var(--r-sm); padding: 9px 11px; margin-top: 4px;
+    white-space: pre-wrap; color: var(--text-2); display: block;
+  }
+
+  /* Footer — botón cerrar, igual que logout-modal__footer */
+  .au-modal-footer { padding: 4px 24px 22px; }
+  .au-modal-btn-cerrar {
+    width: 100%; padding: 11px;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: var(--bg-card); color: var(--text-1);
+    font-size: 13px; font-weight: 600;
+    font-family: var(--font);
+    cursor: pointer; transition: background 0.15s;
+  }
+  .au-modal-btn-cerrar:hover { background: #f8fafc; }
+
+  /* ── Animaciones (mismas que dashboard) ── */
+  @keyframes cardIn  { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+  @keyframes pulse   { 0%{transform:scale(1);opacity:.6} 70%{transform:scale(2.2);opacity:0} 100%{transform:scale(2.2);opacity:0} }
+
+  /* ── Responsive ── */
+  @media (max-width: 768px) {
+    .au-filtros { flex-direction: column; }
+    .au-accion  { max-width: 160px; }
+  }
+</style>
+
+<div class="au-root">
+  <app-navbar (logout)="onLogout()"></app-navbar>
+
+  <!-- Breadcrumb — mismo patrón que dashboard -->
+  <div style="padding: 18px 32px 0 32px; font-family: 'Inter', sans-serif;">
+    <span style="font-size:13px; color:#2366CE; font-weight:600; cursor:pointer;" (click)="irA('dashboarda')">Dashboard</span>
+    <span style="font-size:13px; color:#9ca3af; margin:0 6px;">›</span>
+    <span style="font-size:13px; color:#9ca3af;">Auditorías</span>
+  </div>
+
+  <!-- Contenido -->
+  <div style="padding: 24px 32px 64px 32px;">
+
+    <!-- Encabezado — mismo estilo que dashboard -->
+    <div style="margin-bottom: 20px; animation: cardIn 0.35s cubic-bezier(0.4,0,0.2,1) both;">
+      <p style="font-size:11px; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; color:#2366CE; margin:0 0 4px 0;">Corredor Azul</p>
+      <h2 style="font-size:24px; font-weight:700; color:#111827; margin:0;">
+        Registro de Auditorías
+        <span style="font-size:14px; font-weight:600; color:var(--text-3); margin-left:10px;
+                     background:#f3f4f6; padding:4px 12px; border-radius:20px; vertical-align:middle;">
+          {{ totalRegistros | number }} eventos
+        </span>
+      </h2>
+    </div>
+
+    <!-- Error -->
+    <div class="au-error" *ngIf="error">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" width="16" height="16" style="flex-shrink:0;">
+        <path d="M12 9v3.75m9.303 3.376c.866 1.5-.217 3.374-1.948 3.374H4.645c-1.73 0-2.813-1.874-1.948-3.374L10.652 3.622c.866-1.5 3.032-1.5 3.898 0l8.601 12.502zM12 15.75h.007v.008H12v-.008Z"/>
+      </svg>
+      {{ error }}
+    </div>
+
+    <!-- Tabs por tabla -->
+    <div class="au-tabs">
+      <button
+        *ngFor="let t of tablas"
+        class="au-tab"
+        [class.active]="tablaActiva === t"
+        (click)="cambiarTabla(t)">
+        <span class="au-icon" [innerHTML]="iconoTablaSvg(t)"></span>
+        {{ t === 'Todas' ? 'Todas' : t.replace('_', ' ') }}
+      </button>
+    </div>
+
+    <!-- Filtros fecha + usuario -->
+    <div class="au-filtros">
+      <div class="au-filtro-group">
+        <label>Desde</label>
+        <input class="au-input" type="date" [(ngModel)]="fechaIni" (change)="onFechaChange()" />
+      </div>
+      <div class="au-filtro-group">
+        <label>Hasta</label>
+        <input class="au-input" type="date" [(ngModel)]="fechaFin" (change)="onFechaChange()" />
+      </div>
+      <div class="au-filtro-group" style="flex:2; min-width:200px;">
+        <label>Usuario (nombre o correo)</label>
+        <input
+          class="au-input" type="text"
+          placeholder="Buscar usuario..."
+          [(ngModel)]="busquedaUsuario"
+          (ngModelChange)="onBusquedaChange()" />
+      </div>
+      <button class="au-btn-limpiar" (click)="limpiarFiltros()">✕ Limpiar</button>
+    </div>
+
+    <!-- Panel principal -->
+    <div class="panel" style="animation-delay: 80ms;">
+      <div class="panel-header">
+        <div class="panel-title-wrap">
+          <span class="panel-title">Historial de cambios</span>
+          <span class="panel-subtitle">Ordenado por más reciente</span>
+        </div>
+        <span class="panel-badge">{{ tablaActiva }}</span>
+      </div>
+
+      <div class="au-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Tabla</th>
+              <th>Operación</th>
+              <th>Usuario</th>
+              <th>Acción</th>
+              <th>Fecha</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+
+            <!-- Skeletons -->
+            <ng-container *ngIf="cargando">
+              <tr *ngFor="let i of [1,2,3,4,5,6,7,8,9,10]">
+                <td><div class="au-skel" style="width:28px"></div></td>
+                <td><div class="au-skel" style="width:100px"></div></td>
+                <td><div class="au-skel" style="width:58px"></div></td>
+                <td><div class="au-skel" style="width:130px"></div></td>
+                <td><div class="au-skel" style="width:210px"></div></td>
+                <td><div class="au-skel" style="width:95px"></div></td>
+                <td><div class="au-skel" style="width:55px"></div></td>
+              </tr>
+            </ng-container>
+
+            <!-- Sin datos -->
+            <tr *ngIf="!cargando && auditorias.length === 0">
+              <td colspan="7">
+                <div class="au-empty">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="#d1d5db" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" width="40" height="40">
+                    <path d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607Z"/>
+                  </svg>
+                  <p>No se encontraron eventos con los filtros aplicados.</p>
+                </div>
+              </td>
+            </tr>
+
+            <!-- Filas de datos -->
+            <tr *ngFor="let a of auditorias">
+              <td style="color:var(--text-3); font-size:12px;">{{ a.id }}</td>
+              <td>
+                <div class="au-tabla-cell">
+                  <span class="au-icon" [innerHTML]="iconoTablaSvg(a.tablaAfectada)"></span>
+                  <span>{{ a.tablaAfectada.replace('_', ' ') }}</span>
+                </div>
+              </td>
+              <td>
+                <span class="badge" [ngClass]="badgeOperacion(a.operacion)">
+                  {{ a.operacion }}
+                </span>
+              </td>
+              <td>
+                <div class="au-usuario-cell">
+                  <span class="au-usuario-nombre">{{ a.usuario }}</span>
+                  <span class="au-usuario-correo">{{ a.correo }}</span>
+                </div>
+              </td>
+              <td>
+                <div class="au-accion" [title]="a.accion">{{ a.accion }}</div>
+              </td>
+              <td>
+                <span class="au-fecha">{{ formatFechaHora(a.fecha) }}</span>
+              </td>
+              <td>
+                <button class="au-btn-ver" (click)="verDetalle(a)">Ver más</button>
+              </td>
+            </tr>
+
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Paginación -->
+      <div class="au-pagination" *ngIf="!cargando && auditorias.length > 0">
+        <span class="au-pag-info">
+          {{ (paginaActual - 1) * itemsPorPagina + 1 }}–{{ paginaActual * itemsPorPagina > totalRegistros ? totalRegistros : paginaActual * itemsPorPagina }}
+          de {{ totalRegistros | number }} registros
+        </span>
+        <div class="au-pag-btns">
+          <button class="au-pag-btn" (click)="paginaAnterior()" [disabled]="paginaActual === 1">‹</button>
+          <ng-container *ngFor="let p of paginasVisibles">
+            <span *ngIf="p === '...'" class="au-pag-dots">…</span>
+            <button
+              *ngIf="p !== '...'"
+              class="au-pag-btn"
+              [class.active]="p === paginaActual"
+              (click)="irPagina(p)">{{ p }}</button>
+          </ng-container>
+          <button class="au-pag-btn" (click)="paginaSiguiente()" [disabled]="paginaActual === totalPaginas">›</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Footer — igual que dashboard -->
+    <div style="margin-top:48px; text-align:center; font-size:12px; color:#9ca3af; font-family:'Inter',sans-serif;">
+      Corredor Azul © 2025 · Sistema de transporte público
+    </div>
+
+  </div>
+
+  <!-- Modal detalle (dentro de .au-root para heredar las variables CSS) -->
+  <div class="au-modal-overlay" *ngIf="modalDetalle" (click)="cerrarModal()">
+    <div class="au-modal" (click)="$event.stopPropagation()" *ngIf="auditoriaSeleccionada as a">
+
+      <!-- Header — igual que el modal de perfil del navbar -->
+      <div class="au-modal-header">
+        <img src="Logo_CorredorAzul.png" alt="Corredor Azul" class="au-modal-logo" />
+        <div style="flex:1; min-width:0;">
+          <p class="au-modal-titulo">Detalle del evento</p>
+          <p class="au-modal-sub">Corredor Azul</p>
+        </div>
+        <button class="au-modal-close" (click)="cerrarModal()">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+
+      <!-- Hero — icono de la tabla + nombre + badge de operación -->
+      <div class="au-modal-hero">
+        <div class="au-modal-hero-icon" [ngClass]="'op-' + a.operacion.toLowerCase()">
+          <span class="au-icon" [innerHTML]="iconoTablaSvg(a.tablaAfectada)"></span>
+        </div>
+        <p class="au-modal-hero-tabla">{{ a.tablaAfectada.replace('_', ' ') }}</p>
+        <span class="badge" [ngClass]="badgeOperacion(a.operacion)">{{ a.operacion }}</span>
+      </div>
+
+      <!-- Datos del evento -->
+      <div class="au-modal-body">
+
+        <div class="au-modal-row">
+          <div class="au-modal-row-icon" style="background: rgba(35,102,206,0.08);">
+            <svg fill="none" stroke="#2366CE" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M11.25 11.25l.041-.02a.75.75 0 011.063.852l-.708 2.836a.75.75 0 001.063.853l.041-.021M21 12a9 9 0 11-18 0 9 9 0 0118 0Zm-9-3.75h.008v.008H12V8.25Z"/>
+            </svg>
+          </div>
+          <div class="au-modal-row-info">
+            <span class="au-modal-label">Acción</span>
+            <span class="au-modal-val">{{ a.accion }}</span>
+          </div>
+        </div>
+
+        <div class="au-modal-row">
+          <div class="au-modal-row-icon" style="background: rgba(124,58,237,0.08);">
+            <svg fill="none" stroke="#7c3aed" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M9.568 3H5.25A2.25 2.25 0 003 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581c.699.699 1.78.872 2.607.31a18.095 18.095 0 005.99-6.09c.572-.927.4-2.009-.299-2.708L12.659 3.659A2.25 2.25 0 009.568 3Z M6 6h.008v.008H6V6Z"/>
+            </svg>
+          </div>
+          <div class="au-modal-row-info">
+            <span class="au-modal-label">ID Registro</span>
+            <span class="au-modal-val">{{ a.idRegistro !== null ? a.idRegistro : '—' }}</span>
+          </div>
+        </div>
+
+        <div class="au-modal-row">
+          <div class="au-modal-row-icon" style="background: rgba(8,145,178,0.08);">
+            <svg fill="none" stroke="#0891b2" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0ZM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632Z"/>
+            </svg>
+          </div>
+          <div class="au-modal-row-info">
+            <span class="au-modal-label">Usuario</span>
+            <span class="au-modal-val">{{ a.usuario }}</span>
+            <span style="font-size:11px; color:var(--text-3);">{{ a.correo }} · {{ a.rol }}</span>
+          </div>
+        </div>
+
+        <div class="au-modal-row">
+          <div class="au-modal-row-icon" style="background: rgba(22,163,74,0.08);">
+            <svg fill="none" stroke="#16a34a" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0Z"/>
+            </svg>
+          </div>
+          <div class="au-modal-row-info">
+            <span class="au-modal-label">Fecha y hora</span>
+            <span class="au-modal-val">{{ formatFechaHora(a.fecha) }}</span>
+          </div>
+        </div>
+
+        <div class="au-modal-row" *ngIf="a.valorAnterior">
+          <div class="au-modal-row-icon" style="background: rgba(239,68,68,0.08);">
+            <svg fill="none" stroke="#dc2626" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 7.5L12 3m0 0L7.5 7.5M12 3v13.5"/>
+            </svg>
+          </div>
+          <div class="au-modal-row-info">
+            <span class="au-modal-label">Valor anterior</span>
+            <span class="au-modal-val mono">{{ formatearValor(a.valorAnterior) }}</span>
+          </div>
+        </div>
+
+        <div class="au-modal-row" *ngIf="a.valorNuevo">
+          <div class="au-modal-row-icon" style="background: rgba(34,197,94,0.08);">
+            <svg fill="none" stroke="#16a34a" stroke-width="1.6" viewBox="0 0 24 24" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 12m0 0l4.5-4.5M12 12V3"/>
+            </svg>
+          </div>
+          <div class="au-modal-row-info">
+            <span class="au-modal-label">Valor nuevo</span>
+            <span class="au-modal-val mono">{{ formatearValor(a.valorNuevo) }}</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Footer -->
+      <div class="au-modal-footer">
+        <button class="au-modal-btn-cerrar" (click)="cerrarModal()">Cerrar</button>
+      </div>
+
+    </div>
+  </div>
+</div>
