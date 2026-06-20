@@ -4,26 +4,31 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NavbarComponent } from '../../../components/navbar/navbar';
 import { AuthService } from '../../../services/auth';
+import {
+  UsuarioAdminService,
+  UsuarioAdminListado,
+  RolOption,
+} from '../../../services/usuario-admin';
 
 // ── Tipos ──────────────────────────────────────────────────────────────────────
 
 export type EstadoUsuario = 'activo' | 'baja' | 'suspendido';
-export type RolUsuario = 'Admin' | 'Usuario' | 'Operario' | 'Conductor';
 
-export interface Usuario {
+// Vista local de un usuario, ya con los campos calculados (badge, iniciales, etc.)
+// que el HTML espera. Se construye a partir de UsuarioAdminListado (el DTO real
+// que devuelve el backend).
+export interface UsuarioVM {
   id:              number;
   nombre:          string;
   iniciales:       string;
-  avatarUrl?:      string;
   saldo:           number;
   fechaRegistro:   string;
   estado:          EstadoUsuario;
   estadoLabel:     string;
   estadoClass:     string;
-  rol:             RolUsuario;
+  idRol:           number;
   rolLabel:        string;
   rolClass:        string;
-  // Campos extra del schema Oracle
   correo?:         string;
   telefono?:       string;
   tipoDocumento?:  string;
@@ -38,12 +43,25 @@ export interface FormEditar {
   telefono:      string;
   tipoDocumento: string;
   nroDocumento:  string;
-  rol:           string;
+  idRol:         number | null;
   estado:        string;
   saldo:         number;
 }
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
+
+// Convención de Usuario.estado en BD: 1=Activo, 0=Baja, 2=Suspendido
+function estadoNumeroATexto(estado: number): EstadoUsuario {
+  if (estado === 1) return 'activo';
+  if (estado === 2) return 'suspendido';
+  return 'baja';
+}
+
+function estadoTextoANumero(estado: EstadoUsuario): number {
+  if (estado === 'activo') return 1;
+  if (estado === 'suspendido') return 2;
+  return 0;
+}
 
 function estadoMeta(estado: EstadoUsuario): { estadoLabel: string; estadoClass: string } {
   const map: Record<EstadoUsuario, { estadoLabel: string; estadoClass: string }> = {
@@ -54,14 +72,15 @@ function estadoMeta(estado: EstadoUsuario): { estadoLabel: string; estadoClass: 
   return map[estado];
 }
 
-function rolMeta(rol: RolUsuario): { rolLabel: string; rolClass: string } {
-  const map: Record<RolUsuario, { rolLabel: string; rolClass: string }> = {
-    Admin:      { rolLabel: 'Admin',      rolClass: 'admin'      },
-    Usuario:    { rolLabel: 'Usuario',    rolClass: 'usuario'    },
-    Operario:   { rolLabel: 'Operario',   rolClass: 'operario'   },
-    Conductor:  { rolLabel: 'Conductor',  rolClass: 'conductor'  },
-  };
-  return map[rol];
+// La clase CSS del badge de rol se calcula a partir del nombre real que
+// devuelve la BD (Rol.nombre_rol), no de un enum fijo, para no romper si
+// agregan/renombran roles. Si no reconoce el rol, cae a una clase neutra.
+function rolClassDesdeNombre(nombreRol: string): string {
+  const n = (nombreRol || '').toLowerCase();
+  if (n.includes('admin'))      return 'admin';
+  if (n.includes('operario'))   return 'operario';
+  if (n.includes('conductor'))  return 'conductor';
+  return 'usuario';
 }
 
 function iniciales(nombre: string): string {
@@ -71,6 +90,27 @@ function iniciales(nombre: string): string {
     .slice(0, 2)
     .map(p => p[0].toUpperCase())
     .join('');
+}
+
+function aVM(u: UsuarioAdminListado): UsuarioVM {
+  const estado = estadoNumeroATexto(u.estado);
+  return {
+    id:             u.id,
+    nombre:         u.nombreCompleto,
+    iniciales:      iniciales(u.nombreCompleto),
+    saldo:          u.saldo,
+    fechaRegistro:  u.fechaRegistro,
+    estado,
+    estadoLabel:    u.estadoLabel,
+    estadoClass:    estadoMeta(estado).estadoClass,
+    idRol:          u.idRol,
+    rolLabel:       u.nombreRol,
+    rolClass:       rolClassDesdeNombre(u.nombreRol),
+    correo:         u.correo,
+    telefono:       u.telefono,
+    tipoDocumento:  u.tipoDocumento,
+    nroDocumento:   u.nroDocumento,
+  };
 }
 
 // ── Componente ─────────────────────────────────────────────────────────────────
@@ -86,54 +126,97 @@ export class GestionarUsuariosComponent implements OnInit {
 
   busqueda: string = '';
 
-  // ── Datos mock (reemplazar con llamada a servicio) ──────────────────────────
-  private todosLosUsuarios: Usuario[] = [
-    { id: 1,  nombre: 'Jorge Luis Machado Flores',  iniciales: 'JM', saldo: 15.00, fechaRegistro: '12 Ene 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'j.machado@gmail.com',    telefono: '987654321', tipoDocumento: 'DNI', nroDocumento: '45678901' },
-    { id: 2,  nombre: 'Yerami Medina Quispe',       iniciales: 'YM', saldo: 15.00, fechaRegistro: '15 Ene 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'yerami.mq@gmail.com',    telefono: '912345678', tipoDocumento: 'DNI', nroDocumento: '46789012' },
-    { id: 3,  nombre: 'Carlos Alberto Paredes',     iniciales: 'CP', saldo: 15.00, fechaRegistro: '03 Feb 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Conductor', ...rolMeta('Conductor'), correo: 'c.paredes@hotmail.com',  telefono: '',          tipoDocumento: 'DNI', nroDocumento: '47890123' },
-    { id: 4,  nombre: 'Lucía Ríos Torres',          iniciales: 'LR', saldo: 15.00, fechaRegistro: '20 Feb 2024', estado: 'baja',       ...estadoMeta('baja'),       rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'lucia.rt@gmail.com',     telefono: '934567890', tipoDocumento: 'DNI', nroDocumento: '48901234' },
-    { id: 5,  nombre: 'Miguel Alonzo Huanca',       iniciales: 'MA', saldo: 15.00, fechaRegistro: '08 Mar 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Operario',  ...rolMeta('Operario'),  correo: 'm.huanca@corredor.pe',  telefono: '956789012', tipoDocumento: 'DNI', nroDocumento: '49012345' },
-    { id: 6,  nombre: 'Patricia Vega Salcedo',      iniciales: 'PV', saldo: 32.50, fechaRegistro: '22 Mar 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'pvega@gmail.com',        telefono: '978901234', tipoDocumento: 'CE',  nroDocumento: 'CE001122' },
-    { id: 7,  nombre: 'Rodrigo Castillo Mendoza',   iniciales: 'RC', saldo: 8.00,  fechaRegistro: '01 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Conductor', ...rolMeta('Conductor'), correo: 'r.castillo@corredor.pe', telefono: '900123456', tipoDocumento: 'DNI', nroDocumento: '50123456' },
-    { id: 8,  nombre: 'Sofía Mamani Apaza',         iniciales: 'SM', saldo: 21.00, fechaRegistro: '14 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'sofia.ma@gmail.com',     telefono: '921234567', tipoDocumento: 'DNI', nroDocumento: '51234567' },
-    { id: 9,  nombre: 'Diego Flores Cárdenas',      iniciales: 'DF', saldo: 5.50,  fechaRegistro: '30 Abr 2024', estado: 'activo',     ...estadoMeta('activo'),     rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'd.flores@gmail.com',     telefono: '',          tipoDocumento: 'DNI', nroDocumento: '52345678' },
-    { id: 10, nombre: 'Ana Lucía Herrera Ramos',    iniciales: 'AH', saldo: 15.00, fechaRegistro: '05 May 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Usuario',   ...rolMeta('Usuario'),   correo: 'ana.hr@gmail.com',       telefono: '943456789', tipoDocumento: 'DNI', nroDocumento: '53456789' },
-    { id: 11, nombre: 'Ernesto Tapia Villanueva',   iniciales: 'ET', saldo: 15.00, fechaRegistro: '18 May 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Admin',     ...rolMeta('Admin'),     correo: 'e.tapia@corredor.pe',    telefono: '964567890', tipoDocumento: 'DNI', nroDocumento: '54567890' },
-    { id: 12, nombre: 'Claudia Soto Quiroz',        iniciales: 'CS', saldo: 15.00, fechaRegistro: '02 Jun 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Operario',  ...rolMeta('Operario'),  correo: 'c.soto@gmail.com',       telefono: '',          tipoDocumento: 'CE',  nroDocumento: 'CE003344' },
-    { id: 13, nombre: 'Héctor Quispe Lazo',         iniciales: 'HQ', saldo: 15.00, fechaRegistro: '19 Jun 2024', estado: 'suspendido', ...estadoMeta('suspendido'), rol: 'Conductor', ...rolMeta('Conductor'), correo: 'h.quispe@corredor.pe',   telefono: '975678901', tipoDocumento: 'DNI', nroDocumento: '55678901' },
-  ];
+  usuariosFiltrados: UsuarioVM[] = [];
+  roles: RolOption[] = [];
 
-  usuariosFiltrados: Usuario[] = [];
-
-  get totalUsuarios(): number {
-    return this.todosLosUsuarios.length;
-  }
+  totalUsuarios = 0;
+  pagina = 1;
+  tamPagina = 10;
+  cargando = false;
+  error: string | null = null;
 
   // ── Estados de modales ──────────────────────────────────────────────────────
   modalEliminarAbierto = false;
   modalEditarAbierto   = false;
   modalVerAbierto      = false;
+  guardandoEdicion     = false;
 
-  usuarioSeleccionado: Usuario | null = null;
+  usuarioSeleccionado: UsuarioVM | null = null;
   formEditar: FormEditar | null = null;
-  constructor(private auth: AuthService,private router: Router, private cdr: ChangeDetectorRef) {}
 
-  ngOnInit(): void {
-    this.usuariosFiltrados = [...this.todosLosUsuarios];
+  // ── Paginación ───────────────────────────────────────────────────────────────
+  get totalPaginas(): number {
+    return Math.max(1, Math.ceil(this.totalUsuarios / this.tamPagina));
   }
 
-  // ── Filtrado ────────────────────────────────────────────────────────────────
+  constructor(
+    private usuarioAdminService: UsuarioAdminService,
+    private auth: AuthService,
+    private router: Router,
+    private cdr: ChangeDetectorRef,
+  ) {}
+
+  ngOnInit(): void {
+    this.cargarRoles();
+    this.cargarUsuarios();
+  }
+
+  // ── Carga de datos ───────────────────────────────────────────────────────────
+
+  private cargarRoles(): void {
+    this.usuarioAdminService.listarRoles().subscribe({
+      next: roles => this.roles = roles,
+      error: () => { /* el select de rol simplemente quedará vacío */ },
+    });
+  }
+
+  cargarUsuarios(): void {
+    this.cargando = true;
+    this.error = null;
+
+    this.usuarioAdminService.listar(this.busqueda, this.pagina, this.tamPagina).subscribe({
+      next: res => {
+        this.usuariosFiltrados = res.usuarios.map(aVM);
+        this.totalUsuarios = res.total;
+        this.cargando = false;
+      },
+      error: () => {
+        this.error = 'No se pudo cargar la lista de usuarios.';
+        this.cargando = false;
+      },
+    });
+  }
+
+  // ── Filtrado (vía backend, con debounce simple desde el input) ──────────────
 
   filtrar(): void {
-    const busq = this.busqueda.toLowerCase().trim();
-    this.usuariosFiltrados = busq
-      ? this.todosLosUsuarios.filter(u => u.nombre.toLowerCase().includes(busq))
-      : [...this.todosLosUsuarios];
+    this.pagina = 1;
+    this.cargarUsuarios();
+  }
+
+  // ── Paginación ───────────────────────────────────────────────────────────────
+
+  paginaAnterior(): void {
+    if (this.pagina <= 1) return;
+    this.pagina--;
+    this.cargarUsuarios();
+  }
+
+  paginaSiguiente(): void {
+    if (this.pagina >= this.totalPaginas) return;
+    this.pagina++;
+    this.cargarUsuarios();
+  }
+
+  irAPagina(n: number): void {
+    if (n < 1 || n > this.totalPaginas || n === this.pagina) return;
+    this.pagina = n;
+    this.cargarUsuarios();
   }
 
   // ── Modal ELIMINAR ──────────────────────────────────────────────────────────
 
-  abrirModalEliminar(usuario: Usuario): void {
+  abrirModalEliminar(usuario: UsuarioVM): void {
     this.usuarioSeleccionado = usuario;
     this.modalEliminarAbierto = true;
   }
@@ -151,33 +234,46 @@ export class GestionarUsuariosComponent implements OnInit {
 
   confirmarEliminar(): void {
     if (!this.usuarioSeleccionado) return;
-    // TODO: llamar al servicio DELETE /usuarios/:id
-    console.log('Eliminar usuario:', this.usuarioSeleccionado.id, this.usuarioSeleccionado.nombre);
-    this.todosLosUsuarios = this.todosLosUsuarios.filter(u => u.id !== this.usuarioSeleccionado!.id);
-    this.filtrar();
-    this.cerrarModalEliminar();
+    const id = this.usuarioSeleccionado.id;
+
+    this.usuarioAdminService.eliminar(id).subscribe({
+      next: () => {
+        this.cerrarModalEliminar();
+        this.cargarUsuarios();
+      },
+      error: () => {
+        this.error = 'No se pudo eliminar el usuario.';
+        this.cerrarModalEliminar();
+      },
+    });
   }
 
   // ── Modal EDITAR ────────────────────────────────────────────────────────────
 
-  abrirModalEditar(usuario: Usuario): void {
+  abrirModalEditar(usuario: UsuarioVM): void {
     this.usuarioSeleccionado = usuario;
-    // Separar nombre completo en nombres / apellidos (split por primer espacio de la segunda palabra)
-    const partes = usuario.nombre.trim().split(' ');
-    const nombres   = partes.slice(0, 2).join(' ');
-    const apellidos = partes.slice(2).join(' ');
-    this.formEditar = {
-      nombres,
-      apellidos,
-      correo:        usuario.correo        ?? '',
-      telefono:      usuario.telefono      ?? '',
-      tipoDocumento: usuario.tipoDocumento ?? '',
-      nroDocumento:  usuario.nroDocumento  ?? '',
-      rol:           usuario.rol,
-      estado:        usuario.estado,
-      saldo:         usuario.saldo,
-    };
-    this.modalEditarAbierto = true;
+
+    // Pedimos el detalle completo al backend (trae nombres/apellidos por
+    // separado, en vez de tener que partir el "nombre" combinado del listado).
+    this.usuarioAdminService.obtener(usuario.id).subscribe({
+      next: detalle => {
+        this.formEditar = {
+          nombres:       detalle.nombres,
+          apellidos:     detalle.apellidos,
+          correo:        detalle.correo,
+          telefono:      detalle.telefono ?? '',
+          tipoDocumento: detalle.tipoDocumento ?? '',
+          nroDocumento:  detalle.nroDocumento ?? '',
+          idRol:         detalle.idRol,
+          estado:        estadoNumeroATexto(detalle.estado),
+          saldo:         detalle.saldo,
+        };
+        this.modalEditarAbierto = true;
+      },
+      error: () => {
+        this.error = 'No se pudo cargar el detalle del usuario.';
+      },
+    });
   }
 
   cerrarModalEditar(): void {
@@ -194,43 +290,40 @@ export class GestionarUsuariosComponent implements OnInit {
 
   guardarEdicion(): void {
     if (!this.formEditar || !this.usuarioSeleccionado) return;
-    if (!this.formEditar.nombres || !this.formEditar.apellidos || !this.formEditar.correo || !this.formEditar.rol) {
-      // TODO: mostrar validación
+    if (!this.formEditar.nombres || !this.formEditar.apellidos
+        || !this.formEditar.correo || !this.formEditar.idRol) {
+      this.error = 'Completa todos los campos obligatorios.';
       return;
     }
 
-    // Construir nombre completo
-    const nombreCompleto = `${this.formEditar.nombres} ${this.formEditar.apellidos}`.trim();
-    const estado = this.formEditar.estado as EstadoUsuario;
-    const rol    = this.formEditar.rol    as RolUsuario;
+    const id = this.usuarioSeleccionado.id;
+    this.guardandoEdicion = true;
 
-    // Actualizar en el array local
-    const idx = this.todosLosUsuarios.findIndex(u => u.id === this.usuarioSeleccionado!.id);
-    if (idx !== -1) {
-      this.todosLosUsuarios[idx] = {
-        ...this.todosLosUsuarios[idx],
-        nombre:        nombreCompleto,
-        iniciales:     iniciales(nombreCompleto),
-        correo:        this.formEditar.correo,
-        telefono:      this.formEditar.telefono,
-        tipoDocumento: this.formEditar.tipoDocumento,
-        nroDocumento:  this.formEditar.nroDocumento,
-        rol,
-        estado,
-        ...estadoMeta(estado),
-        ...rolMeta(rol),
-      };
-    }
-
-    // TODO: llamar al servicio PUT /usuarios/:id
-    console.log('Guardar edición:', this.usuarioSeleccionado.id, this.formEditar);
-    this.filtrar();
-    this.cerrarModalEditar();
+    this.usuarioAdminService.editar(id, {
+      nombres:       this.formEditar.nombres,
+      apellidos:     this.formEditar.apellidos,
+      correo:        this.formEditar.correo,
+      telefono:      this.formEditar.telefono,
+      tipoDocumento: this.formEditar.tipoDocumento,
+      nroDocumento:  this.formEditar.nroDocumento,
+      idRol:         this.formEditar.idRol,
+      estado:        estadoTextoANumero(this.formEditar.estado as EstadoUsuario),
+    }).subscribe({
+      next: () => {
+        this.guardandoEdicion = false;
+        this.cerrarModalEditar();
+        this.cargarUsuarios();
+      },
+      error: (err) => {
+        this.guardandoEdicion = false;
+        this.error = err?.error?.message || 'No se pudo guardar la edición.';
+      },
+    });
   }
 
   // ── Modal VER DETALLE ───────────────────────────────────────────────────────
 
-  abrirModalVer(usuario: Usuario): void {
+  abrirModalVer(usuario: UsuarioVM): void {
     this.usuarioSeleccionado = usuario;
     this.modalVerAbierto = true;
   }

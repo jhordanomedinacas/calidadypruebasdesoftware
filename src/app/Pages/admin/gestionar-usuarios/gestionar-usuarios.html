@@ -231,6 +231,38 @@
   }
   .gu-footer-count { font-weight: 500; }
 
+  /* ── Paginación ── */
+  .gu-paginacion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .gu-pag-btn {
+    width: 28px; height: 28px;
+    border-radius: var(--r-sm);
+    border: 1.5px solid var(--border);
+    background: var(--bg-card);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer;
+    color: var(--text-2);
+    transition: background 0.15s, border-color 0.15s, color 0.15s, opacity 0.15s;
+  }
+  .gu-pag-btn:hover:not(:disabled) {
+    background: var(--blue-soft);
+    border-color: #bfdbfe;
+    color: var(--blue);
+  }
+  .gu-pag-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+  }
+  .gu-pag-info {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text-2);
+    white-space: nowrap;
+  }
+
   /* ══════════════════════════════════════════════
      ANIMACIONES
   ══════════════════════════════════════════════ */
@@ -642,8 +674,7 @@
           <!-- Nombre -->
           <div class="gu-user-cell">
             <div class="gu-avatar">
-              <img *ngIf="u.avatarUrl" [src]="u.avatarUrl" [alt]="u.nombre" />
-              <span *ngIf="!u.avatarUrl">{{ u.iniciales }}</span>
+              <span>{{ u.iniciales }}</span>
             </div>
             <span class="gu-nombre">{{ u.nombre }}</span>
           </div>
@@ -703,6 +734,23 @@
         <span class="gu-footer-count">
           {{ usuariosFiltrados.length }} de {{ totalUsuarios }} usuarios
         </span>
+
+        <div class="gu-paginacion" *ngIf="totalPaginas > 1">
+          <button class="gu-pag-btn" [disabled]="pagina <= 1" (click)="paginaAnterior()" title="Página anterior">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+            </svg>
+          </button>
+
+          <span class="gu-pag-info">Página {{ pagina }} de {{ totalPaginas }}</span>
+
+          <button class="gu-pag-btn" [disabled]="pagina >= totalPaginas" (click)="paginaSiguiente()" title="Página siguiente">
+            <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
+            </svg>
+          </button>
+        </div>
+
         <span style="color: #9ca3af; font-size:11px;">Actualizado hoy</span>
       </div>
 
@@ -847,12 +895,9 @@
         <div class="gu-modal-field">
           <label class="gu-modal-label">Rol <span>*</span></label>
           <div class="gu-modal-select-wrap">
-            <select class="gu-modal-select" [(ngModel)]="formEditar.rol">
-              <option value="">Seleccionar</option>
-              <option value="Admin">Admin</option>
-              <option value="Usuario">Usuario</option>
-              <option value="Operario">Operario</option>
-              <option value="Conductor">Conductor</option>
+            <select class="gu-modal-select" [(ngModel)]="formEditar.idRol">
+              <option [ngValue]="null">Seleccionar</option>
+              <option *ngFor="let r of roles" [ngValue]="r.id">{{ r.nombre }}</option>
             </select>
           </div>
         </div>
